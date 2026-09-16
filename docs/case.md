@@ -7,10 +7,12 @@ O problema acontece no setor de varejo automotivo, onde muitas vezes o tanto o p
 ## Contexto
 
 ### Acionamento do Sistema
-    O sistema poderá ser acionado tanto pelo propietário quanto pelo mecânico, tendo como objetivo sanar dúvidas identificação de peças quanto apresentar informações disponibilizadas em manuais do automóvel. 
+
+O sistema poderá ser acionado tanto pelo propietário quanto pelo mecânico, tendo como objetivo sanar dúvidas identificação de peças quanto apresentar informações disponibilizadas em manuais do automóvel. 
 
 ### input e output
-    Como input o sistema necessita do nome de modelo do veículo, ano de fabricação, carroceria e motorização, o usuário que irá ceder inicialmente essa informação e a partir destes dados, o sistema apresentará em formato de tabela o código de identificação da peça e uma lista de automóveis também compatível com tal peça, ou apresentará em formato de texto corrido um resumo de orientações a partir da informação extraída do manual do veículo.
+
+Como input o sistema necessita do nome de modelo do veículo, ano de fabricação, carroceria e motorização, o usuário que irá ceder inicialmente essa informação e a partir destes dados, o sistema apresentará em formato de tabela o código de identificação da peça e uma lista de automóveis também compatível com tal peça, ou apresentará em formato de texto corrido um resumo de orientações a partir da informação extraída do manual do veículo.
 
 ### Situação Atual
 
@@ -29,69 +31,68 @@ A incerteza no momento de compra de peças de substituição em carros vendidos 
 ## Identificação do Usuário
 
 <table>
-        <thead>
-            <tr>
-                <th>Perfil</th>
-                <th>O que deseja</th>
-                <th>O que sabe</th>
-                <th>O que ele pode fazer</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Propietário</td>
-                <td>
-                    <ul>
-                        <li>
-                            Comprar de forma autônoma uma peça compatível com seu veículo;
-                        </li>
-                        <li>
-                            Consultar informações no manual do propietário, como períodos de manutenção, lista de peças próximas de serem trocadas, manutenções preventivas necessárias à ser realizadas, e dicas de condução.
-                        </li>
-                    </ul>
-                </td>
-                <td>
-                    <ul>
-                        <li>
-                            nome da peça
-                        </li>
-                        <li>
-                            modelo e ano de fabricação
-                        </li>
-                        <li>
-                            motorização, carroceria do veículo, km percorridos.
-                        </li>
-                    </ul>
-                </td> 
-                <td>descreve, consulta</td>
-            </tr>
-            <tr>
-                <td>Mecânico</td>
-                <td>
-                    <ul>
-                        <li>
-                            Identificar peças e fluidos compatíveis com o modelo do carro.  
-                        </li>
-                    </ul>
-                </td>
-                <td>
-                    <ul>
-                        <li>
-                            nome da peça
-                        </li>
-                        <li>
-                            modelo e ano de fabricação
-                        </li>
-                        <li>
-                            possíveis veículos que compartilham peças.
-                        </li>
-                    </ul>
-                </td>
-                <td>descreve, pergunta, consulta</td>
-            </tr>
-
-        </tbody>
-    </table>
+    <thead>
+        <tr>
+            <th>Perfil</th>
+            <th>O que deseja</th>
+            <th>O que sabe</th>
+            <th>O que ele pode fazer</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Propietário</td>
+            <td>
+                <ul>
+                    <li>
+                        Comprar de forma autônoma uma peça compatível com seu veículo;
+                    </li>
+                    <li>
+                        Consultar informações no manual do propietário, como períodos de manutenção, lista de peças próximas de serem trocadas, manutenções preventivas necessárias à ser realizadas, e dicas de condução.
+                    </li>
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    <li>
+                        nome da peça
+                    </li>
+                    <li>
+                        modelo e ano de fabricação
+                    </li>
+                    <li>
+                        motorização, carroceria do veículo, km percorridos.
+                    </li>
+                </ul>
+            </td> 
+            <td>descreve, consulta</td>
+        </tr>
+        <tr>
+            <td>Mecânico</td>
+            <td>
+                <ul>
+                    <li>
+                        Identificar peças e fluidos compatíveis com o modelo do carro.  
+                    </li>
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    <li>
+                        nome da peça
+                    </li>
+                    <li>
+                        modelo e ano de fabricação
+                    </li>
+                    <li>
+                        possíveis veículos que compartilham peças.
+                    </li>
+                </ul>
+            </td>
+            <td>descreve, pergunta, consulta</td>
+        </tr>
+    </tbody>
+</table>
 
 
 
@@ -103,24 +104,26 @@ o retorno será uma tabela com o código da peça, modelo e ano de automóveis c
 # Ganhos Esperados
 
 <table>
-        <thead>
-            <tr>
-                <th>Eixo</th>
-                <th>Linha de Base</th>
-                <th>Alvo</th>
-                <th>Ganho</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Tempo por Tarefa</td>
-                <td>Dias</td>
-<td>Espera-se reduzir o tempo necessário para identificar qual peça é compatível com o veículo</td>
-<td>~50% de Redução em Tempo identificando peça para o modelo de automôvel</td>
-</tr>
-<tr>
-                <td>Erro e retrabalho</td>
-                <td>taxa antes × depois</td>
-<td>Mecânico, Consumidor</td>
-<td>Redução em 90% de peças devolvidas por conta de compra errada.</td>
-</tr>
+    <thead>
+        <tr>
+            <th>Eixo</th>
+            <th>Linha de Base</th>
+            <th>Alvo</th>
+            <th>Ganho</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Tempo por Tarefa</td>
+            <td>Dias</td>
+            <td>Espera-se reduzir o tempo necessário para identificar qual peça é compatível com o veículo</td>
+            <td>~50% de Redução em Tempo identificando peça para o modelo de automôvel</td>
+        </tr>
+        <tr>
+            <td>Erro e retrabalho</td>
+            <td>taxa antes × depois</td>
+            <td>Mecânico, Consumidor</td>
+            <td>Redução em 90% de peças devolvidas por conta de compra errada.</td>
+        </tr>
+    </tbody>
+</table>
