@@ -170,78 +170,82 @@ o retorno será uma tabela com o código da peça, modelo e ano de automóveis c
 
 ## 2.4.1 O que o sistema faz
 
+Assistente informacional que ajuda mecânicos e proprietários a identificar peças
+compatíveis com o veículo e a consultar o manual do proprietário. Recebe a dúvida em
+texto livre, verifica primeiro se já foi respondida antes (cache local), senão
+consulta a API de peças ou o manual indexado, conforme o tipo de dúvida, e devolve o
+código da peça com os modelos compatíveis ou um resumo do manual. Não executa compra
+nem reserva — é só informativo.
+
 ## 2.4.2 Nível de autonomia pretendido
+
+**Agente simples**, não roteador puro e não workflow. Não é workflow porque nem todo
+passo é determinístico — o sistema decide, olhando o texto livre, o que falta
+perguntar e qual fonte consultar (API ou manual). Não é só roteador porque, depois de
+rotear, ainda decide sozinho como formatar a resposta e o que registrar no SQLite.
 
 ## 2.4.3 Ferramentas disponíveis
 
-<table>
-    <thead>
-        <tr>
-            <th>Ferramenta</th>
-            <th>O que faz</th>
-            <th>Leitura/Escrita?</th>
-            <th>Reversível?</th>
-            <th>Com quem se comunica</th>
-        </tr>
-    </thead>
-    <tbody>
-    </tbody>
-<table>
+| Ferramenta | O que faz | Leitura/Escrita | Reversível? | Com quem se comunica |
+|---|---|---|---|---|
+| `consultar_cache` | Verifica se a dúvida já foi resolvida antes | Leitura | — | SQLite local |
+| `consultar_api_pecas` | Busca peça compatível por modelo/ano/motorização | Leitura | — | API pública de catálogo |
+| `buscar_manual` | Recupera trecho relevante do manual do veículo | Leitura | — | Manuais em PDF indexados |
+| `registrar_peca` | Grava no cache os modelos que aceitam a peça encontrada | Escrita | Sim (é cache, pode ser sobrescrito) | SQLite local |
 
 # 2.5 A Justificativa do negócio
 
-## 2.5.1 Por que um Agente e não um software comum? 
+## 2.5.1 Por que um Agente e não um software comum?
+
+Porque a dúvida chega em texto livre e de dois tipos bem diferentes (peça x manual),
+e o sistema precisa decidir, a cada conversa, o que falta perguntar e qual fonte
+consultar. Um formulário fixo resolveria se o usuário sempre informasse tudo de
+início — o que não acontece (ver 2.2).
 
 ## 2.5.2 Ganhos Esperados
 
-<table>
-    <thead>
-        <tr>
-            <th>Eixo</th>
-            <th>Linha de Base</th>
-            <th>Alvo</th>
-            <th>Ganho</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>Tempo por Tarefa</td>
-            <td>Dias</td>
-            <td>Espera-se reduzir o tempo necessário para identificar qual peça é compatível com o veículo</td>
-            <td>~50% de Redução em Tempo identificando peça para o modelo de automôvel</td>
-        </tr>
-        <tr>
-            <td>Erro e retrabalho</td>
-            <td>taxa antes × depois</td>
-            <td>Mecânico, Consumidor</td>
-            <td>Redução em 90% de peças devolvidas por conta de compra errada.</td>
-        </tr>
-    </tbody>
-</table>
+| Eixo | Linha de Base (medir) | Alvo | Ganho |
+|---|---|---|---|
+| Tempo por tarefa | até alguns dias em casos ambíguos (cronometrar 10 casos reais) | poucos minutos | ~50% de redução (estimativa a confirmar) |
+| Erro e retrabalho | taxa de devolução por peça errada hoje (levantar no histórico da loja) | taxa menor | ~90% de redução em devoluções (estimativa a confirmar) |
 
 ## 2.5.3 Ganhos do usuário
 
+Mecânico: menos tempo parado esperando confirmação. Proprietário: mais autonomia
+pra não comprar peça errada. Loja: menos devolução.
+
 ## 2.5.4 Custos para manter o sistema
 
+Custo por chamada de modelo (ver item 3, análise de modelos), custo de manter o
+índice dos manuais atualizado, e custo de hospedar o SQLite e a API de peças.
 
 # 2.6 O Verificador
 
+Conjunto de 20 a 40 casos rotulados à mão (modelo + ano + motorização → código de
+peça correto, conferido contra o catálogo real) + regra de negócio: a peça devolvida
+tem que bater exatamente com os campos informados pelo usuário.
+
 # 2.7 Critério de Sucesso
+
+Acerta a peça correta em pelo menos 32 de 40 casos rotulados, e nunca devolve peça de
+segurança (freio, suspensão, direção) com confiança baixa.
 
 # 2.8 Dados
 
 ## 2.8.1 Origem
 
+Peças: API pública real. Manuais: PDFs reais de manutenção. Casos de teste:
+simulados, incluindo os três exigidos — divergência (motorização informada não bate
+com o catálogo), registro inexistente (peça sem substituta) e caso que não deve
+disparar registro no SQLite (dúvida de manual, não de peça).
+
 # 2.9 Dado Sensível
 
-# 2.10 Conceitos Futuros
-
-- [x] **RAG** - Leitura de manuais em pdf com cerca de 200 páginas.
-- [ ] **MCP**
-- [x] **LangChain** — Necessário realizar a orquestração entre os agentes de formulação de resposta e consulta de base de dados. 
-- [x] **Multiagente** — Haverá 3 fontes de dados (sqlite, manuais em pdf e API's públicas), logo, faz-se necessário o uso de multi-agentes.
+Nenhum. O sistema lida só com dado de veículo (modelo, ano, motorização) — não com
+dado pessoal, financeiro ou de saúde.
 
 # 2.11 O maior risco
-(tabela de riscos e possíveis problemas inerentes ao modelo)
 
-# 3 Análise de Modelos
+| Risco | Plano B |
+|---|---|
+| Acesso à API pública de peças pode não ter cobertura suficiente pra todos os modelos testados | Usar uma base simulada pequena, com os casos difíceis nomeados, pra demonstração |
