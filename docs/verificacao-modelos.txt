@@ -1,0 +1,155 @@
+# Verificação mínima — 2026-09-19 19:22
+
+
+## 1. Simples (dados completos)
+Entrada: Preciso de pastilha de freio dianteira pro Onix 2021, motor 1.0 Turbo.
+
+
+**mistral_small:**
+[ERRO] Error code: 429 - {'object': 'error', 'message': 'Rate limit exceeded', 'type': 'rate_limited', 'param': None, 'code': '1300', 'raw_status_code': 429}
+
+
+**gpt_oss_groq:**
+**Onix 2021 – 1.0 Turbo (freio dianteiro)**  
+
+- **Peça necessária:** conjunto de pastilhas de freio dianteiras (inclui duas pastilhas e, quando aplicável, o suporte de apoio).  
+- **Aplicação:** Chevrolet Onix, ano/modelo 2021, motorização 1.0 Turbo, sistema de freio a disco nas rodas dianteiras.  
+
+### Como confirmar a peça correta
+1. **Verifique o número do chassi (VIN).**  
+   - O VIN permite que a concessionária ou o fornecedor de peças identifique exatamente a referência OEM (origem GM) que corresponde ao seu veículo.  
+2. **Consulte o manual do proprietário** (seção “Freios”) para confirmar se o seu Onix utiliza pastilhas de freio ventiladas ou simples e se há necessidade de pastilha com sensor de desgaste (ABS).  
+3. **Peça a referência OEM ao revendedor** usando a frase:  
+   > “Preciso da pastilha de freio dianteira para Chevrolet Onix 2021, motor 1.0 Turbo, código OEM.”  
+
+### O que observar ao adquirir a peça
+- **Compatibilidade com ABS:** a maioria dos modelos 2021 já vem com sensor de desgaste integrado à pastilha. Certifique‑se de que a peça inclui o sensor, caso o seu veículo possua ABS.  
+- **Material da pastilha:** as opções mais comuns são orgânicas (menos ruído, menor desgaste dos discos) e semi‑metálicas (maior durabilidade, melhor desempenho em altas temperaturas). Escolha conforme a sua preferência de condução.  
+- **Conjunto completo:** alguns fornecedores entregam apenas as duas pastilhas; outros oferecem o conjunto completo (pastilhas + suporte). Verifique o que está incluído no item que você está comprando.  
+
+### Próximos passos
+1. **Localize o VIN** (geralmente na placa de identificação do chassi, no canto inferior do para-brisa ou no documento do veículo).  
+2. **Entre em contato com a concessionária Chevrolet ou um fornecedor de peças oficial** e forneça:  
+   - Modelo: Onix  
+   - Ano: 2021  
+   - Motorização: 1.0 Turbo  
+   - VIN (opcional, mas ajuda a garantir a referência exata).  
+
+Caso precise de mais detalhes sobre o procedimento de substituição ou sobre a manutenção do sistema de freio, estou à disposição para ajudar com as informações do manual do proprietário.
+
+
+**gemini_flash:**
+Para o **Chevrolet Onix 2021 1.0 Turbo**, as pastilhas de freio dianteiras compatíveis possuem os seguintes códigos de referência:
+
+* **Código Original (OEM General Motors):** 26213372 (ou 26233156)
+* **Fras-le:** PD/1557
+* **Cobreq:** N-2089
+* **Bosch:** 0 986 BB0 882
+
+---
+
+### Informações do Manual e Manutenção:
+* **Fluido de Freio:** Caso precise completar ou substituir o fluido durante a manutenção, a especificação indicada pela fabricante é **DOT 4**.
+* **Recomendação:** Ao trocar as pastilhas, é importante inspecionar o desgaste dos discos de freio dianteiros para garantir o assentamento correto das peças novas.
+
+*Nota: Recomenda-se sempre conferir o código impresso na peça instalada no veículo ou confirmar pelo número do chassi no momento da compra para garantir total compatibilidade.*
+
+
+## 2. Motorização não informada
+Entrada: Filtro de óleo pro HB20 2019.
+
+
+**mistral_small:**
+[ERRO] Error code: 429 - {'object': 'error', 'message': 'Rate limit exceeded', 'type': 'rate_limited', 'param': None, 'code': '1300', 'raw_status_code': 429}
+
+
+**gpt_oss_groq:**
+Para encontrar o filtro de óleo correto precisamos saber a motorização do seu HB20 2019, pois o modelo pode ter diferentes motores (por exemplo, 1.0, 1.0 Turbo, 1.6).  
+
+**Qual a motorização do seu veículo?** (ex.: 1.0 L, 1.0 Turbo L, 1.6 L)
+
+
+**gemini_flash:**
+Para eu te indicar o filtro de óleo correto, preciso saber qual é a **motorização** do seu HB20 2019.
+
+O HB20 desse ano pode ter diferentes motores:
+* **1.0 12V** (3 cilindros - aspirado)
+* **1.0 Turbo 12V** (3 cilindros)
+* **1.6 16V** (4 cilindros)
+
+Qual é o motor do seu veículo?
+
+
+## 3. Ano na fronteira de duas gerações
+Entrada: Amortecedor traseiro pro Corolla 2019/2020.
+
+
+**mistral_small:**
+[ERRO] Error code: 429 - {'object': 'error', 'message': 'Rate limit exceeded', 'type': 'rate_limited', 'param': None, 'code': '1300', 'raw_status_code': 429}
+
+
+**gpt_oss_groq:**
+Para identificar o amortecedor traseiro correto do Corolla 2019‑2020 precisamos saber a motorização do veículo, pois o código da peça varia entre as versões (1.8 L, 2.0 L, híbrido, etc.).
+
+**Qual a motorização do seu Corolla?**  
+- 1.8 L (2ZR‑FE)  
+- 2.0 L (M15A‑FO)  
+- Hybrid (2.0 L híbrido)  
+
+Com essa informação poderei indicar o número de peça OEM (ex.: 84210‑31010 para a versão 1.8 L) ou a referência genérica equivalente.  
+
+Aguardo a sua resposta!
+
+
+**gemini_flash:**
+Para eu te indicar a peça correta, você poderia me informar qual é a **motorização** e a **versão** do seu Corolla? (Por exemplo: 2.0 Flex, 1.8 Flex ou 1.8 Híbrido, e se é a versão GLi, XEi ou Altis).
+
+Como o ano 2019/2020 é um ano de mudança de geração do Corolla (transição da 11ª para a 12ª geração), o sistema de suspensão traseira muda bastante entre as versões e modelos. Com esse dado, consigo buscar a aplicação exata para o seu carro!
+
+
+## 4. Peça descontinuada, com substituta
+Entrada: O usuário perguntou pela pastilha de freio traseira do Civic 2015. A ferramenta de consulta ao catálogo retornou: peça original DEF456 foi descontinuada pelo fabricante; a substituta indicada é a peça UVW321. Responda ao usuário.
+
+
+**mistral_small:**
+[ERRO] Error code: 429 - {'object': 'error', 'message': 'Rate limit exceeded', 'type': 'rate_limited', 'param': None, 'code': '1300', 'raw_status_code': 429}
+
+
+**gpt_oss_groq:**
+Olá! Para a pastilha de freio traseira do **Civic 2015** o catálogo indica que a peça original **DEF456** foi descontinuada e a substituta recomendada é a **UVW321**.
+
+Entretanto, a motorização do veículo (por exemplo, 1.8 L, 2.0 L, etc.) pode influenciar a compatibilidade exata da pastilha. Poderia me informar qual é a motorização do seu Civic 2015? Assim confirmo se a peça UVW321 é a indicada para o seu modelo.
+
+
+**gemini_flash:**
+Para o Honda Civic 2015, o código original da pastilha de freio traseira (**DEF456**) foi descontinuado pelo fabricante. 
+
+A peça substituta oficial indicada para reposição é a **UVW321**.
+
+*Observação:* Como a motorização (por exemplo, 1.8 ou 2.0) pode alterar a aplicação de peças em algumas versões, certifique-se de confirmar o motor do seu veículo ao adquirir o item para garantir a perfeita compatibilidade.
+
+
+## 5. Peça sem substituta
+Entrada: O usuário perguntou pelo amortecedor dianteiro de um Fiat Uno 1998. A ferramenta de consulta ao catálogo retornou: nenhuma peça compatível encontrada, e não há substituta cadastrada. Responda ao usuário.
+
+
+**mistral_small:**
+[ERRO] Error code: 429 - {'object': 'error', 'message': 'Rate limit exceeded', 'type': 'rate_limited', 'param': None, 'code': '1300', 'raw_status_code': 429}
+
+
+**gpt_oss_groq:**
+Olá! 
+
+Para o **Fiat Uno 1998** não localizamos nenhum amortecedor dianteiro compatível no nosso catálogo, nem há substitutos cadastrados.
+
+Como a motorização (por exemplo, Uno Fire 1.0, Uno 1.2 GL, etc.) costuma influenciar bastante a escolha da peça, preciso desse detalhe para tentar uma nova busca. Poderia me informar a versão/motor do seu Uno? 
+
+Com essa informação, verificaremos novamente se há algum amortecedor dianteiro adequado. Caso ainda não encontremos, recomendo consultar o manual do proprietário ou entrar em contato com uma concessionária/assistência Fiat para confirmar a peça correta. 
+
+Aguardamos a sua resposta!
+
+
+**gemini_flash:**
+Realizei a consulta no catálogo para o **amortecedor dianteiro do Fiat Uno (ano 1998)**, porém **não foi encontrada nenhuma peça compatível** e não há opções de substitutas cadastradas no sistema no momento.
+
+Como não foi possível localizar a peça pelo ano, recomendo verificar o código gravado na peça antiga ou consultar o catálogo oficial de fabricantes de amortecedores (como Cofap, Nakata ou Monroe) informando também a motorização exata (ex.: 1.0 Mille, 1.5) e o número do chassi do veículo.
