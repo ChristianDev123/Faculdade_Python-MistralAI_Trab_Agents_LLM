@@ -51,8 +51,7 @@ class LeitorManualPDF(Agent):
         ])
 
         with pdfplumber.open(path) as pdf:
-            qtd_paginas = len(pdf.pages)
-            while qtd_paginas > 1:
+            for i, page in enumerate(pdf.pages):
                 messages = [
                     {
                         'role':'system',
@@ -61,18 +60,19 @@ class LeitorManualPDF(Agent):
                             O usuário informou a dúvida: {duvida_usuario}.
                             O usuário te enviará páginas de pdf,
                             identifique entre as páginas a informação que o usuário
-                            te solicitou anteriormente.
-                            Devolva em um JSON com as informações: 
-                            num_pagina (número da página);
-                            fl_contem_info (True/False);
-                            descricao;
+                            te solicitou.
+                            Ignore índices, glossários e seções pretextuais.
+                            A cada página, devolva em um JSON as informações: 
+                                - num_pagina (número da página);
+                                - fl_contem_info (True/False);
+                                - descricao;
                             Se a página contém informações que o usuário solicitou, 
                             preencha o campo descrição com um breve resumo do que a página especifica.
                             Se não, mantenha o campo descrição com string vazia.
                         """
                     }
                 ]
-                messages.append(Message('user', pdf.pages[qtd_paginas - 1].extract_text()).to_dict())
+                messages.append(Message('user', page.extract_text()).to_dict())
                 response_completion = self.client.chat.completions.create(
                     model=self.model,
                     messages=messages,
@@ -80,10 +80,9 @@ class LeitorManualPDF(Agent):
                     response_format=json_format
                 )
                 resultado = json.loads(response_completion.choices[0].message.content)
+                print(f"página {i+1} lida")
                 if(resultado['fl_contem_info']):
                     return resultado
-                print(f"página {qtd_paginas-1} lida")
-                qtd_paginas -= 1
 
     def run(self):
         for _ in range(4):
