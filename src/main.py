@@ -1,4 +1,5 @@
 from orquestrador import Orquestrador
+from leitor_manual_pdf import LeitorManualPDF
 from openai import OpenAI
 import os
 
@@ -7,5 +8,10 @@ client = OpenAI(
     api_key=os.environ["GROQ_API_KEY"]
 )
 
-orquestrador = Orquestrador(client)
+orquestrador = Orquestrador(
+    client=client,
+    agents=[
+        LeitorManualPDF(client)
+    ]
+)
 orquestrador.run()

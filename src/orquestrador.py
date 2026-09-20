@@ -11,19 +11,21 @@ import json
 load_dotenv()
 
 class Orquestrador(Agent):
-    def __init__(self, client:OpenAI, model=None):
-        super().__init__(client, model)
+    def __init__(self, client:OpenAI, model=None, agents:list[Agent] = []):
+        super().__init__('conversacional',client, model)
+        self.agents = agents
         self.json_format_orquestrador = createJsonFormat('descisao_orquestrador',[
             {'name':'pensamento', 'type':'string'},
             {'name':'acao', 'type':'string', 'enum':["RESPONDER_USUARIO", "CHAMAR_SUBAGENTE"]},
             {'name':'conteudo', 'type':'string'},
-            {'name':'subagente_destino', 'type':'string', 'enum':['LEITOR MANUAL PDF', 'CONVERSACIONAL']},
+            {'name':'subagente_destino', 'type':'string', 'enum':['LEITOR_MANUAL_PDF', 'CONVERSACIONAL']},
         ])
 
         self.json_format_leitura_manual = createJsonFormat('envio_dados_leitor_manual',[
             {'name':'modelo', 'type':'string'},
             {'name':'ano', 'type':'integer'},
             {'name':'motorizacao', 'type':'string'},
+            {'name':'duvida', 'type':'string'},
         ])
 
     def run(self):        
@@ -41,8 +43,10 @@ class Orquestrador(Agent):
                 print(f'Bot: {sys_message['conteudo']}')
 
             elif(sys_message['acao'] == 'CHAMAR_SUBAGENTE'):
+                agent = list(filter(lambda x: str(sys_message['subagente_destino']).lower() == x.name, self.agents))[0]
                 self.send_message(Message('system', 'Apresente os dados coletados na conversa com usuário em um JSON contendo apenas as características do veículo'))
-                sys_message = json.loads(self.get_answer(response_format=self.json_format_leitura_manual).content)
-                print(sys_message)
-        
+                sys_message = self.get_answer(response_format=self.json_format_leitura_manual).content
+                agent.send_message(Message('user', sys_message))
+                agent.run()
+                
 
