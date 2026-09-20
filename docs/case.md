@@ -10,7 +10,7 @@ o que gera compra errada, devolução e atraso no conserto.
 que depende de identificar a peça certa rapidamente para não perder o cliente para a 
 oficina concorrente.
 
-**Onde o sistema roda:** dentro do atendimento de balcão, telefone ou WhatsApp da
+**Onde o sistema roda:** dentro do atendimento de balcão ou telefone via Discord da
 loja de autopeças. no momento em que o mecânico já verificou o problema do veículo
 ou desmontou a peça antiga e precisa da referência de reposição. Quem aciona é o
 próprio mecânico ou o balconista em nome dele.
@@ -142,7 +142,7 @@ A incerteza no momento de compra de peças de substituição em carros vendidos 
 
 ## 2.2.2 Como é a Interação
 
-A interação será através de chat, é mais simples para acesso de ambos usuários à informação. O agente será acionado pelo usuário, portanto reativo. provavelmente haverá entorno de 3 à 4 interações até o sistema ter todos os dados necessários para inferir qual peça é a certa ao automóvel ou sanar a dúvida do usuário.
+A interação será através de chatbot, é mais simples para acesso de ambos usuários à informação. O agente será acionado pelo usuário, portanto reativo. provavelmente haverá entorno de 3 à 4 interações até o sistema ter todos os dados necessários para inferir qual peça é a certa ao automóvel ou sanar a dúvida do usuário.
 o retorno será uma tabela com o código da peça, modelo e ano de automóveis compatíveis com a peça ou a resposta extraída de um manual. Em caso de erro o agente apresentará a desculpa de não ter encontrado a peça para o automóvel.
 
 
