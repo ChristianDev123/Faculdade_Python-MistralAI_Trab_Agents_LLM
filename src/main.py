@@ -2,6 +2,9 @@ from orquestrador import Orquestrador
 from leitor_manual_pdf import LeitorManualPDF
 from openai import OpenAI
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 client = OpenAI(
     base_url="https://api.groq.com/openai/v1",
