@@ -4,6 +4,8 @@ sys.path.append(Path(__file__).resolve().parent.parent)
 from interfaces.agent import Agent
 from interfaces.message import Message
 from openai import OpenAI
+import sqlite3
+
 
 class Registrador(Agent):
     def __init__(self, client:OpenAI):
@@ -11,16 +13,17 @@ class Registrador(Agent):
         self.input = input
         self.send_message(Message('system',self.read_system_prompts('registrador_system_prompt.md')))
 
-    def _verifica_arquivo_sqlite(self):
-        pass
+    def _cria_tabela(self, tablename, fields:list[str]):
+        path_database = Path(__file__).resolve().parent.parent // 'database'
+        with sqlite3.connect(path_database // 'db.sqlite') as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"CREATE TABLE IF NOT EXISTS {tablename}({','.join(fields)})")
 
-    def _cria_base(self, db_name):
-        if(self._verifica_arquivo_sqlite()):
-            pass
-        pass
-
-    def _insert_base(self, data:dict):
-        pass
+    def _inserir_tabela(self, tablename, data:list[str]):
+        path_database = Path(__file__).resolve().parent.parent // 'database'
+        with sqlite3.connect(path_database // 'db.sqlite') as conn:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO {tablename} VALUES  ")
 
     def run(self):
         print(self.get_answer().content)
