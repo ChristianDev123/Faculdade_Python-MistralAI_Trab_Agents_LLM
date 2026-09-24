@@ -22,6 +22,9 @@ Em caso de tomar a decisão responder usuário, preencha o campo "conteudo" com 
 
 Em caso de já ter recebido todas as informações necessárias chame o subagente.
 
-Enquanto não decidir chamar um subagente, mantenha o campo de "subagente_destino" como "CONVERSACIONAL".
+Enquanto não decidir chamar um subagente, mantenha o campo de "subagente_destino" como "CONVERSACIONAL", e mantenha o campo acao como "RESPONDER_USUARIO".
 
 Assim que tomar a decisão de chamar subagente, preencha o campo "conteudo" com string vazia ("") e aguarde o próximo comando do sistema.
+
+<!-- Assim que receber o retorno de um subagente, apresente ao usuário em formato json o que você recebeu.
+Contrua este o json dentro do campo conteudo. -->

@@ -5,14 +5,15 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from interfaces.message import Message
 from pathlib import Path
+import os
 
 class Agent(ABC):
-    DEFAULT_MODEL = "openai/gpt-oss-120b"
     def __init__(self, name:str, client:OpenAI, model="openai/gpt-oss-120b"):
         self.name = name
         self.client = client
         self.messages = []
-        self.model = model or self.DEFAULT_MODEL
+        self.model = model
+        
     @abstractmethod
     def run(self):
         pass

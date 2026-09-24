@@ -5,11 +5,10 @@ class ToolCall:
         self.props = []
         self.required = []
 
-    def insert_prop(self, name, type, desc):
+    def insert_prop(self, name:str, definition:dict):
         self.props.append({
             'name': name,
-            'type': type,
-            'description':desc
+            'definition':definition,
         })
         self.required.append(name)
 
@@ -21,7 +20,7 @@ class ToolCall:
                 'description':self.desc_function,
                 'parameters':{ 
                     'type':'object',
-                    'properties':{prop['name']:{'type':prop['type'], 'description':prop['description']} for prop in self.props},
+                    'properties':{prop['name']:prop['definition'] for prop in self.props},
                     'required': self.required,
                     'additionalProperties': False
                  }            

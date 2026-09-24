@@ -12,7 +12,11 @@ load_dotenv()
 
 class Orquestrador(Agent):
     def __init__(self, client:OpenAI, model=None, agents:list[Agent] = []):
-        super().__init__('conversacional',client, model)
+        if(model):
+            super().__init__('conversacional',client, model)
+        else:
+            super().__init__('conversacional',client)
+
         self.agents = agents
         self.json_format_orquestrador = createJsonFormat('descisao_orquestrador',[
             {'name':'pensamento', 'type':'string'},
@@ -21,12 +25,12 @@ class Orquestrador(Agent):
             {'name':'subagente_destino', 'type':'string', 'enum':['LEITOR_MANUAL_PDF', 'CONVERSACIONAL']},
         ])
 
-        self.json_format_leitura_manual = createJsonFormat('envio_dados_leitor_manual',[
-            {'name':'modelo', 'type':'string'},
-            {'name':'ano', 'type':'integer'},
-            {'name':'motorizacao', 'type':'string'},
-            {'name':'duvida', 'type':'string'},
-        ])
+        # self.json_format_leitura_manual = createJsonFormat('envio_dados_leitor_manual',[
+        #     {'name':'modelo', 'type':'string'},
+        #     {'name':'ano', 'type':'integer'},
+        #     {'name':'motorizacao', 'type':'string'},
+        #     {'name':'duvida', 'type':'string'},
+        # ])
 
     def run(self):        
         self.send_message(Message('system', self.read_system_prompts('orquestrador_system_prompt.md')))
@@ -44,12 +48,8 @@ class Orquestrador(Agent):
 
             elif(sys_message['acao'] == 'CHAMAR_SUBAGENTE'):
                 agent = list(filter(lambda x: str(sys_message['subagente_destino']).lower() == x.name, self.agents))[0]
-                self.send_message(Message('system', 'Apresente os dados coletados na conversa com usuário em um JSON contendo apenas as características do veículo'))
-                sys_message = self.get_answer(
-                    response_format=self.json_format_leitura_manual,
-                    temperature=0
-                ).content
+                self.send_message(Message('user', f'Apresente os dados disponíveis em um JSON.'))
+                sys_message = self.get_answer(temperature=0).content
                 agent.send_message(Message('user', sys_message))
-                agent.run()
-                
+                self.send_message(Message('system',f"""Retorno agente {agent.name}: {agent.run()} """))
 

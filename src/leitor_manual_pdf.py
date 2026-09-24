@@ -12,29 +12,33 @@ import json
 import time
 
 class LeitorManualPDF(Agent):
-    def __init__(self, client:OpenAI, model=None, ):
-        super().__init__('leitor_manual_pdf', client, model)
+    def __init__(self, client:OpenAI, model=None):
+        if(model):
+            super().__init__('leitor_manual_pdf', client, model)
+        else:
+            super().__init__('leitor_manual_pdf', client)
+
         self.tool_calls = []
         self.tool_calls_func_link = {}
         self._create_tool_calls()
-        sys_prompt = self.read_system_prompts('leitor_manual_pdf_prompt.md')
-        self.send_message(Message('system', sys_prompt))
+        self.send_message(Message('system', self.read_system_prompts('leitor_manual_pdf_prompt.md')))
 
     def _create_tool_calls(self):
-        tool = ToolCall('get_pdf_filename', """
+        get_pdf_filename = ToolCall('get_pdf_filename', """
             Utilize para receber uma lista de nomes de arquivos
             de manuais de automóveis disponíveis para leitura.
         """)
-        self.tool_calls.append(tool.to_dict())
+        self.tool_calls.append(get_pdf_filename.to_dict())
         self.tool_calls_func_link['get_pdf_filename'] = self._get_pdf_filenames
 
-        tool = ToolCall('read_pdf_pages',"""
+        read_pdf_pages = ToolCall('read_pdf_pages',"""
             Resposabilidade: ler arquivos de manuais arquivados em formato pdf.
             Utilize assim que tiver o nome do arquivo à ser lido.
         """)
-        tool.insert_prop('namefile', 'string', 'Nome do arquivo pdf à ser lido')
-        tool.insert_prop('duvida_usuario', 'string', 'Duvida do Usuário')
-        self.tool_calls.append(tool.to_dict())
+        read_pdf_pages.insert_prop('namefile', {'type':'string','description':'Nome do arquivo pdf à ser lido'})
+        read_pdf_pages.insert_prop('duvida_usuario', {'type':'string', 'description':'Duvida do Usuário'})
+        read_pdf_pages.insert_prop('palavras_chave', {'type':'array', 'item':{'type':'string'}, 'description':'palavras chaves baseada na dúvida do usuário'})
+        self.tool_calls.append(read_pdf_pages.to_dict())
         self.tool_calls_func_link['read_pdf_pages'] = self._read_pdf_pages
 
     def _get_pdf_filenames(self):
@@ -42,10 +46,10 @@ class LeitorManualPDF(Agent):
         path_project = f'{path_project}/databases/manuais/'
         return list(filter(lambda x: str(x).endswith('.pdf'), os.listdir(path_project)))
 
-    def _read_pdf_pages(self, namefile, duvida_usuario):
+    def _read_pdf_pages(self, namefile, duvida_usuario, palavras_chave):
         path = Path(__file__).resolve().parent.parent
         path = f"{path}/databases/manuais/{namefile}"
-        sys_prompt = self.read_system_prompts('tool_call_leitura_pdf.md')
+
         json_format = createJsonFormat('read_pdf_pages_return', [
             {'name':'trecho_original', 'type':'string'},
             {'name':'resumo', 'type':'string'},
@@ -54,11 +58,14 @@ class LeitorManualPDF(Agent):
 
         with pdfplumber.open(path) as pdf:
             for i, page in enumerate(pdf.pages):
+                pagina = page.extract_text()
+
+                if(not any(map(lambda x: str(x).lower() in str(pagina).lower(), palavras_chave))): continue
                 messages = [
-                    {'role':'system', 'content':sys_prompt},
+                    {'role':'system', 'content': self.read_system_prompts('tool_call_leitura_pdf.md')},
                     {'role':'system', 'content':f"Dúvida do usuário: {duvida_usuario}."}
                 ]
-                messages.append(Message('user', page.extract_text()).to_dict())
+                messages.append(Message('user', pagina).to_dict())
                 response_completion = self.client.chat.completions.create(
                     model=self.model,
                     messages=messages,
@@ -72,6 +79,11 @@ class LeitorManualPDF(Agent):
                 time.sleep(0.25)
 
     def run(self):
+        json_format_retorno = createJsonFormat('retorno_leitura_pdf',[
+            {'name':'duvida_usuario', 'type':'string'},
+            {'name':'kws_duvida_usuario', 'type':'array', 'items':{'type':'string'}},
+            {'name':'resolucao', 'type':'string'},
+        ])
         for _ in range(4):
             sys_message = self.get_answer(tools=self.tool_calls)
             if(sys_message.tool_calls):
@@ -85,4 +97,13 @@ class LeitorManualPDF(Agent):
                         content=json.dumps(result)
                     ))
                 continue
-            print(sys_message.content)
+            self.send_message(Message('system', """
+                Devolva em formato de string as informações: 
+                    - duvida do usuário (duvida_usuario),
+                    - palavras-chave da duvida do usuário (kws_duvida_usuario),
+                    - resumo elaborado à partir da leitura do manual (resolucao)   
+            """))
+            return self.get_answer(
+                response_format = json_format_retorno,
+                temperature=0
+            ).content
