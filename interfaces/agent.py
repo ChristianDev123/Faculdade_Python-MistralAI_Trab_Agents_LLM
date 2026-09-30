@@ -24,9 +24,13 @@ class Agent(ABC):
                 return prompt.read()
 
     def send_message(self, message:Message)->None:
-        self.messages.append(message.to_dict())
-        
+        if(type(message) is Message):
+            self.messages.append(message.to_dict())
+        else:
+            self.messages.append(message)
     def get_answer(self, **kwargs):
+        if kwargs.get('response_format') is None:
+            kwargs.pop('response_format', None)
         response = self.client.chat.completions.create(
             model= self.model,
             messages=self.messages,

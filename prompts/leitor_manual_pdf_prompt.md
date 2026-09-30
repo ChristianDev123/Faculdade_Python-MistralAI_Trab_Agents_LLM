@@ -16,5 +16,7 @@ Apresente em um JSON com as seguintes informações:
 
 Após encontrar o nome do arquivo, acione a tool_call para leitura do manual passando 
 o nome do arquivo à ser lido, descrição da dúvida do usuário 
-e uma lista de palavras-chaves que coincidem com a dúvida. 
+e uma lista de palavras-chaves que coincidem com a dúvida do usuário.
+> Não utilize como base dados do carro para construir palavras chaves nessa etapa, utilize apenas a dúvida do usuário  
+
 Retorne as informações em formato json.

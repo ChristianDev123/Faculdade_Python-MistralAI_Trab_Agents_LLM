@@ -47,6 +47,12 @@ class LeitorManualPDF(Agent):
         return list(filter(lambda x: str(x).endswith('.pdf'), os.listdir(path_project)))
 
     def _read_pdf_pages(self, namefile, duvida_usuario, palavras_chave):
+        print(f"""
+            --- REALIZANDO CONSULTA EM MANUAL ---
+                - Dúvida à ser sanada: {duvida_usuario}
+                - Arquivo Selecionado: {namefile}
+                - Palavras_Chave Busca: {palavras_chave}
+        """)
         path = Path(__file__).resolve().parent.parent
         path = f"{path}/databases/manuais/{namefile}"
 
