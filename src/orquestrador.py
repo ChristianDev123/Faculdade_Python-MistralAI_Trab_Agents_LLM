@@ -30,12 +30,43 @@ class Orquestrador(Agent):
         agent = next((a for a in self.agents if a.name.upper() == sub_agent_name), None)
         if not agent:
             raise Exception(f"Erro: Subagente '{sub_agent_name}' não encontrado.")
-        messages = [{"role":'system', "content":'Formate em JSON todos os dados enviados pelo usuario.'}]
+
+        jf = createJsonFormat('retorno_dados_usuario',[
+            {'name':'duvida_usuario', 'type':'string'},
+            {'name':'modelo', 'type':'string'},
+            {'name':'ano', 'type':'integer'},
+            {'name':'motorizacao', 'type':'string'},
+            {'name':'kw_duvida', 'type':'string', 'description':'palavras-chave da duvida do usuario'},
+            {'name':'resumo', 'type':'string', 'description':'resumo obtido da leitura do manual do veículo'},
+        ])
+        
+        messages = [
+            {
+                "role":'system', 
+                "content":'''
+                    Não utilize conhecimento prévio, utilize apenas os dados cedidos pelo usuário!
+                    Não crie palavras chave, utilize apenas os dados cedidos pelo usuário!
+                    Não crie resumo, utilize apenas os dados cedidos pelo usuário!
+                    Em caso de não ter informação relacionado à algum tópico, preencha o json com vazio.
+                    Formate em JSON todos os dados enviados pelo usuario.
+                    Ex :
+                    {
+                        duvida_usuario": "Quais são os itens de segurança presentes no meu carro?",
+                        "modelo": "Fox",
+                        "ano": 2015,
+                        "motorizacao": "1.6",
+                        "kw_duvida":'',
+                        "resumo":'',
+                    }
+                '''
+            }
+        ]
         messages = messages + [message for message in self.messages if (message['role'] == 'user' or str(message['content']).lower().startswith('retorno agente'))]
         formated_data = self.client.chat.completions.create(
             model= self.model,
             messages=messages,
-            temperature=0
+            temperature=0,
+            response_format = jf
         ).choices[0].message.content
         print(f"""
             --- ACIONANDO SUBAGENTE ---

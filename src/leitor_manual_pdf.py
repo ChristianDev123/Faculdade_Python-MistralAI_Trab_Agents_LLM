@@ -10,6 +10,7 @@ from openai import OpenAI
 import pdfplumber
 import json
 import time
+import inspect
 
 class LeitorManualPDF(Agent):
     def __init__(self, client:OpenAI, model=None):
@@ -55,7 +56,6 @@ class LeitorManualPDF(Agent):
         """)
         path = Path(__file__).resolve().parent.parent
         path = f"{path}/databases/manuais/{namefile}"
-
         json_format = createJsonFormat('read_pdf_pages_return', [
             {'name':'pensamento', 'type':'string'},
             {'name':'trecho_original', 'type':'string'},
@@ -63,10 +63,13 @@ class LeitorManualPDF(Agent):
             {'name':'fl_duvida_sanada', 'type':'boolean', 'enum':[True, False]},
         ])
         with pdfplumber.open(path) as pdf:
+            mx_page = 10
             for i, page in enumerate(pdf.pages):
                 pagina = page.extract_text()
 
                 if(not any(map(lambda x: str(x).lower() in str(pagina).lower(), palavras_chave))): continue
+                mx_page-=1
+                if(mx_page == -1): return resultado
                 messages = [
                     {'role':'system', 'content': self.read_system_prompts('tool_call_leitura_pdf.md')},
                     {'role':'system', 'content':f"Dúvida do usuário: {duvida_usuario}."}
@@ -83,6 +86,7 @@ class LeitorManualPDF(Agent):
                 if(resultado['fl_duvida_sanada']):
                     return resultado
                 time.sleep(0.25)
+            
 
     def run(self):
         json_format_retorno = createJsonFormat('retorno_leitura_pdf', [
@@ -99,9 +103,14 @@ class LeitorManualPDF(Agent):
         while getattr(sys_message, 'tool_calls', None):
             self.send_message(sys_message)
             for tool in sys_message.tool_calls:
+                print(sys_message)
+                func = self.tool_calls_func_link[tool.function.name]
                 argumentos = json.loads(tool.function.arguments)
-                result = self.tool_calls_func_link[tool.function.name](**argumentos)
+                sig = inspect.signature(func)
                 
+                if len(sig.parameters) == 0: result = func()
+                else: result = func(**argumentos)
+
                 self.send_message(Message(
                     role='tool',
                     tool_call_id=tool.id,
