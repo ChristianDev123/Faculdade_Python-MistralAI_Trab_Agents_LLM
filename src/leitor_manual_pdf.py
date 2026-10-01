@@ -13,11 +13,8 @@ import time
 import inspect
 
 class LeitorManualPDF(Agent):
-    def __init__(self, client:OpenAI, model=None):
-        if(model):
-            super().__init__('leitor_manual_pdf', client, model)
-        else:
-            super().__init__('leitor_manual_pdf', client)
+    def __init__(self, client:OpenAI):
+        super().__init__('leitor_manual_pdf', client)
 
         self.tool_calls = []
         self.tool_calls_func_link = {}
@@ -87,7 +84,6 @@ class LeitorManualPDF(Agent):
                     return resultado
                 time.sleep(0.25)
             
-
     def run(self):
         json_format_retorno = createJsonFormat('retorno_leitura_pdf', [
             {'name': 'duvida_usuario', 'type': 'string'},

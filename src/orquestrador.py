@@ -11,11 +11,8 @@ import json
 load_dotenv()
 
 class Orquestrador(Agent):
-    def __init__(self, client:OpenAI, model=None, agents:list[Agent] = []):
-        if(model):
-            super().__init__('conversacional',client, model)
-        else:
-            super().__init__('conversacional',client)
+    def __init__(self, client:OpenAI, agents:list[Agent] = []):
+        super().__init__('conversacional',client)
 
         self.agents = agents
         self.json_format_orquestrador = createJsonFormat('descisao_orquestrador',[

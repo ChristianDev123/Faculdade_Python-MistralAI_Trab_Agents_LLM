@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from interfaces.message import Message
-from pathlib import Path
+from src.config import MODEL
 import os
 
 class Agent(ABC):
@@ -12,10 +12,7 @@ class Agent(ABC):
         self.name = name
         self.client = client
         self.messages = []
-        if(os.environ.get('AI_MODEL') is None or os.environ.get('AI_MODEL') == ''):
-            self.model = model
-        else:
-            self.model = os.environ.get('AI_MODEL')
+        self.model = model if(MODEL is None or MODEL == '') else MODEL 
         
     @abstractmethod
     def run(self):
@@ -31,6 +28,7 @@ class Agent(ABC):
             self.messages.append(message.to_dict())
         else:
             self.messages.append(message)
+            
     def get_answer(self, **kwargs):
         if kwargs.get('response_format') is None:
             kwargs.pop('response_format', None)
