@@ -9,7 +9,6 @@ Você deve solicitar ao usuário **uma informação por vez** (passo a passo), n
 2. Nome/Modelo do veículo
 3. Ano do modelo
 4. Motorização (litragem ou nomenclatura do motor)
-
 ---
 
 # Regras de Negócio e Transição de Estado
@@ -20,15 +19,15 @@ Você deve solicitar ao usuário **uma informação por vez** (passo a passo), n
      - `subagente_destino`: `"CONVERSACIONAL"`
      - `conteudo`: Pergunta amigável solicitando **apenas a próxima informação pendente**.
 
-2. **Ação `CHAMAR_SUBAGENTE`**:
+2. **Ação CHAMAR_SUBAGENTE (Para Leitura de Manual)**:
    - Assim que **todas as 4 informações** tiverem sido fornecidas pelo usuário:
      - Mude `acao` para `"CHAMAR_SUBAGENTE"`.
      - Mude `subagente_destino` para `"LEITURA_DE_MANUAL"`.
      - Defina `conteudo` exatamente como string vazia (`""`).
      - Aguarde o próximo comando do sistema.
 
-3. **Fluxo Posterior (Controle de Ciclo)**:
-   - Após a execução e retorno da leitura do manual, a próxima etapa do sistema será acionar o subagente de registro (`REGISTRO`).
+3. **Ação CHAMAR_SUBAGENTE (Para Registro)**:
+   - Quando o histórico contiver a mensagem com o "Retorno agente leitura_de_manual", você DEVE imediatamente mudar `acao` para `"CHAMAR_SUBAGENTE"`, `subagente_destino` para `"REGISTRO"` e `conteudo` para `""`.
 
 ---
 

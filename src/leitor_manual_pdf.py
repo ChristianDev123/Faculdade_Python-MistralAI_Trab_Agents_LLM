@@ -57,11 +57,11 @@ class LeitorManualPDF(Agent):
         path = f"{path}/databases/manuais/{namefile}"
 
         json_format = createJsonFormat('read_pdf_pages_return', [
+            {'name':'pensamento', 'type':'string'},
             {'name':'trecho_original', 'type':'string'},
             {'name':'resumo', 'type':'string'},
             {'name':'fl_duvida_sanada', 'type':'boolean', 'enum':[True, False]},
         ])
-
         with pdfplumber.open(path) as pdf:
             for i, page in enumerate(pdf.pages):
                 pagina = page.extract_text()
@@ -85,31 +85,42 @@ class LeitorManualPDF(Agent):
                 time.sleep(0.25)
 
     def run(self):
-        json_format_retorno = createJsonFormat('retorno_leitura_pdf',[
-            {'name':'duvida_usuario', 'type':'string'},
-            {'name':'kws_duvida_usuario', 'type':'array', 'items':{'type':'string'}},
-            {'name':'resolucao', 'type':'string'},
+        json_format_retorno = createJsonFormat('retorno_leitura_pdf', [
+            {'name': 'duvida_usuario', 'type': 'string'},
+            {'name': 'kws_duvida_usuario', 'type': 'array', 'items': {'type': 'string'}},
+            {'name': 'resolucao', 'type': 'string'},
         ])
-        for _ in range(4):
-            sys_message = self.get_answer(tools=self.tool_calls)
-            if(sys_message.tool_calls):
-                self.send_message(sys_message)
-                for tool in sys_message.tool_calls:
-                    argumentos = json.loads(tool.function.arguments)
-                    result = self.tool_calls_func_link[tool.function.name](**argumentos)
-                    self.send_message(Message(
-                        role='tool', 
-                        tool_call_id= tool.id,
-                        content=json.dumps(result)
-                    ))
-                continue
-            self.send_message(Message('system', """
-                Devolva em formato de string as informações: 
-                    - duvida do usuário (duvida_usuario),
-                    - palavras-chave da duvida do usuário (kws_duvida_usuario),
-                    - resumo elaborado à partir da leitura do manual (resolucao)   
-            """))
-            return self.get_answer(
-                response_format = json_format_retorno,
+
+        sys_message = self.get_answer(
+            tools=self.tool_calls,
+            temperature=0
+        )
+
+        while getattr(sys_message, 'tool_calls', None):
+            self.send_message(sys_message)
+            for tool in sys_message.tool_calls:
+                argumentos = json.loads(tool.function.arguments)
+                result = self.tool_calls_func_link[tool.function.name](**argumentos)
+                
+                self.send_message(Message(
+                    role='tool',
+                    tool_call_id=tool.id,
+                    content=json.dumps(result)
+                ))
+
+            sys_message = self.get_answer(
+                tools=self.tool_calls,
                 temperature=0
-            ).content
+            )
+
+        self.send_message(Message('user', """
+            Com base no histórico da conversa, devolva as seguintes informações no formato JSON especificado:
+            - Dúvida do usuário (duvida_usuario)
+            - Palavras-chave da dúvida do usuário (kws_duvida_usuario)
+            - Resumo elaborado a partir da leitura do manual (resolucao)
+        """))
+
+        return self.get_answer(
+            response_format=json_format_retorno,
+            temperature=0
+        ).content

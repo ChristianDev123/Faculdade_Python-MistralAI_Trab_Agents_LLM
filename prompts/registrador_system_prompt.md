@@ -13,7 +13,7 @@ A estrutura de resposta será determinada na seguinte estrutura:
 # Workflow
     1 - Inicialmente o usuário apresentará os dados para registro.
     2 - Identifique entre as bases de dados já existentes qual armazenar os dados que o usuário informou.
-    3 - Conforme a necessidade do usuário escolha entre registrar dados e armazenar dados
+    3 - Conforme a necessidade do usuário escolha entre registrar dados e resgatar dados
         3.1 - Em caso de registrar dados, preencha o campo conteúdo com um json, respeitando a seguinte estrutura:
             - nm_database,
             - dado_a_ser_registrado (em formato json)

@@ -12,7 +12,10 @@ class Agent(ABC):
         self.name = name
         self.client = client
         self.messages = []
-        self.model = model
+        if(os.environ.get('AI_MODEL') is None or os.environ.get('AI_MODEL') == ''):
+            self.model = model
+        else:
+            self.model = os.environ.get('AI_MODEL')
         
     @abstractmethod
     def run(self):
@@ -31,6 +34,7 @@ class Agent(ABC):
     def get_answer(self, **kwargs):
         if kwargs.get('response_format') is None:
             kwargs.pop('response_format', None)
+        
         response = self.client.chat.completions.create(
             model= self.model,
             messages=self.messages,

@@ -26,20 +26,41 @@ class Orquestrador(Agent):
         ])
         self.send_message(Message('system', self.read_system_prompts('orquestrador_system_prompt.md')))
 
+    def _call_sub_agent(self, sub_agent_name):
+        agent = next((a for a in self.agents if a.name.upper() == sub_agent_name), None)
+        if not agent:
+            raise Exception(f"Erro: Subagente '{sub_agent_name}' não encontrado.")
+        messages = [{"role":'system', "content":'Formate em JSON todos os dados enviados pelo usuario.'}]
+        messages = messages + [message for message in self.messages if (message['role'] == 'user' or str(message['content']).lower().startswith('retorno agente'))]
+        formated_data = self.client.chat.completions.create(
+            model= self.model,
+            messages=messages,
+            temperature=0
+        ).choices[0].message.content
+        print(f"""
+            --- ACIONANDO SUBAGENTE ---
+            - nm_subagente: {agent.name}
+            - dados enviados: {formated_data}
+        """)
+        agent.send_message(Message('user', formated_data))
+        resultado_subagente = agent.run()
+        self.send_message(Message('user', f"Retorno agente {agent.name}: {resultado_subagente}"))
+        
     def run(self):        
-        while True:
+        for _ in range(10):
             sys_message = json.loads(self.get_answer(response_format=self.json_format_orquestrador).content)
             
-            if(sys_message['acao'] == 'RESPONDER_USUARIO'):
-                print(f'Bot: {sys_message['conteudo']}')
+            if sys_message['acao'] == 'RESPONDER_USUARIO':
+                print(f"Bot: {sys_message['conteudo']}")
                 user_input = input('user: ').strip()
-                if(not user_input): break
+                if not user_input:
+                    break
                 self.send_message(Message('user', user_input))
 
-            elif(sys_message['acao'] == 'CHAMAR_SUBAGENTE'):
-                agent = list(filter(lambda x: str(sys_message['subagente_destino']) == x.name.upper(), self.agents))[0]
-                self.send_message(Message('user', f'Apresente os dados disponíveis em um JSON.'))
-                sys_message = self.get_answer(temperature=0).content
-                agent.send_message(Message('user', sys_message))
-                self.send_message(Message('system',f"""Retorno agente {agent.name}: {agent.run()} """))
+            elif sys_message['acao'] == 'CHAMAR_SUBAGENTE':
+                destino = sys_message['subagente_destino'].upper()
+                self._call_sub_agent(destino)
+                
 
+                
+                

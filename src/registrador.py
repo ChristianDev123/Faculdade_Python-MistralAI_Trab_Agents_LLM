@@ -55,6 +55,11 @@ class Registrador(Agent):
             cursor.execute(f"CREATE TABLE IF NOT EXISTS {tablename}({','.join(fields)})")
 
     def _inserir_tabela(self, tablename, data:dict):
+        print(f"""
+            --- REALIZANDO INSERÇÃO EM BASE ---
+                - nm_tabela: {tablename}
+                - dados: {data}
+        """)
         with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
             cursor = conn.cursor()
             cursor.execute(f"SELECT * FROM {tablename} LIMIT 0")
