@@ -26,9 +26,31 @@ class Registrador(Agent):
             'kws_duvida_usuario TEXT',
             'resolucao TEXT'
         ])
+        self._cria_tabela('webcatalogos', [
+            'id INTEGER PRIMARY KEY AUTOINCREMENT',
+            'fabricante VARCHAR(100)',
+            'link VARCHAR(150)'
+        ])
+        self._default_data()
         self.send_message(Message('system', f"Ao Realizar uma operação, você estritamente só poderá escolher entre as tabelas :[{','.join(self.tabelas_criadas)}]"))
         self.tool_calls = []
         self.tool_calls_func = {}
+
+    def _default_data(self):
+        if(len(self._get_data('webcatalogos')) == 0):
+            datalist = [
+                {"fabricante":'Volkswagen','link':'https://pecas.vw.com.br/todas-categorias'},
+            ]
+            for data in datalist: 
+                self._inserir_tabela('webcatalogos',data)
+
+    def _get_data(self, tablename:str, filter:list[str] = []):
+        with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"""
+                SELECT * FROM {tablename}
+            """)
+            return cursor.fetchall()
         
     def _get_db_json_format(self, tablename):
         with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
