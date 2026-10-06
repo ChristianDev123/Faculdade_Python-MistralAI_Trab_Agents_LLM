@@ -53,6 +53,11 @@ class Registrador(Agent):
                     'link':'https://pecas.vw.com.br/todas-categorias',
                     'regra':'q=<modelo> + <ano> + <motorizacao>&page=<num_page>'
                 },
+                {
+                    'fabricante': 'chevrolet',
+                    'link':'https://www.pecachevrolet.com.br/pesquisa',
+                    'regra':'nomepeca=<motorizacao>&nomeveiculo=<modelo>&ano=<ano>'
+                }
             ]
             for data in datalist: 
                 self._inserir_tabela('webcatalogos',data)
@@ -116,7 +121,7 @@ class Registrador(Agent):
 
     def _loop_insert_data(self, sys_message):
         conteudo = json.loads(sys_message['conteudo'])
-        json_format = self._get_db_json_format(conteudo['nm_database'])
+        json_format = self._get_db_json_format(conteudo['nm_tabela'])
         messages = [
             Message('system', 'Estruture os dados que serão enviados pelo o usuário em um json').to_dict(),
             Message('user', str(conteudo['dado_a_ser_registrado'])).to_dict()

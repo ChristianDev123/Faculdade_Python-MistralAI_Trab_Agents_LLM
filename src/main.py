@@ -19,10 +19,10 @@ w = WebScrapper(client, r)
 w.send_message({
     'role':'user',
     'content':"""
-        'modelo':'Fox',
-        'ano':2015,
-        'motorizacao':'1.6',
-        'fabricante':'Volkswagen'
+        'modelo':'Corsa',
+        'ano':2008,
+        'motorizacao':'1.4',
+        'fabricante':'Chevrolet'
     """
 })
 retorno = w.run()
