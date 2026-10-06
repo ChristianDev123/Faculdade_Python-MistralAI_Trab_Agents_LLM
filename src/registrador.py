@@ -29,7 +29,16 @@ class Registrador(Agent):
         self._cria_tabela('webcatalogos', [
             'id INTEGER PRIMARY KEY AUTOINCREMENT',
             'fabricante VARCHAR(100)',
-            'link VARCHAR(150)'
+            'link VARCHAR(150)',
+            'regra VARCHAR(150)'
+        ])
+        self._cria_tabela('pecas_automoveis',[
+            'id INTEGER PRIMARY KEY AUTOINCREMENT',
+            'nm_peca VARCHAR(100) NOT NULL',
+            'codigo_peca VARCHAR(50) NOT NULL',
+            'modelo VARCHAR(150)',
+            'ano_fabricacao INTEGER',
+            'motorizacao VARCHAR(150)',           
         ])
         self._default_data()
         self.send_message(Message('system', f"Ao Realizar uma operação, você estritamente só poderá escolher entre as tabelas :[{','.join(self.tabelas_criadas)}]"))
@@ -39,18 +48,21 @@ class Registrador(Agent):
     def _default_data(self):
         if(len(self._get_data('webcatalogos')) == 0):
             datalist = [
-                {"fabricante":'Volkswagen','link':'https://pecas.vw.com.br/todas-categorias'},
+                {
+                    "fabricante":'Volkswagen',
+                    'link':'https://pecas.vw.com.br/todas-categorias',
+                    'regra':'q=<modelo> + <ano> + <motorizacao>&page=<num_page>'
+                },
             ]
             for data in datalist: 
                 self._inserir_tabela('webcatalogos',data)
 
     def _get_data(self, tablename:str, filter:list[str] = []):
         with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
+            conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute(f"""
-                SELECT * FROM {tablename}
-            """)
-            return cursor.fetchall()
+            cursor.execute(f"""SELECT * FROM {tablename}""")
+            return [dict(line) for line in cursor.fetchall()]
         
     def _get_db_json_format(self, tablename):
         with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
@@ -101,7 +113,36 @@ class Registrador(Agent):
                 VALUES
                 ({','.join(ordenated_data)})
             """)
-            
+
+    def _loop_insert_data(self, sys_message):
+        conteudo = json.loads(sys_message['conteudo'])
+        json_format = self._get_db_json_format(conteudo['nm_database'])
+        messages = [
+            Message('system', 'Estruture os dados que serão enviados pelo o usuário em um json').to_dict(),
+            Message('user', str(conteudo['dado_a_ser_registrado'])).to_dict()
+        ] 
+        response = json.loads(self.client.chat.completions.create(
+            model= self.model,
+            messages=messages,
+            response_format=json_format,
+            temperature=0
+        ).choices[0].message.content)
+        try:
+            self._inserir_tabela(conteudo['nm_tabela'], response)
+            return {'Sucesso': 'Linha registrada com sucesso!'}
+        except Exception as err:
+            print(err)
+            return {'Erro':'Falha ao tentar inserir registro!'}
+
+    def _loop_select_data(self, sys_message):
+        conteudo = json.loads(sys_message['conteudo'])
+        try:
+            response = self._get_data(conteudo['nm_tabela'],[])
+            return response
+        except Exception as err:
+            print(err)
+            return {'Erro': 'Falha ao tentar recuperar dados'}
+   
     def run(self):
         response_format = createJsonFormat('loop_json_format', [
             {'name':'pensamento', 'type':'string'},
@@ -111,17 +152,8 @@ class Registrador(Agent):
         for _ in range(1):
             self.send_message(Message('system','escolha qual será o proximo passo.'))
             sys_message = json.loads(self.get_answer(response_format=response_format).content)
+            
             if(sys_message['acao'] == "INSERIR_DADOS"):
-                conteudo = json.loads(sys_message['conteudo'])
-                json_format = self._get_db_json_format(conteudo['nm_database'])
-                messages = [
-                    Message('system', 'Estruture os dados que serão enviados pelo o usuário em um json').to_dict(),
-                    Message('user', str(conteudo['dado_a_ser_registrado'])).to_dict()
-                ] 
-                response = json.loads(self.client.chat.completions.create(
-                    model= self.model,
-                    messages=messages,
-                    response_format=json_format,
-                    temperature=0
-                ).choices[0].message.content)
-                self._inserir_tabela(conteudo['nm_database'], response)
+                return self._loop_insert_data(sys_message)
+            elif(sys_message['acao'] == "RESGATAR_DADOS"):
+                return self._loop_select_data(sys_message)
