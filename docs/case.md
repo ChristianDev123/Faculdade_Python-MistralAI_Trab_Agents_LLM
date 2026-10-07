@@ -1,8 +1,8 @@
 # 1. Tema: Assistente Informacional de Manutenção Automotiva
 
-### 2.1 O problema
+# 2.1 O problema
 
-**Problema em uma frase:** consumidores e mecânicos não confirmam no balcão se uma
+**Problema em uma frase:** propietários e mecânicos não confirmam no balcão se uma
 peça de reposição é compatível com o veículo específico (modelo, ano e motorização),
 o que gera compra errada, devolução e atraso no conserto.
 
@@ -16,7 +16,7 @@ ou desmontou a peça antiga e precisa da referência de reposição. Quem aciona
 próprio mecânico ou o balconista em nome dele.
 
 **O que existe antes e depois:** antes, a entrada é a descrição do mecânico (modelo,
-ano, defeito, às vezes foto da peça antiga). Depois, a saída, código de peça e
+ano, motorização, defeito). Depois, a saída, código de peça e
 fornecedor, alimenta o pedido de compra feito pelo balconista (fora do escopo do
 agente, que é só informativo) e a instalação na oficina.
 
@@ -47,30 +47,6 @@ confirmação do fornecedor.
 - Frota brasileira envelhecendo com idade média de ~10 anos e 9 meses aumenta a 
   proporção de veículos com peças já descontinuadas ou fora de
   linha, exatamente os casos mais difíceis de resolver.
-
-## 2.1.2 Contexto
-
-### 2.1.2.1 Acionamento do Sistema
-
-O sistema poderá ser acionado tanto pelo propietário quanto pelo mecânico, tendo como objetivo sanar dúvidas identificação de peças quanto apresentar informações disponibilizadas em manuais do automóvel. 
-
-### 2.1.2.2 input e output
-
-Como input o sistema necessita do nome de modelo do veículo, ano de fabricação, carroceria e motorização, o usuário que irá ceder inicialmente essa informação e a partir destes dados, o sistema apresentará em formato de tabela o código de identificação da peça e uma lista de automóveis também compatível com tal peça, ou apresentará em formato de texto corrido um resumo de orientações a partir da informação extraída do manual do veículo.
-
-### 2.1.2.3 Situação Atual
-
-Hoje, a consulta funciona principalmente através da leitura de manuais técnicos desenvolvidos pela montadora para cada modelo de automóvel. O que pode fazer com que propietários não atentos à ler com cuidado o manual comprar peças erradas.
-Em quanto ao vendedor/mecânico, não havendo uma base de dados confiável, desenvolvida internamente, fica suscetível à realizar a compra na base do achismo.
-
-### 2.1.2.4 Regras do Domínio
-
-A peça recomendada para a instalação no automóvel exige a leitura do manual. Muitos automóveis compartilham peças, então a base de dados explorada (Manuais) pode ser maior que apenas a base disponibilizada pelo fabricante para o veículo em específico. Uma das principais regras é respeitar o ano/modelo do veículo.
-
-### 2.1.2.5 O que dá Errado Hoje
-
-A incerteza no momento de compra de peças de substituição em carros vendidos no mercado nacional, causa o aumento de custos e possível maior demora para realização de serviços em oficinas de pequeno/médio porte.
-
 
 # 2.2 Identificação do Usuário
 
@@ -107,7 +83,7 @@ A incerteza no momento de compra de peças de substituição em carros vendidos 
                         modelo e ano de fabricação
                     </li>
                     <li>
-                        motorização, carroceria do veículo, km percorridos.
+                        motorização, km percorridos.
                     </li>
                 </ul>
             </td> 
@@ -156,11 +132,11 @@ o retorno será uma tabela com o código da peça, modelo e ano de automóveis c
                             Em caso positivo -> segue para o passo 5
                             Em caso negativo -> segue para o passo 3.2     
     3.2 CONSULTA        À depender da dúvida do usuário o sistema tem duas formas de realizar consulta.         [decide: MODELO]
-                            Em caso de compatibilidade de peças -> API
+                            Em caso de compatibilidade de peças -> Webscrapping
                             Em caso de outras dúvidas consulta em Manual -> Agente especializado em leitura
-    4. REGISTRO     Em caso de verificação de compatibilidade de peças,                                         [decide: MODELO]
+    4. REGISTRO     Em caso de verificação de compatibilidade de peças,                                         [decide:MODELO]
                     registra em uma base em sqlite e consulta 
-                    modelos de automóveis que aceitam a peça encontrada 
+                    modelos de automóveis que aceitam a peça em questão 
     5. APRESENTAÇÃO     Apresentação das informações levantadas                                                 [decide: MODELO]
                             Em caso de verificação de compatibilidade de peça -> apresenta tabela de modelos que compartilham a mesma peça. 
                             Em caso de outras dúvidas -> apresenta um texto de até 400 tokens com a resposta.
@@ -173,7 +149,7 @@ o retorno será uma tabela com o código da peça, modelo e ano de automóveis c
 Assistente informacional que ajuda mecânicos e proprietários a identificar peças
 compatíveis com o veículo e a consultar o manual do proprietário. Recebe a dúvida em
 texto livre, verifica primeiro se já foi respondida antes (cache local), senão
-consulta a API de peças ou o manual indexado, conforme o tipo de dúvida, e devolve o
+consulta o webscrapping de catálogo de peças ou o manual indexado, conforme o tipo de dúvida, e devolve o
 código da peça com os modelos compatíveis ou um resumo do manual. Não executa compra
 nem reserva — é só informativo.
 
@@ -181,17 +157,17 @@ nem reserva — é só informativo.
 
 **Agente simples**, não roteador puro e não workflow. Não é workflow porque nem todo
 passo é determinístico — o sistema decide, olhando o texto livre, o que falta
-perguntar e qual fonte consultar (API ou manual). Não é só roteador porque, depois de
+perguntar e qual fonte consultar (Webscrapper, manual ou base local). Não é só roteador porque, depois de
 rotear, ainda decide sozinho como formatar a resposta e o que registrar no SQLite.
 
 ## 2.4.3 Ferramentas disponíveis
 
 | Ferramenta | O que faz | Leitura/Escrita | Reversível? | Com quem se comunica |
 |---|---|---|---|---|
-| `consultar_cache` | Verifica se a dúvida já foi resolvida antes | Leitura | — | SQLite local |
-| `consultar_api_pecas` | Busca peça compatível por modelo/ano/motorização | Leitura | — | API pública de catálogo |
+| `executar_webscrapping` | Realiza extração de todo um site de webcatálogo de uma determinada montadora | Escriya | — | Sites de Catálogos |
 | `buscar_manual` | Recupera trecho relevante do manual do veículo | Leitura | — | Manuais em PDF indexados |
-| `registrar_peca` | Grava no cache os modelos que aceitam a peça encontrada | Escrita | Sim (é cache, pode ser sobrescrito) | SQLite local |
+| `registrar` | Grava no cache os modelos dados estruturados em json | Escrita | Sim (é cache, pode ser sobrescrito) | SQLite local |
+| `resgatar` | Resgata dados à partir do cache local | Leitura | - | SQLite local |
 
 # 2.5 A Justificativa do negócio
 
@@ -234,7 +210,7 @@ segurança (freio, suspensão, direção) com confiança baixa.
 
 ## 2.8.1 Origem
 
-Peças: API pública real. Manuais: PDFs reais de manutenção. Casos de teste:
+Peças: Webscrapping de catálogos online. Manuais: PDFs reais de manutenção. Casos de teste:
 simulados, incluindo os três exigidos — divergência (motorização informada não bate
 com o catálogo), registro inexistente (peça sem substituta) e caso que não deve
 disparar registro no SQLite (dúvida de manual, não de peça).
@@ -248,4 +224,5 @@ dado pessoal, financeiro ou de saúde.
 
 | Risco | Plano B |
 |---|---|
-| Acesso à API pública de peças pode não ter cobertura suficiente pra todos os modelos testados | Usar uma base simulada pequena, com os casos difíceis nomeados, pra demonstração |
+| Acesso à API pública de peças pode não ter cobertura suficiente pra todos os modelos testados | Realizar Webscrapping |
+| Em caso do webscrapping não ser possível por conta da forma de desenvolvimento das páginas web | Utilizar dados mocados |
