@@ -8,6 +8,7 @@ from interfaces.tool_call import ToolCall
 import requests
 import json
 import inspect
+import re
 from openai import Client
 from bs4 import BeautifulSoup, Comment
 from playwright.sync_api import sync_playwright
@@ -53,10 +54,100 @@ class WebScrapper(Agent):
             response_format = return_format
         ).choices[0].message.content
 
+    def processar_html_generico_para_markdown(self, html_content: str, preservar_nav_html: bool = True) -> str:
+        soup = BeautifulSoup(html_content, "html.parser")
+        for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
+            comment.extract()
+        nav_tags = []
+        if preservar_nav_html:
+            for nav in soup.find_all("nav"):
+                nav_tags.append(str(nav))
+                nav.decompose()  
+        tags_inuteis = [
+            "script",
+            "style",
+            "svg",
+            "path",
+            "img",
+            "picture",
+            "iframe",
+            "canvas",
+            "head",
+            "footer",
+            "header",
+            "noscript",
+            "form",
+            "input",
+            "button",
+        ]
+        for tag in soup(tags_inuteis):
+            tag.decompose()
+
+        markdown_linhas = []
+
+        # 4. Tratar elementos estruturais e links no corpo do HTML
+        # Se o corpo tiver links envelopando múltiplos blocos (cards)
+        anchors = soup.find_all("a", href=True)
+
+        if anchors:
+            for a in anchors:
+                href = a["href"].strip()
+
+                # Extrai todos os blocos de texto/sub-elementos contidos no link
+                linhas_texto = []
+                for element in a.stripped_strings:
+                    texto = element.strip()
+                    # Evita duplicar fragmentos repetidos
+                    if texto and texto not in linhas_texto:
+                        linhas_texto.append(texto)
+
+                if not linhas_texto:
+                    continue
+
+                # Se for um card com múltiplos campos (ex: Título, Atributos, Preço)
+                if len(linhas_texto) > 1:
+                    titulo = linhas_texto[0]
+                    detalhes = linhas_texto[1:]
+
+                    block_md = f"### [{titulo}]({href})\n"
+                    for det in detalhes:
+                        block_md += f"- {det}\n"
+                    markdown_linhas.append(block_md)
+                else:
+                    # Se for um link simples de linha única
+                    markdown_linhas.append(f"-[{linhas_texto[0]}]({href})")
+
+            # Remove o link já processado para não duplicar no texto geral
+            a.decompose()
+
+        # 5. Processar o texto restante do HTML (textos fora de <a>)
+        texto_restante = soup.get_text(separator="\n")
+        for linha in texto_restante.splitlines():
+            linha_limpa = linha.strip()
+            if linha_limpa:
+                markdown_linhas.append(linha_limpa)
+
+        # 6. Reanexar os componentes de navegação em HTML (se houver)
+        if nav_tags:
+            markdown_linhas.append(
+                "\n--- COMPONENTES DE NAVEGACAO E PAGINACAO (HTML) ---"
+            )
+            markdown_linhas.extend(nav_tags)
+
+        # 7. Pós-processamento e compressão drástica de whitespace/quebras
+        resultado = "\n".join(markdown_linhas)
+
+        # Substitui múltiplos espaços/tabs por 1 espaço
+        resultado = re.sub(r"[ \t]+", " ", resultado)
+
+        # Reduz 3 ou mais quebras de linha para no máximo 2 (\n\n)
+        resultado = re.sub(r"\n\s*\n", "\n\n", resultado)
+
+        return resultado.strip()
+
     def _get_data(self, link:str, regra:str ,nm_modelo:str, ano:int, motorizacao:str):
         curr_num_page = 1
-        mx_num_page = 1
-        HEADERS = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        mx_num_page = 1        
         
         if(link.endswith('/') or link.endswith('?')): link = link[:-1]
         
@@ -94,8 +185,13 @@ class WebScrapper(Agent):
         ])
         sys_prompt = self.read_system_prompts('webscrapper/tool_scrapping.md')
         pecas_processadas = set()
+        selector_proximo = (
+        "//button[contains(text(), '>') or text()='>' or contains(text(), '»') or contains(@aria-label, 'Next') or contains(@class, 'next') or contains(text(), 'Próximo') or contains(text(), 'Proximo')]"
+        " | "
+        "//a[contains(text(), '>') or text()='>' or contains(text(), '»') or contains(@aria-label, 'Next') or contains(@class, 'next') or contains(text(), 'Próximo') or contains(text(), 'Proximo')]"
+        )
+
         with sync_playwright() as p:
-            # Usa o Chromium nativo do Arch Linux para evitar dependências ausentes
             browser = p.chromium.launch(
                 executable_path="/usr/bin/chromium", 
                 headless=True
@@ -107,32 +203,33 @@ class WebScrapper(Agent):
             page = context.new_page()
 
             while curr_num_page <= mx_num_page:
-                n_link = link.replace('<num_page>', str(curr_num_page))
-                print(f'Navegando na Página {curr_num_page}/{mx_num_page}: {n_link}')
-                
+                print(f'Processando Página {curr_num_page}/{mx_num_page} (URL Atual: {page.url or link})')
                 try:
-                    # 1. Abre a URL e aguarda até que não haja requisições de rede ativas por 500ms (Fetch/XHR do React)
-                    page.goto(n_link, wait_until="networkidle", timeout=30000)
-                    
-                    # 2. Aguarda um elemento chave carregar (opcional, mas recomendado para React)
-                    # page.wait_for_selector('a', timeout=5000) 
-
+                    if curr_num_page == 1:
+                        page.goto(link, wait_until="networkidle", timeout=30000)
+                    else:
+                        botao_proximo = page.locator(selector_proximo).first
+                        if botao_proximo.is_visible():
+                            print("Botão de navegação '>' encontrado. Clicando...")
+                            botao_proximo.click()
+                            page.wait_for_load_state("networkidle", timeout=15000)
+                        else:
+                            print("Botão '>' não encontrado ou não está visível. Encerrando paginação.")
+                            break
                 except Exception as e:
-                    print(f"Erro ao carregar página {n_link} via Playwright: {e}")
+                    print(f"Erro ao carregar ou navegar na página {curr_num_page} via Playwright: {e}")
                     break
 
-                # 3. Extrai o DOM totalmente renderizado pelo React/JS
+                # Processamento do conteúdo carregado
                 html_content = page.content()
                 soup = BeautifulSoup(html_content, 'html.parser')
                 
-                # Limpeza de elementos pesados do DOM
                 for element in soup(['script', 'style', 'img', 'image', 'path', 'svg', 'rect', 'head', 'footer', 'header']):
                     element.decompose()
                     
                 for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
                     comment.extract()
 
-                # Sanitização de tags <a> para economizar tokens
                 links_tags = []
                 for a in soup.find_all('a'):
                     if not a.find_parent('nav') and not a.find('nav'):
@@ -141,7 +238,7 @@ class WebScrapper(Agent):
                                 del a[attr]
                         
                         texto_a = " ".join(str(a).split())
-                        if len(texto_a) > 10:  # Descarta links vazios/curtos
+                        if len(texto_a) > 0:
                             links_tags.append(texto_a)
 
                 nav_tags = [" ".join(str(nav).split()) for nav in soup.find_all('nav')]
@@ -150,11 +247,10 @@ class WebScrapper(Agent):
                 if nav_tags:
                     html_filtrado += "\n\n--- COMPONENTES DE NAVEGACAO E PAGINACAO ---\n" + "\n".join(nav_tags)
 
-                print(html_filtrado)
                 messages = [
                     Message('system', sys_prompt).to_dict(),
-                    Message('user', html_filtrado).to_dict()        
-                ]  
+                    Message('user', self.processar_html_generico_para_markdown(html_filtrado)).to_dict()        
+                ]   
 
                 response = self.client.chat.completions.create(
                     model=self.model,
@@ -181,56 +277,11 @@ class WebScrapper(Agent):
                         print(self.register.run())
                         novas_pecas += 1
 
-
+                print(f'{novas_pecas} novas peças inseridas!')
+                
+                # Incrementa o contador para a próxima iteração do loop
+                curr_num_page += 1
         
-        # while curr_num_page <= mx_num_page:
-        #     n_link = link.replace('<num_page>', str(curr_num_page))
-        #     print(f'Link: {n_link}')
-        #     page = requests.get(n_link, headers=HEADERS)
-        #     page = page.text
-        #     print(page)
-        #     soup = BeautifulSoup(page, 'html.parser')
-        #     for element in soup([
-        #         'script', 'style', 'img', 'image', 'path', 'svg',
-        #         'rect'
-        #     ]):
-        #         element.decompose()
-        #     for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
-        #         comment.extract()
-
-        #     links_tags = []
-        #     for a in soup.find_all('a'):
-        #         eh_filha_de_nav = a.find_parent('nav') is not None
-        #         tem_filho_nav = a.find('nav') is not None
-        #         if not eh_filha_de_nav and not tem_filho_nav:
-        #             links_tags.append(str(a))
-        #     nav_tags = [str(nav) for nav in soup.find_all('nav')]
-            
-        #     # Junta as tags em um bloco limpo para a LLM
-        #     html_filtrado = "--- LINKS E CARDS DA PAGINA ---\n" + "\n".join(links_tags)
-        #     html_filtrado += "\n\n--- COMPONENTES DE NAVEGACAO E PAGINACAO ---\n" + "\n".join(nav_tags)
-        #     print(html_filtrado)
-        #     messages = [
-        #         Message('system', sys_prompt).to_dict(),
-        #         Message('user', html_filtrado).to_dict()        
-        #     ]  
-
-        #     data = json.loads(self.client.chat.completions.create(
-        #         model = self.model,
-        #         messages = messages,
-        #         response_format = json_format_return,
-        #         temperature=0
-        #     ).choices[0].message.content)            
-        #     mx_num_page = data['max_pagina']
-        #     curr_num_page += 1
-        #     for peca in data['dados_peca']:
-        #         peca['modelo'] = nm_modelo
-        #         peca['ano_fabricacao'] = ano
-        #         peca['motorizacao'] = motorizacao
-        #         self.register.send_message(Message('user', f'Registre essa peça: {peca}'))
-        #         print(self.register.run())
-        
-
     def run(self):
         sys_message = self.get_answer(
             tools=self.tool_calls,
