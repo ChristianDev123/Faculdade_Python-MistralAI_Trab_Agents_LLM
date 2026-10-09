@@ -14,8 +14,18 @@ import inspect
 
 class LeitorManualPDF(Agent):
     def __init__(self, client:OpenAI):
-        super().__init__('leitor_manual_pdf', client)
-
+        f_entrada = createJsonFormat('entrada_leitura_pdf',[
+            {'name':'duvida_usuario', 'type':'string'},
+            {'name':'modelo', 'type':'string'},
+            {'name':'ano', 'type':'integer'},
+            {'name':'motorizacao', 'type':'string'},
+        ])
+        f_saida = createJsonFormat('retorno_leitura_pdf', [
+            {'name': 'duvida_usuario', 'type': 'string'},
+            {'name': 'kws_duvida_usuario', 'type': 'array', 'items': {'type': 'string'}},
+            {'name': 'resolucao', 'type': 'string'},
+        ])
+        super().__init__('leitor_manual_pdf', client, f_entrada=f_entrada, f_saida=f_saida)
         self.tool_calls = []
         self.tool_calls_func_link = {}
         self._create_tool_calls()
@@ -85,12 +95,6 @@ class LeitorManualPDF(Agent):
                 time.sleep(0.25)
             
     def run(self):
-        json_format_retorno = createJsonFormat('retorno_leitura_pdf', [
-            {'name': 'duvida_usuario', 'type': 'string'},
-            {'name': 'kws_duvida_usuario', 'type': 'array', 'items': {'type': 'string'}},
-            {'name': 'resolucao', 'type': 'string'},
-        ])
-
         sys_message = self.get_answer(
             tools=self.tool_calls,
             temperature=0
@@ -126,6 +130,6 @@ class LeitorManualPDF(Agent):
         """))
 
         return self.get_answer(
-            response_format=json_format_retorno,
+            response_format=self.f_saida,
             temperature=0
         ).content

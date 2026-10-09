@@ -8,11 +8,13 @@ from src.config import MODEL
 import os
 
 class Agent(ABC):
-    def __init__(self, name:str, client:OpenAI, model="openai/gpt-oss-120b"):
+    def __init__(self, name:str, client:OpenAI, f_entrada:str, f_saida:str, model="openai/gpt-oss-120b"):
         self.name = name
         self.client = client
         self.messages = []
         self.model = model if(MODEL is None or MODEL == '') else MODEL 
+        self.f_entrada = f_entrada
+        self.f_saida = f_saida
         
     @abstractmethod
     def run(self):

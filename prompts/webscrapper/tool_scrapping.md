@@ -32,7 +32,23 @@ Você é um agente especializado em extração de dados à partir de webscrappin
     - **Atributos Ausentes**: Se a tag `<a>` for um link genérico ou menu de navegação e NÃO contiver uma peça automotiva, ignore-a.
 3. Identifique qual a maior página acessível dentro do html por itens destinado à navegação.
     - **Exemplo de Componente de Paginação**: ```HTML
-    <nav data-pc-section="paginatorcontainer"><div class="p-paginator p-component" data-pc-name="paginator" data-pc-section="root" pc109="" pv_id_8=""><div class="p-paginator-content" data-pc-section="content"><button class="p-paginator-first p-disabled" type="button" data-pc-section="first" data-pc-group-section="pagebutton" aria-label="First Page" disabled=""></button><button class="p-paginator-prev p-disabled" type="button" data-pc-section="prev" data-pc-group-section="pagebutton" aria-label="Previous Page" disabled=""></button><span class="p-paginator-pages" data-pc-section="pages"><button class="p-paginator-page p-paginator-page-selected" type="button" aria-label="Page 1" aria-current="page" data-pc-section="page" data-p-active="true">1</button><button class="p-paginator-page" type="button" aria-label="Page 2" data-pc-section="page" data-p-active="false">2</button><button class="p-paginator-page" type="button" aria-label="Page 3" data-pc-section="page" data-p-active="false">3</button><button class="p-paginator-page" type="button" aria-label="Page 4" data-pc-section="page" data-p-active="false">4</button><button class="p-paginator-page" type="button" aria-label="Page 5" data-pc-section="page" data-p-active="false">5</button></span><button class="p-paginator-next" type="button" data-pc-section="next" data-pc-group-section="pagebutton" aria-label="Next Page"></button><button class="p-paginator-last" type="button" data-pc-section="last" data-pc-group-section="pagebutton" aria-label="Last Page"></button></div></div></nav>
+    <nav>
+        <div>
+            <div>
+                <button></button>
+                <button></button>
+                <span>
+                    <button>1</button>
+                    <button>2</button>
+                    <button>3</button>
+                    <button>4</button>
+                    <button>5</button>
+                </span>
+                <button></button>
+                <button></button>
+            </div>
+        </div>
+    </nav>
     ```
 4. Devolva um JSON contendo uma lista de dados extraídos no passo 2, e a maior página encontrada no passo 3.
     - **Exemplo de JSON**: {'dados_peca':[\<dados_passo2\>], 'max_pagina':\<maior_pagina_encontrada_passo4\>}

@@ -12,8 +12,7 @@ import json
 class Registrador(Agent):
     
     def __init__(self, client:OpenAI):
-        super().__init__('registrador',client)
-        self.input = input
+        super().__init__('registrador',client, f_entrada="", f_saida="")
         self.send_message(Message('system',self.read_system_prompts('registrador_system_prompt.md')))
         self.PATH_DATABASE = Path(__file__).resolve().parent.parent / 'databases'
         self.tabelas_criadas = []
@@ -39,6 +38,7 @@ class Registrador(Agent):
             'modelo VARCHAR(150)',
             'ano_fabricacao INTEGER',
             'motorizacao VARCHAR(150)',           
+            'carros_compatíveis TEXT',           
         ])
         self._default_data()
         self.send_message(Message('system', f"Ao Realizar uma operação, você estritamente só poderá escolher entre as tabelas :[{','.join(self.tabelas_criadas)}]"))

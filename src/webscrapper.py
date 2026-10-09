@@ -5,16 +5,22 @@ from interfaces.agent import Agent
 from interfaces.message import Message
 from interfaces.json_format import createJsonFormat
 from interfaces.tool_call import ToolCall
-import requests
 import json
 import inspect
 import re
 from openai import Client
 from bs4 import BeautifulSoup, Comment
 from playwright.sync_api import sync_playwright
+
 class WebScrapper(Agent):
     def __init__(self, client:Client, register:Agent):
-        super().__init__('webscrapper', client)
+        f_entrada = createJsonFormat('entrada_webscrapper', [
+            {'name':'modelo', 'type':'string'},
+            {'name':'ano', 'type':'integer'},
+            {'name':'motorizacao', 'type':'string'},
+            {'name':'fabricante', 'type':'string'}
+        ])
+        super().__init__('webscrapper', client, f_entrada=f_entrada, f_saida="")
         self.register = register
         self.send_message(Message('system',self.read_system_prompts('webscrapper/geral.md')))
         self.tool_calls = []
@@ -30,7 +36,11 @@ class WebScrapper(Agent):
         self.tool_calls_links[get_catalog_site.name] = self._get_catalog_site
 
         get_data = ToolCall('get_data', 'Executa Webscrapping sobre o link informado')
-        get_data.insert_prop('link', {'type':'string', 'description':'endereço do webcatalogo à ser consultado'})
+        get_data.insert_prop('link', {'type':'string', 'description':'Endereço do webcatalogo à ser consultado, resgatado em banco de dados'})
+        get_data.insert_prop('regra', {'type':'string', 'description':'Regras de consulta do webcatálogo, resgatado em banco de dados'})
+        get_data.insert_prop('nm_modelo', {'type':'string', 'description':'Modelo do veículo à ser consultado, informado pelo usuário'})
+        get_data.insert_prop('ano', {'type':'string', 'description':'Ano do veículo à ser consultado, informado pelo usuário'})
+        get_data.insert_prop('motorizacao', {'type':'string', 'description':'Motorizacao do veículo à ser consultado, informado pelo usuário'})
         self.tool_calls.append(get_data.to_dict())
         self.tool_calls_links[get_data.name] = self._get_data
 
@@ -162,20 +172,29 @@ class WebScrapper(Agent):
             {
                 'name': 'dados_peca', 
                 'type':'array', 
-                'items': {
-                    'type': 'object',
-                    'properties': {
-                        'nome_peca': {'type': 'string', 'description': 'Nome da peça automotiva'},
-                        'carros_compativeis': {
-                            'type': 'array', 
-                            'items': {'type': 'string'}, 
-                            'description': 'Lista de carros compatíveis'
-                        },
-                        'codigo_peca': {'type': 'string', 'description': 'Código da peça (ex: VW 373201238A)'}
+                'description': 'Lista de peças encontradas no HTML',
+                "items": {
+                    "type": "object",
+                    "properties": {
+                    "nome_peca": {
+                        "type": "string",
+                        "description": "Nome da peça automotiva"
                     },
-                    'required': ['nome_peca', 'carros_compativeis', 'codigo_peca']
-                }, 
-                'description': 'Lista de peças encontradas no HTML'
+                    "carros_compativeis": {
+                        "type": "array",
+                        "items": {
+                        "type": "string"
+                        },
+                        "description": "Lista de carros compatíveis com a peça"
+                    },
+                    "codigo_peca": {
+                        "type": "string",
+                        "description": "Código da peça (ex: VW 373201238A)"
+                    }
+                    },
+                    "required": ["nome_peca","carros_compativeis","codigo_peca"],
+                    "additionalProperties": False
+                }
             }, 
             {
                 'name':'max_pagina',
@@ -215,12 +234,11 @@ class WebScrapper(Agent):
                             page.wait_for_load_state("networkidle", timeout=15000)
                         else:
                             print("Botão '>' não encontrado ou não está visível. Encerrando paginação.")
-                            break
+                            return {'sucesso':'Botão não encontrado, todos os dados coletados'}
                 except Exception as e:
                     print(f"Erro ao carregar ou navegar na página {curr_num_page} via Playwright: {e}")
-                    break
+                    return {'erro', 'Página não encontrada'}
 
-                # Processamento do conteúdo carregado
                 html_content = page.content()
                 soup = BeautifulSoup(html_content, 'html.parser')
                 
@@ -251,12 +269,12 @@ class WebScrapper(Agent):
                     Message('system', sys_prompt).to_dict(),
                     Message('user', self.processar_html_generico_para_markdown(html_filtrado)).to_dict()        
                 ]   
-
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=messages,
                     response_format=json_format_return,
-                    temperature=0
+                    temperature=0,
+                    max_completion_tokens=4096
                 )
 
                 data = json.loads(response.choices[0].message.content)
@@ -272,15 +290,19 @@ class WebScrapper(Agent):
                         peca['modelo'] = nm_modelo
                         peca['ano_fabricacao'] = ano
                         peca['motorizacao'] = motorizacao
-                        
+                        if(peca.get('carros_compativeis')):
+                            arr_carros_comp = peca.get('carros_compativeis')
+                            del peca['carros_compativeis']
+                            peca['carros_compativeis'] = ','.join(arr_carros_comp)
+
                         self.register.send_message(Message('user', f'Registre essa peça: {peca}'))
-                        print(self.register.run())
+                        self.register.run()
                         novas_pecas += 1
 
                 print(f'{novas_pecas} novas peças inseridas!')
                 
-                # Incrementa o contador para a próxima iteração do loop
                 curr_num_page += 1
+        return {'sucesso':'Webcatálogo acessado!'}
         
     def run(self):
         sys_message = self.get_answer(
