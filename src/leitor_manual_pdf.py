@@ -109,7 +109,8 @@ class LeitorManualPDF(Agent):
         collection = self._chroma_collection(namefile)
         result = collection.query(
             query_texts=[duvida_usuario],
-            n_results = 5 # maximo 5 páginas recuperadas
+            n_results = 15, # maximo 5 páginas recuperadas
+            where={"pagina": {"$gt": 5}}
         )
         if not result['documents'][0]:
             return {'erro':'Nenhum resultado encontrado'}
