@@ -49,7 +49,16 @@ class Orquestrador(Agent):
         self.tool_calls.append(insert_db_question.to_dict())
         self.tool_calls_func_link['insert_db_question'] = self._insert_db_question
 
-        read_manual_pdf = ToolCall('read_manual_pdf',"Utilize para responder à dúvidas do usuário que não estejam relacionadas à compatibiidade de peças.")
+        read_manual_pdf = ToolCall('read_manual_pdf',"""
+            Ferramenta obrigatória para dúvidas técnicas que não sejam
+            sobre compatibilidade de peças.
+            Acione esta ferramenta quando:
+            - A consulta à base de dúvidas tiver sido executada;
+            - Os registros retornados não forem suficientes para responder;
+            - A dúvida não for sobre compatibilidade de peças.
+            Não responda tecnicamente ao usuário antes de receber
+            o resultado desta ferramenta.
+        """)
         self.tool_calls.append(read_manual_pdf.to_dict())
         self.tool_calls_func_link['read_manual_pdf'] = self._read_manual_pdf
 
@@ -92,11 +101,11 @@ class Orquestrador(Agent):
 
     def _read_manual_pdf(self):
         agent = next((a for a in self.agents if a.name.upper() == 'LEITOR_MANUAL_PDF'), None)
-        self.send_message(Message('user', 'Estruture os dados que você recebeu em JSON'))
+        self.send_message(Message('user', 'Estruture os dados do veículo e dúvida que você recebeu do usuário em JSON'))
         formated_data = self.get_answer(
             temperature = 0,
             response_format = agent.f_entrada
-        )
+        ).content
         agent.send_message(Message('user', formated_data))
         return agent.run()
 
