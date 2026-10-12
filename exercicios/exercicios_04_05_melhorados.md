@@ -62,7 +62,7 @@ O que falta informar de cara: a motorização — é o dado que o sistema precis
 | `reservar_peca` | Escrita | **Não** |
 | `escalonar_humano` | Escrita | Sim |
 
-**Orçamento:** catálogo até 3 chamadas · manual até 2 buscas / 5 chunks · avaliador até 3 rodadas · resposta até 300 tokens · teto geral: 8 passos / 30s por conversa.
+**Orçamento:** catálogo até 3 chamadas · manual até 2 buscas / 5 chunks · avaliador até 3 rodadas · resposta até 400 tokens · teto geral: 8 passos / 30s por conversa.
 
 **Fluxo**
 ```

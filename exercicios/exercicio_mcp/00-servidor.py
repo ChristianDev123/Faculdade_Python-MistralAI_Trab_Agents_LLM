@@ -29,7 +29,7 @@ def consultar_cnpj(cnpj: str) -> dict:
             .replace('-', '')\
             .replace('/', '')\
             .replace('.', '')
-    if(len(cnpj) != 14): return {'error': 'Quantidade de caracteres inválido!'}
+    if(len(cnpj) != 14): return {'erro': 'Quantidade de caracteres inválido!'}
     
     campos = ['cnpj', 'razao_social', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'municipio', 'uf']
 
@@ -40,9 +40,9 @@ def consultar_cnpj(cnpj: str) -> dict:
             dados = result.json()
             return {key: dados[key] for key in dados if key in campos}
         elif(result.status_code == 404):
-            return {'error':'cnpj não identificado!'}
+            return {'erro':'cnpj não identificado!'}
         elif(result.status_code == 429):
-            return {'error':'Muitas requisições seguidas, tente novamente mais tarde'}
+            return {'erro':'Muitas requisições seguidas, tente novamente mais tarde'}
     except Exception as err:
         print("[ERROR] Requisição CNPJ")
         raise err
@@ -74,9 +74,9 @@ def consultar_cep(cep: str) -> dict:
                 'longitude': coords.get('longitude')
             }
         elif(result.status_code == 404):
-            return {'error':'cpf não identificado!'}
+            return {'erro':'cpf não identificado!'}
         elif(result.status_code == 429):
-            return {'error':'Muitas requisições seguidas, tente novamente mais tarde'}
+            return {'erro':'Muitas requisições seguidas, tente novamente mais tarde'}
     except Exception as err:
         raise err
 

@@ -11,6 +11,7 @@ from openai import OpenAI
 from interfaces.json_format import createJsonFormat
 import json
 import inspect
+import time
 
 load_dotenv()
 
@@ -119,16 +120,16 @@ class Orquestrador(Agent):
         agent.send_message(Message('user', formated_data))
         return agent.run()
 
-    def run(self):        
-        for _ in range(10):
-            # 1. Faz a chamada SEM forçar response_format estrito no topo 
-            # (permitindo que o modelo decida chamar a Tool ou Responder)
+    def _human_loop(self, limit_iterator):
+        while True:        
+            if(limit_iterator == 0): return {'finish': 'Programa Terminou por limite de iterações excedido'}
+            
             response = self.get_answer(
                 tools=self.tool_calls,
-                temperature=0
+                temperature=0,
+                max_tokens=400
             )
 
-            # 2. Loop de execução de ferramentas
             while getattr(response, 'tool_calls', None) and len(response.tool_calls) > 0:
                 self.send_message(response)
                 
@@ -145,6 +146,9 @@ class Orquestrador(Agent):
                     
                     if len(sig.parameters) == 0: result = func()
                     else: result = func(**argumentos)
+
+                    if(type(result) is dict and result.get('erro')): return {'finish': 'Erro do sistema', 'erro': result['erro']}
+                    
                     self._write_conversation_log('1','1')        
                     content_to_send = result if isinstance(result, str) else json.dumps(result)
 
@@ -157,24 +161,32 @@ class Orquestrador(Agent):
                 # Reconsulta o modelo para ele processar o retorno da Tool
                 response = self.get_answer(
                     tools=self.tool_calls,
-                    temperature=0
+                    temperature=0,
+                    max_tokens=400
                 )
 
-            # 3. Quando o modelo NÃO chama mais tools, processa a mensagem para o usuário
             if response.content:
                 try:
-                    # Tenta fazer a leitura do JSON retornado pelo prompt
                     sys_message = json.loads(response.content)
                     if sys_message.get('acao') == 'RESPONDER_USUARIO':
                         print(f"Bot: {sys_message.get('conteudo')}")
                         user_input = input('user: ').strip()
                         if not user_input:
-                            break
+                            return {'finish': 'O usuário terminou o programa ao não enviar input.'}
                         self.send_message(Message('user', user_input))
                 except json.JSONDecodeError:
-                    # Se não veio JSON estrito, mas o modelo respondeu em texto
                     print(f"Bot: {response.content}")
                     user_input = input('user: ').strip()
                     if not user_input:
-                        break
+                        return {'finish': 'O usuário terminou o programa ao não enviar input.'}
                     self.send_message(Message('user', user_input))
+                
+                
+
+
+    def run(self):    
+        total_execution_time = time.time()
+        finish_reason = self._human_loop(10)
+        total_execution_time = time.time() - total_execution_time
+        print(finish_reason)
+        print(f'Tempo total de execução da aplicação: {total_execution_time:.6f} segundos')
