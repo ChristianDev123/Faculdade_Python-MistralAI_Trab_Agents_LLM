@@ -1,225 +1,58 @@
-# Contrato de Entrada e Saída
+# Plano de Prompt Engineering
 
-Este documento define o contrato de entrada e saída do **Assistente Informacional de Manutenção Automotiva**. O sistema recebe dúvidas em texto livre, decide quais informações ainda são necessárias, consulta as fontes disponíveis e retorna uma resposta estruturada em JSON.
-
-O contrato está alinhado ao funcionamento descrito no projeto: o agente atende mecânicos e proprietários, identifica peças compatíveis ou consulta informações do manual do proprietário, podendo consultar cache local, catálogo de peças ou manuais indexados. O sistema possui caráter informativo e não realiza compras ou reservas.
-
-> **Observação:** os exemplos desta documentação representam o formato esperado do contrato. Os campos `commit`, `data_execucao` e `log` devem ser preenchidos a partir de execuções reais do sistema antes da entrega final. Eles não foram inventados porque essas informações não constam no material fornecido.
+Este documento estabelece o planejamento, a arquitetura e a estratégia de validação dos prompts utilizados no sistema, separando a documentação estratégica do código-fonte dos prompts.
 
 ---
 
-## 1.1 Entrada
+## 2.1 Documento de Raciocínio (`docs/prompts.md`)
 
-### Texto livre como entrada principal
+A tabela abaixo detalha cada etapa do sistema em que o modelo de linguagem é chamado, especificando a técnica utilizada, a justificativa, o contrato estrito de saída e o critério de teste associado.
 
-A entrada principal do sistema é uma **mensagem textual livre**, escrita pelo usuário em linguagem natural.
-
-Isso é importante porque o sistema não pressupõe que o usuário saiba antecipadamente quais campos são necessários para responder à dúvida. Por exemplo, o usuário pode informar apenas:
-
-```text
-Preciso do código da pastilha de freio do Corolla 2020.
-```
-
-Nesse caso, o sistema pode identificar que faltam informações relevantes, como a motorização ou versão, antes de consultar a fonte.
-
-O projeto estabelece que a interação ocorre por chatbot e que o agente pode realizar aproximadamente três ou quatro interações até obter os dados necessários para construir a resposta. A entrada inicial, portanto, não deve ser tratada como um formulário fixo. 
-
-O sistema deve aceitar mensagens como:
-
-```text
-Qual pastilha de freio serve no Corolla 2020?
-```
-
-ou:
-
-```text
-Tenho um Corolla 2020 2.0 e preciso saber qual pastilha de freio devo comprar.
-```
-
-ou ainda:
-
-```text
-No manual do meu carro, quando devo trocar o óleo?
-```
-
-Essas mensagens representam consultas diferentes que precisam ser classificadas e tratadas pelo agente.
-
-### Metadados da execução
-
-Além do texto digitado pelo usuário, a aplicação pode receber metadados técnicos necessários para identificar a conversa ou a execução. Esses dados não fazem parte da mensagem em linguagem natural.
-
-Exemplo:
-
-```json
-{
-  "thread_id": "discord-canal-123",
-  "user_id": "usuario-456",
-  "message": "Tenho um Corolla 2020 2.0 e preciso saber qual pastilha de freio devo comprar."
-}
-```
-
-O `thread_id` identifica a conversa e pode ser utilizado para manter o contexto entre as interações. O `user_id` identifica o solicitante quando essa informação estiver disponível.
-
-O projeto informa que o sistema é acionado pelo próprio mecânico ou pelo balconista em nome dele, por meio de um chatbot. A interação é reativa e ocorre no atendimento de balcão ou telefone via Discord da loja.
-
-### Arquivos, imagens e outros conteúdos
-
-Arquivos, planilhas ou imagens **não substituem a entrada textual principal**.
-
-Quando houver conteúdo externo, ele deve ser tratado como fonte consultável pelo agente. No projeto, por exemplo, os manuais são PDFs indexados e são acessados pela ferramenta `buscar_manual`.
-
-A entrada do sistema continua sendo uma pergunta textual, como:
-
-```text
-Quando devo trocar o óleo desse veículo?
-```
-
-e o agente utiliza o manual como fonte para produzir a resposta.
+| Etapa | Técnica | Por que ela | Contrato de saída | Como é testada |
+| :--- | :--- | :--- | :--- | :--- |
+| **Triagem** | zero-shot + Chain of Thought | A classificação depende de regras de negócio e convenções de domínio específicas que o modelo pré-treinado não conhece nativamente. | JSON estrito contendo os campos: `pensamento`, `conteúdo` (Campo de resposta ao usuário) e `ação` (string enumerada de possíveis ações do sistema). Proibido texto livre fora do JSON. | 15 casos rotulados, com meta de $\ge 13$ acertos. |
+| **Resposta do RAG** | Cadeia de pensamento (Chain-of-Thought) | O modelo precisa primeiro sintetizar os trechos recuperados para evitar alucinações e fundamentar a resposta estritamente no contexto fornecido. | JSON estruturado contendo: `pensamento`, `trecho original` e `resumo` | 10 perguntas de teste com gabarito de contexto, avaliadas por similaridade semântica e ausência de alucinação. |
+| **Resposta da consulta em banco de dados relacional** | Cadeia de pensamento (Chain-of-Thought) | O modelo precisa identificar base de dados à consulta e executar operações solicitadas pelo usuário, isso tudo normalizando a query de acordo com a estrutura física das tabelas | JSON semi-estruturado dinâmicamente de acordo com a estrutura da base consultada ou a ter dados inseridos | 10 casos de linhas recuperadas manualmente, comparadas à extraídas pelo sistema
+| **Extração de dados via WebScrapping** | Cadeia de pensamento (Chain-of-Thought) + Few-Shot | A etapa necessita solicitar ao registrador o link do webcatálogo, e identificar trechos dentro do html/markdown onde há os dados à serem incluídos em base local | - | Comparação manual dos dados extraídos com os dados disponibilizados em site
 
 ---
 
-## 1.2 Contrato de saída
+## 2.2 Organização dos Prompts em Arquivo (`src/prompts/`)
+Com excessão de prompts para padronização de dados em json, a partir desta entrega, **nenhum prompt reside dentro do código Python em f-strings**. Todos os prompts foram migrados para arquivos individuais dentro de `src/prompts/`, garantindo versionamento, histórico de alterações via Git e carregamento dinâmico em tempo de execução.
 
-A saída do sistema não é texto livre. Ela deve ser um **objeto JSON validado por um schema definido no código**.
-
-O contrato possui três informações obrigatórias:
-
-1. `conteúdo` — a resposta produzida pelo agente;
-2. `fonte` — a evidência utilizada para produzir a resposta;
-3. `suficiencia` — indica se o sistema possui informação suficiente para responder.
-
-### Schema proposto
-
-```json
-{
-  "resultado": {},
-  "fonte": [],
-  "suficiencia": true
-}
+### Estrutura de Arquivos Implementada:
+```cmd
+src/prompts/
+├── leitor_manual_pdf
+│   ├── leitor_manual_pdf_prompt.md
+│   └── tool_call_leitura_pdf.md
+├── orquestrador_system_prompt.md
+├── registrador_system_prompt.md
+├── system_prompt.py
+└── webscrapper
+    ├── geral.md
+    ├── tool_scrapping.md
+    └── tool_webcatalog.md
 ```
-
-Uma representação mais completa, adequada ao funcionamento do projeto, é:
-
-```json
-{
-  "modelo": "Toyota Corolla",
-  "ano": "2020",
-  "motorizacao": "2.0"
-  "codigo_peca": "ABC123",
-  "modelos_compativeis": [{
-    "modelo": "etios",
-    "ano":"2021"
-  }],
-  "fonte": {
-    "tipo": "cache",
-    "origem": "catalogo_toyota",
-    "evidencia": {
-      "modelo": "Toyota Corolla",
-      "ano": "2020",
-      "motorizacao": "2.0", "nome_peca":"xxxx", "codigo_peca":"ABC123"
-    }
-  },
-  "suficiencia": true
-}
-```
-
-### Resposta de manual
-
-Quando a dúvida não for sobre compatibilidade de peças, o resultado pode representar o resumo extraído do manual:
-
-```json
-{
-  "duvida_usuario":"Quais são as dicas de direção são recomendadas pela montadora do meu carro?",
-  "kws_duvida_usuario":["dicas","direção"],
-  "resolucao":"Trocar a marcha à cada 10 km/h, utilizar cinto de segurança sempre que dirigir, nunca desengatar o carro em ladeira...",
-  "origem": "manual_toyota_corolla_2020.pdf",
-  "suficiencia": true
-}
-```
-
-O projeto define que, para dúvidas de manual, o agente apresenta um texto de até 400 tokens com a resposta.
-
-### Resposta sem informação suficiente
-
-A recusa também faz parte do contrato. O agente não deve preencher uma resposta por aproximação quando não possui dados suficientes.
-
-Exemplo:
-
-```json
-{
-  "duvida_usuario":"Quais são as dicas de direção são recomendadas pela montadora do meu carro?",
-  "kws_duvida_usuario":["dicas","direção"],
-  "resolucao":"",
-  "origem": "manual_toyota_corolla_2020.pdf",
-  "suficiencia": False
-}
-```
-
-Esse comportamento é especialmente importante para peças de segurança. O projeto determina que peças de freio, suspensão e direção não devem ser apresentadas com baixa confiança.
-
-Também existe uma regra explícita para peças sem substituta exata: o sistema deve informar que não encontrou a peça, em vez de apresentar uma peça apenas aproximada.
-
-## 1.4 Entradas que não podem ser atendidas diretamente
-
-O agente deve tratar explicitamente três situações:
-
-1. entrada incompleta;
-2. entrada ambígua;
-3. entrada fora do escopo.
-
-Responder normalmente nesses casos poderia gerar uma resposta aparentemente válida, mas sem base suficiente.
+Cada execução do sistema agora registra obrigatoriamente no log inicial a versão e o hash/conteúdo do prompt em uso, conforme exigido pelas diretrizes de rastreabilidade.
 
 ---
 
-### 1.4.1 Entrada incompleta
+## 2.3 Relatório da Regra da Frase (Otimização de Prompt)
 
-Uma entrada é incompleta quando faltam dados necessários para identificar a resposta.
+> *“Se vocês apagarem uma frase do prompt e não souberem dizer o que ela impedia, ela não estava fazendo nada.”*
 
-**Entrada:**
+### Experimento realizado no prompt: `src/prompts/triagem.txt`
 
-```text
-Qual é o código da pastilha de freio do Corolla 2020?
-```
+**Frase removida:** 
 
-**Comportamento esperado:**
-O agente irá fazer uma nova pergunta ao usuário para coletar os dados faltantes.
+    ## Regra de Formatação de Resposta
+    - NUNCA emita uma chamada de ferramenta (tool call) com o nome "json".
+    - Quando a ação for "RESPONDER_USUARIO", envie a resposta como texto simples de mensagem contendo o JSON no corpo da resposta (content), e NÃO como uma chamada de função/ferramenta (tool call).
 
-A regra é não realizar uma busca com informações insuficientes e apresentar o primeiro resultado encontrado como se fosse necessariamente compatível.
+**O que aconteceu:** 
+    
+    O programa parou de funcionar. apresentando chamada à uma tool_call inexistente.
 
----
-
-### 1.4.2 Entrada ambígua
-
-Uma entrada é ambígua quando os dados fornecidos permitem mais de uma interpretação possível.
-
-**Entrada:**
-
-```text
-Preciso da peça do Corolla 2020.
-```
-
-Essa entrada não informa sequer qual peça está sendo procurada e também pode não especificar a versão ou motorização.
-
-**Comportamento esperado:**
-
-O agente não deve escolher arbitrariamente uma peça ou uma configuração do veículo.
-
-Caso existam duas interpretações plausíveis, outra possibilidade é o agente apresentar explicitamente a interpretação escolhida e solicitar confirmação.
-
----
-
-### 1.4.3 Entrada fora do escopo
-
-Uma entrada está fora do escopo quando solicita uma operação que o sistema não realiza.
-
-O projeto estabelece que o agente é **informativo** e não executa compras ou reservas.
-
-**Entrada:**
-
-```text
-Compre agora a pastilha de freio para o meu Corolla.
-```
-
-**Saída esperada:**
-
-**O que demonstra:** o agente reconhece a intenção relacionada ao seu domínio, mas não executa uma ação que está explicitamente fora do escopo.
+**Conclusão (A frase voltou?):** 
+  **Sim, a frase voltou.** O teste provou que ela exercia uma trava essencial para o funcionamento do sistema, evitando delírio na orquestração de chamadas de ferramentas na etapa de orquestração de ações.
