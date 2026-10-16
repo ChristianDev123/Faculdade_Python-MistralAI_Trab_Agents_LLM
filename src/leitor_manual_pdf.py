@@ -6,8 +6,10 @@ import chromadb
 from chromadb.utils import embedding_functions
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from src.busca_textual import Bm25
 from src.contrato import LeituraManual
-from src.util import ler_prompt, modelo_em_uso
+from src.memoria import texto_procedural
+from src.util import JANELA_TOKENS, ler_prompt, modelo_em_uso, tokens_estimados
 
 # Primeira página com conteúdo real de cada manual. As anteriores são capa, sumário e índice,
 # que respondem "onde está" e não "o que fazer". Medido nos PDFs do repositório:
@@ -19,16 +21,20 @@ PRIMEIRA_PAGINA_CONTEUDO = {
     'Volkswagen_Fox_2020.pdf': 9,
 }
 PRIMEIRA_PAGINA_PADRAO = 6
-K_TRECHOS = 15  # trechos (chunks de 800 caracteres) levados ao modelo; justificativa do valor em docs/rag.md
+# Trechos (chunks de 800 caracteres) levados ao modelo. 6 e não 15: com a busca textual, o 7B respondeu 14 de 18 dúvidas
+# com k=6 e menos com mais trechos, porque o ruído extra atrapalha a leitura. Medição em docs/rag.md.
+K_TRECHOS = 6
 
 MAX_TOKENS_LEITURA = 600  # teto de saída da leitura: sem ele, uma geração presa num schema roda até o timeout
 
 
 class LeitorManualPDF:
-    """Recuperação no manual (Chroma) + leitura fundamentada pelo modelo. A escolha do PDF é regra em código."""
+    """Recuperação textual (BM25) no manual + leitura fundamentada pelo modelo. A escolha do PDF é regra em código.
+    O Chroma guarda os trechos já cortados (e os vetores, que o manual não usa); a busca é por termo, em memória."""
 
     def __init__(self, client):
         self.client = client
+        self._indices: dict[str, tuple[Bm25, list]] = {}
         self.PROJECT_PATH = Path(__file__).resolve().parent.parent
         self.chroma_client = chromadb.PersistentClient(f"{self.PROJECT_PATH}/databases/chroma_db")
 
@@ -82,39 +88,66 @@ class LeitorManualPDF:
                 ids = ids
             )
     
+    def _colecao_de_leitura(self, namefile: str):
+        """Coleção sem função de embedding: ler os trechos não precisa do modelo (que leva ~7 s para carregar).
+        Só a indexação, que gera vetores, usa `_chroma_collection`."""
+        try:
+            return self.chroma_client.get_collection(namefile)
+        except Exception:  # NotFoundError: o manual ainda não foi indexado
+            return None
+
     def _verify_document_indexed(self, namefile: str) -> bool:
-        colecao = self._chroma_collection(namefile)
-        resultados = colecao.get(
-            where={"fonte": namefile},
-            limit=1
-        )
-        total_encontrado = len(resultados.get("ids", []))
-        return total_encontrado > 0
+        colecao = self._colecao_de_leitura(namefile)
+        if colecao is None:
+            return False
+        return len(colecao.get(where={"fonte": namefile}, limit=1).get("ids", [])) > 0
         
-    def ler(self, namefile: str, duvida: str) -> dict:
-        """Busca os trechos mais próximos da dúvida e pede ao modelo uma resposta só com eles.
+    def _indice(self, namefile: str) -> tuple[Bm25, list]:
+        """BM25 sobre os trechos de conteúdo (do início do corpo em diante). Monta uma vez por processo, em memória."""
+        if namefile not in self._indices:
+            if not self._verify_document_indexed(namefile): self._pdf_indexer(namefile)
+            primeira = PRIMEIRA_PAGINA_CONTEUDO.get(namefile, PRIMEIRA_PAGINA_PADRAO)
+            dados = self._colecao_de_leitura(namefile).get(include=['documents', 'metadatas'])
+            trechos = sorted(((m['pagina'], m['chunk_id'], d) for d, m in zip(dados['documents'], dados['metadatas'])
+                              if m['pagina'] >= primeira))
+            lista = [(d, {'pagina': p, 'chunk_id': c}) for p, c, d in trechos]
+            self._indices[namefile] = (Bm25([d for d, _ in lista]), lista)
+        return self._indices[namefile]
+
+    def ler(self, namefile: str, duvida: str, veiculo: dict | None = None) -> dict:
+        """Busca por termo os trechos que tratam da dúvida e pede ao modelo uma resposta só com eles.
+        O veículo sai da consulta: o manual inteiro é dele, então modelo e ano só puxam páginas genéricas.
         Devolve {'leitura': LeituraManual, 'paginas': [...]} ou {'erro': ...}."""
-        if not self._verify_document_indexed(namefile): self._pdf_indexer(namefile)
-        collection = self._chroma_collection(namefile)
-        result = collection.query(
-            query_texts=[duvida],
-            n_results=K_TRECHOS,
-            where={"pagina": {"$gte": PRIMEIRA_PAGINA_CONTEUDO.get(namefile, PRIMEIRA_PAGINA_PADRAO)}}
-        )
-        if not result['documents'][0]:
-            return {'erro': 'Nenhum trecho encontrado no manual'}
+        indice, trechos_manual = self._indice(namefile)
+        ignorar = ' '.join(str(v) for v in (veiculo or {}).values() if v)
+        achados = indice.buscar(duvida, K_TRECHOS, ignorar=ignorar)
+        if not achados:
+            return {'erro': 'Nenhum trecho do manual contém os termos da dúvida'}
+        result = {'documents': [[trechos_manual[i][0] for i, _ in achados]],
+                  'metadatas': [[trechos_manual[i][1] for i, _ in achados]]}
 
-        trechos = [f"[trecho {i + 1} | página {meta['pagina']}]\n{doc}"
-                   for i, (doc, meta) in enumerate(zip(result['documents'][0], result['metadatas'][0]))]
-        paginas = sorted({meta['pagina'] for meta in result['metadatas'][0]})
+        sistema = ler_prompt('leitor_manual_pdf/tool_call_leitura_pdf.md') + '\n\n# Regras aprendidas (escritas por uma pessoa)\n' + texto_procedural('ler_manual')
+        # Orçamento de contexto. Ordem de descarte: o trecho de menor pontuação sai primeiro (a lista vem do mais
+        # relevante ao menos relevante); o prompt, a dúvida e o trecho mais próximo nunca saem.
+        orcamento = JANELA_TOKENS - tokens_estimados(sistema) - tokens_estimados(duvida)
+        trechos, metas, gasto = [], [], 0
+        for i, (doc, meta) in enumerate(zip(result['documents'][0], result['metadatas'][0])):
+            trecho = f"[trecho {i + 1} | página {meta['pagina']}]\n{doc}"
+            if trechos and gasto + tokens_estimados(trecho) > orcamento:
+                break
+            trechos.append(trecho)
+            metas.append(meta)
+            gasto += tokens_estimados(trecho)
+        descartados = len(result['documents'][0]) - len(trechos)
+        paginas = sorted({meta['pagina'] for meta in metas})
 
-        # Técnica: geração fundamentada nos trechos recuperados (RAG), com `pensamento` antes da resposta (cadeia de pensamento).
-        # Contrato: LeituraManual {pensamento, trecho_original, resumo, sanada}; o limite de 100 palavras vale só pelo prompt.
-        # Impede: usar índice ou glossário como resposta, e completar com conhecimento que não está nos trechos.
+        # Técnica: geração fundamentada nos trechos recuperados (RAG), com `pensamento` curto antes da resposta (cadeia de pensamento).
+        # Contrato: LeituraManual {pensamento, trecho_original, resumo, sanada}; o limite de 80 palavras vale só pelo prompt.
+        # Impede: completar com conhecimento que não está nos trechos, e dar por sanada uma dúvida que só aparece em índice.
         resposta = self.client.chat.completions.create(
             model=modelo_em_uso(),
             messages=[
-                {'role': 'system', 'content': ler_prompt('leitor_manual_pdf/tool_call_leitura_pdf.md')},
+                {'role': 'system', 'content': sistema},
                 {'role': 'user', 'content': f"Dúvida: {duvida}\n\nTrechos do manual:\n\n" + "\n\n".join(trechos)},
             ],
             temperature=0,
@@ -126,4 +159,4 @@ class LeitorManualPDF:
             leitura = LeituraManual.model_validate_json(resposta.choices[0].message.content)
         except ValueError as err:
             return {'erro': f'Resposta do modelo fora do contrato LeituraManual: {err}'}
-        return {'leitura': leitura, 'paginas': paginas}
+        return {'leitura': leitura, 'paginas': paginas, 'trechos_descartados': descartados}

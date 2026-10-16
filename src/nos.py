@@ -4,7 +4,7 @@ Quem decide o quê:
   - MODELO: `extrair` (intenção e dados a partir do texto livre), `raspar` (extração da página) e `ler_manual`
     (resposta fundamentada nos trechos). Nada além disso passa por modelo.
   - CÓDIGO: todas as rotas, os portões, a consulta à base, a gravação e o texto da saída.
-  - HUMANO: `aprovar_gravacao`, via interrupt.
+  - HUMANO: `aprovar_gravacao` e `confirmar_esquecimento`, via interrupt.
 """
 import os
 import time
@@ -16,10 +16,11 @@ from langgraph.types import interrupt
 from openai import APIError
 from pydantic import ValidationError
 
-from src.contrato import Extracao, Fonte, Peca, RespostaAprovacao, Saida
-from src.estado import ZERAR
+from src.contrato import Extracao, Fonte, Peca, RespostaAprovacao, RespostaConfirmacao, Saida
+from src.estado import LIMPAR, ZERAR
+from src.memoria import COLECAO_EPISODICA as COLECAO, JANELA_TOKENS, Memoria, janela_historico, texto_procedural
 from src.trajetoria import Trajetoria, carimbo_prompts, commit_atual
-from src.util import ler_prompt, modelo_em_uso
+from src.util import ler_prompt, modelo_em_uso, tokens_estimados
 
 MAX_TURNOS = int(os.environ.get('MAX_TURNOS') or 15)                      # mensagens do usuário por conversa
 MAX_PERGUNTAS_IGUAIS = 3                                                  # mesma pergunta sem resposta: desiste
@@ -53,6 +54,7 @@ MONTADORAS = ['volkswagen', 'chevrolet', 'fiat', 'toyota', 'honda', 'ford', 'hyu
 
 _servicos = None
 _trajetorias = {}
+_silenciados = set()  # conversas cujos dados foram apagados: nada mais é gravado no log delas
 
 
 def servicos():
@@ -68,6 +70,7 @@ def servicos():
         _servicos.reg = Registrador()
         _servicos.leitor = LeitorManualPDF(client)
         _servicos.scraper = WebScrapper(client)
+        _servicos.memoria = Memoria(_servicos.reg, _servicos.leitor.chroma_client)
     return _servicos
 
 
@@ -84,6 +87,16 @@ def _traj(config) -> Trajetoria:
     return _trajetorias[thread_id]
 
 
+def _usuario(config) -> str:
+    return config['configurable']['thread_id'].partition(':')[0]
+
+
+def _log(config, evento: str, **dados) -> None:
+    if config['configurable']['thread_id'] in _silenciados:
+        return
+    _traj(config).registrar(evento, **dados)
+
+
 def _agora() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -98,7 +111,7 @@ def registrando(func):
     def interno(state, config):
         inicio = time.time()
         saida = func(state, config)
-        _traj(config).registrar('no', no=func.__name__, escreveu=_resumo(saida), duracao_s=round(time.time() - inicio, 3))
+        _log(config, 'no', no=func.__name__, escreveu=_resumo(saida), duracao_s=round(time.time() - inicio, 3))
         return saida
     return interno
 
@@ -155,7 +168,8 @@ def entrada(state, config):
         'turno': turno,
         'passos': [ZERAR], 'evidencias': [ZERAR], 'avisos': [ZERAR],
         'consulta': None, 'candidatas': None, 'aprovacao': None, 'gravadas': None, 'leitura': None,
-        'registro': None, 'erro': None, 'pergunta': None, 'saida': None, 'motivo_termino': None,
+        'registro': None, 'memorizado': None, 'esquecimento': None, 'erro': None, 'pergunta': None, 'saida': None,
+        'motivo_termino': None,
         'desvio': 'limite_turnos' if turno > MAX_TURNOS else None,
     }
 
@@ -166,9 +180,13 @@ def extrair(state, config):
     # Contrato: Extracao {intencao: Literal, modelo, ano:int|null, motorizacao, fabricante, nome_peca, duvida}; null = não disse.
     #   O schema garante uma intenção válida, não a certa: a rota seguinte confia no valor, então ele é testado em execução real.
     # Impede: o modelo inventar dado do veículo, e o sistema agir sobre uma intenção que o usuário não expressou.
-    historico = [{'role': 'system', 'content': ler_prompt('extracao.md')}]
-    for m in state['mensagens']:
-        historico.append({'role': 'user' if isinstance(m, HumanMessage) else 'assistant', 'content': m.content})
+    # Janela: só as últimas mensagens que cabem no orçamento. O que saiu já está no estado (veículo, intenção).
+    sistema = ler_prompt('extracao.md') + '\n\n# Regras aprendidas (escritas por uma pessoa)\n' + texto_procedural('extrair')
+    conversa = [{'role': 'user' if isinstance(m, HumanMessage) else 'assistant', 'content': m.content} for m in state['mensagens']]
+    enviadas = janela_historico(conversa, JANELA_TOKENS - tokens_estimados(sistema))
+    _log(config, 'janela', no='extrair', mensagens_total=len(conversa), mensagens_enviadas=len(enviadas),
+         tokens_estimados=tokens_estimados(sistema) + sum(tokens_estimados(m['content']) for m in enviadas))
+    historico = [{'role': 'system', 'content': sistema}] + enviadas
     try:
         resposta = servicos().client.chat.completions.create(
             model=modelo_em_uso(), messages=historico, **PARAMS_EXTRACAO,
@@ -183,10 +201,18 @@ def extrair(state, config):
 
     campos = normalizar_veiculo({'modelo': ext.modelo, 'ano': ext.ano, 'motorizacao': ext.motorizacao, 'fabricante': ext.fabricante})
     atual = state.get('veiculo') or {}
-    avisos = [f"Considerei {k} = {v} (você tinha dito {atual[k]})." for k, v in campos.items()
+    avisos = [f"Considerei {k} = {v} (antes: {atual[k]})." for k, v in campos.items()
               if v not in (None, '') and atual.get(k) not in (None, '') and str(atual[k]).lower() != str(v).lower()]
+    ditos = [k for k, v in campos.items() if v not in (None, '')]
+    if campos['modelo'] and atual.get('modelo') and campos['modelo'].lower() != str(atual['modelo']).lower():
+        # Outro veículo: o que sobrou do anterior (ano, motorização, montadora) não vale mais.
+        descartados = [k for k in ('ano', 'motorizacao', 'fabricante') if campos.get(k) in (None, '') and atual.get(k)]
+        for k in descartados:
+            campos[k] = LIMPAR
+        if descartados:
+            avisos.append(f"Como o modelo mudou, descartei {', '.join(descartados)} do veículo anterior.")
     return {
-        'intencao': ext.intencao, 'veiculo': campos,
+        'intencao': ext.intencao, 'veiculo': campos, 'campos_ditos': ditos,
         'nome_peca': ext.nome_peca if ext.intencao == 'PECA' else None,
         'duvida': ext.duvida if ext.intencao == 'MANUAL' else None,
         'avisos': avisos, 'passos': ['extrair'],
@@ -208,14 +234,18 @@ def perguntar(state, config):
 
 @registrando
 def consultar_base(state, config):
-    reg, v = servicos().reg, state['veiculo']
-    if state['intencao'] == 'PECA':
-        tabela, filtros = 'pecas_automoveis', {'modelo': v['modelo'], 'ano_fabricacao': v['ano'],
-                                              'motorizacao': v['motorizacao'], 'nm_peca': state['nome_peca']}
-    else:
-        tabela, filtros = 'log_interacoes', {'modelo': v['modelo'], 'ano_fabricacao': v['ano'],
-                                            'duvida_usuario': state['duvida']}
-    linhas = reg.resgatar(tabela, filtros)
+    s, v = servicos(), state['veiculo']
+    if state['intencao'] == 'MANUAL':
+        # Memória episódica: pergunta parecida, do mesmo modelo e ano, já respondida antes (similaridade, não texto exato).
+        achado = s.memoria.buscar_episodio(state['duvida'], v)
+        hit = achado['hit']
+        detalhe = (f"pergunta parecida encontrada (similaridade {hit['similaridade']})" if hit
+                   else f"nenhuma pergunta parecida (melhor distância {achado['melhor_distancia']}, limiar de corte em memoria.py)")
+        fonte = Fonte(tipo='memoria_episodica', origem=COLECAO, evidencia=detalhe)
+        return {'consulta': [hit] if hit else [], 'evidencias': [fonte.model_dump()]}
+    tabela, filtros = 'pecas_automoveis', {'modelo': v['modelo'], 'ano_fabricacao': v['ano'],
+                                          'motorizacao': v['motorizacao'], 'nm_peca': state['nome_peca']}
+    linhas = s.reg.resgatar(tabela, filtros)
     if isinstance(linhas, dict):
         return {'erro': {'origem': 'ferramenta', 'mensagem': linhas['erro']}}
     fonte = Fonte(tipo='base_local', origem=tabela, evidencia=f'{len(linhas)} linha(s) com {filtros}')
@@ -302,7 +332,7 @@ def ler_manual(state, config):
         if manual is None:
             return {'erro': {'origem': 'sem_base', 'mensagem':
                              f"Não tenho o manual do {v['modelo']} {v['ano']}. Manuais disponíveis: {', '.join(s.leitor.manuais())}."}}
-        lido = s.leitor.ler(manual, state['duvida'])
+        lido = s.leitor.ler(manual, state['duvida'], v)
     except APIError as err:
         return {'erro': {'origem': 'modelo', 'mensagem': f'{type(err).__name__}: {err}'}, 'passos': ['ler_manual']}
     except Exception as err:
@@ -310,19 +340,64 @@ def ler_manual(state, config):
     if 'erro' in lido:
         return {'erro': {'origem': 'ferramenta', 'mensagem': lido['erro']}, 'passos': ['ler_manual']}
     fonte = Fonte(tipo='manual_pdf', origem=manual, evidencia=f"páginas {lido['paginas']}")
-    return {'leitura': {**lido['leitura'].model_dump(), 'manual': manual, 'paginas': lido['paginas']},
+    return {'leitura': {**lido['leitura'].model_dump(), 'manual': manual, 'paginas': lido['paginas'],
+                        'trechos_descartados': lido['trechos_descartados']},
             'passos': ['ler_manual'], 'evidencias': [fonte.model_dump()]}
 
 
 @registrando
 def registrar_duvida(state, config):
-    v, leitura = state['veiculo'], state['leitura']
-    palavras = sorted({w.lower().strip('?,.') for w in state['duvida'].split() if len(w) > 4})
-    resultado = servicos().reg.inserir('log_interacoes', {
-        'modelo': v['modelo'], 'ano_fabricacao': v['ano'], 'motorizacao': v.get('motorizacao') or '',
-        'duvida_usuario': state['duvida'], 'kws_duvida_usuario': ', '.join(palavras), 'resolucao': leitura['resumo'],
-    })
+    """Memória episódica: guarda a dúvida respondida (linha na tabela + vetor no índice), só se foi sanada."""
+    resultado = servicos().memoria.registrar_episodio(
+        _usuario(config), state['veiculo'], state['duvida'], state['leitura']['resumo'])
     return {'registro': resultado}
+
+
+@registrando
+def lembrar(state, config):
+    """Memória semântica, leitura: no primeiro turno, preenche o veículo que o usuário já declarou em outra conversa."""
+    perfil = servicos().memoria.lembrar_veiculo(_usuario(config))
+    if not perfil:
+        return {'perfil_lembrado': None}
+    fonte = Fonte(tipo='memoria_semantica', origem='memoria_semantica',
+                  evidencia=f"veículo declarado em {perfil['created_at'][:10]} ({perfil['declaracoes']} declaração(ões))")
+    return {'veiculo': perfil['valor'], 'perfil_lembrado': perfil['valor'], 'evidencias': [fonte.model_dump()]}
+
+
+@registrando
+def memorizar(state, config):
+    """Memória semântica, escrita: depois de uma resposta entregue, guarda o veículo. Idempotente (ja_existia)."""
+    return {'memorizado': servicos().memoria.memorizar_veiculo(_usuario(config), state['veiculo'])}
+
+
+@registrando
+def confirmar_esquecimento(state, config):
+    # Nada com efeito colateral antes do interrupt; contar é só leitura.
+    usuario = _usuario(config)
+    c = servicos().memoria.contar_usuario(usuario)
+    resposta = interrupt({
+        'acao': 'esquecer_dados', 'usuario': usuario, 'contagem': c,
+        'texto': (
+            f"Vou APAGAR todos os dados do usuário {usuario}: {c['fatos_veiculo']} fato(s) sobre o veículo, "
+            f"{c['duvidas_registradas']} dúvida(s) registrada(s) e {c['vetores_episodicos']} item(ns) do índice, "
+            f"{c['conversas_salvas']} conversa(s) salva(s) (esta inclusive) e {c['arquivos_de_log']} arquivo(s) de log.\n"
+            "Não dá para desfazer. Se ninguém confirmar, nada é apagado.\n"
+            "Responda: confirmar | cancelar"),
+    })
+    try:
+        decisao = RespostaConfirmacao.model_validate(resposta).decisao
+    except ValidationError:
+        decisao = 'cancelar'
+    return {'esquecimento': {'decisao': decisao}}
+
+
+@registrando
+def esquecer(state, config):
+    """Remoção a pedido do titular. A conversa em andamento fica para o fim: a CLI a apaga depois do grafo terminar."""
+    thread_id = config['configurable']['thread_id']
+    contagens = servicos().memoria.esquecer_usuario(_usuario(config), manter_thread=thread_id)
+    _silenciados.add(thread_id)  # a pasta de log acabou de ser apagada: não pode ser recriada por este turno
+    return {'esquecimento': {'decisao': 'confirmar', 'contagens': contagens}}
 
 
 @registrando
@@ -330,15 +405,22 @@ def emitir(state, config):
     """Único ponto de saída: monta o texto por código e valida o contrato Saida antes de devolver."""
     saida, motivo = _montar_saida(state)
     mensagens = [AIMessage(content=saida.resultado)]
-    _traj(config).registrar('termino', motivo=motivo, situacao=saida.situacao, suficiencia=saida.suficiencia,
-                            passos=len(state.get('passos') or []), saida=saida.model_dump())
+    if motivo == 'esquecido':
+        _silenciados.add(config['configurable']['thread_id'])
+    _log(config, 'termino', motivo=motivo, situacao=saida.situacao, suficiencia=saida.suficiencia,
+         passos=len(state.get('passos') or []), saida=saida.model_dump())
     return {'saida': saida.model_dump(), 'motivo_termino': motivo, 'mensagens': mensagens}
 
 
 def _montar_saida(state) -> tuple[Saida, str]:
     fontes = [Fonte(**f) for f in state.get('evidencias') or []] or [Fonte(tipo='nenhuma', origem='sistema', evidencia='sem consulta')]
-    avisos = ''.join(f"\nObs.: {a}" for a in state.get('avisos') or [])
     v = state.get('veiculo') or {}
+    notas = list(state.get('avisos') or [])
+    perfil, ditos = state.get('perfil_lembrado') or {}, state.get('campos_ditos') or []
+    if state.get('intencao') in OBRIGATORIOS and [k for k in perfil if k not in ditos and v.get(k) == perfil[k]]:
+        lembrado = ' '.join(str(perfil[k]) for k in ('modelo', 'ano', 'motorizacao') if perfil.get(k))
+        notas.append(f"Usei o veículo que você informou antes ({lembrado}). Se mudou, é só dizer.")
+    avisos = ''.join(f"\nObs.: {a}" for a in notas)
     carro = f"{v.get('modelo')} {v.get('ano')}" + (f" {v['motorizacao']}" if v.get('motorizacao') else '')
 
     def saida(situacao, texto, suficiencia, dados=None, pergunta=None):
@@ -356,6 +438,16 @@ def _montar_saida(state) -> tuple[Saida, str]:
     if desvio == 'desistiu_apos_3_perguntas':
         return saida('faltam_dados', f"Perguntei {MAX_PERGUNTAS_IGUAIS} vezes sobre \"{state['pergunta']}\" e não obtive a informação. "
                      'Sem ela não consigo continuar; reformule o pedido ou procure o balcão.', False), 'desistiu_apos_3_perguntas'
+
+    esquecimento = state.get('esquecimento')
+    if esquecimento:
+        if esquecimento['decisao'] == 'confirmar':
+            c = esquecimento['contagens']
+            return saida('esquecido', (
+                f"Apaguei seus dados: {c['fatos_veiculo']} fato(s) sobre o veículo, {c['duvidas_registradas']} dúvida(s) "
+                f"registrada(s), {c['vetores_episodicos']} item(ns) do índice, {c['conversas_salvas']} conversa(s) salva(s) "
+                f"e {c['arquivos_de_log']} arquivo(s) de log. Esta conversa também é apagada ao terminar."), True), 'esquecido'
+        return saida('rejeitado', 'Cancelei: nada foi apagado.', False), 'esquecimento_recusado'
 
     erro = state.get('erro')
     if erro:
@@ -378,10 +470,18 @@ def _montar_saida(state) -> tuple[Saida, str]:
 
     if state['intencao'] == 'PECA':
         linhas = state.get('consulta') or []
-        if linhas:
+        # Peça sem código no catálogo ("N/A") não é resposta: a regra do domínio é dizer que não encontrou, nunca aproximar.
+        com_codigo = [r for r in linhas if (r['codigo_peca'] or '').strip().upper() not in ('', 'N/A')]
+        if linhas and not com_codigo:
+            nomes = ', '.join(sorted({r['nm_peca'] for r in linhas}))
+            return saida('sem_base', f"Encontrei \"{nomes}\" para {carro} no catálogo, mas sem código cadastrado. "
+                         'Sem o código não indico a peça; confirme no balcão ou com o distribuidor.', False), 'sem_base'
+        if com_codigo:
             pecas = [Peca(nome_peca=r['nm_peca'], codigo_peca=r['codigo_peca'],
-                          carros_compativeis=[c.strip() for c in (r['carros_compatíveis'] or '').split(',') if c.strip()]) for r in linhas]
+                          carros_compativeis=[c.strip() for c in (r['carros_compatíveis'] or '').split(',') if c.strip()]) for r in com_codigo]
             texto = f"Encontrei {len(pecas)} peça(s) para {carro} na base local:\n{_linhas_pecas([p.model_dump() for p in pecas])}"
+            if len(com_codigo) < len(linhas):
+                texto += f"\n({len(linhas) - len(com_codigo)} outra(s) correspondência(s) sem código cadastrado não foram listadas.)"
             return saida('respondido', texto, True, dados=pecas), 'respondido'
         return saida('sem_base', f"Não encontrei \"{state['nome_peca']}\" para {carro} na base local nem no catálogo.", False), 'sem_base'
 
@@ -395,7 +495,8 @@ def _montar_saida(state) -> tuple[Saida, str]:
         return saida('sem_base', texto, False), 'sem_base'
     linhas = state.get('consulta') or []
     if linhas:
-        texto = f"Já respondi isso antes para {carro}: {linhas[0]['resolucao']}"
+        texto = (f"Já respondi uma pergunta parecida para {carro} (similaridade {linhas[0]['similaridade']}): "
+                 f"{linhas[0]['resolucao']}")
         return saida('respondido', texto, True), 'respondido'
     return saida('erro', 'O fluxo terminou sem resultado: estado inesperado.', False), 'erro_ferramenta'
 
@@ -403,11 +504,13 @@ def _montar_saida(state) -> tuple[Saida, str]:
 # ----------------------------- rotas (todas decididas por código) -----------------------------
 
 def rota_pos_entrada(state) -> str:
-    return 'emitir' if state.get('desvio') == 'limite_turnos' else 'extrair'
+    if state.get('desvio') == 'limite_turnos': return 'emitir'
+    return 'lembrar' if state['turno'] == 1 else 'extrair'
 
 
 def rota_pos_extracao(state) -> str:
     if state.get('erro'): return 'emitir'
+    if state.get('intencao') == 'ESQUECER': return 'confirmar_esquecimento'
     if state.get('intencao') == 'FORA_DO_ESCOPO': return 'recusar'
     return 'perguntar' if faltando(state) else 'consultar_base'
 
@@ -427,3 +530,12 @@ def rota_pos_aprovacao(state) -> str:
 
 def rota_pos_manual(state) -> str:
     return 'registrar_duvida' if not state.get('erro') and state['leitura']['sanada'] else 'emitir'
+
+
+def rota_pos_confirmacao(state) -> str:
+    return 'esquecer' if state['esquecimento']['decisao'] == 'confirmar' else 'emitir'
+
+
+def rota_pos_emissao(state) -> str:
+    """Só o que foi entregue com base (`respondido`) vira memória."""
+    return 'memorizar' if state.get('motivo_termino') == 'respondido' else '__end__'

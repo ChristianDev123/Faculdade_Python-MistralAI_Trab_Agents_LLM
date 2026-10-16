@@ -6,6 +6,7 @@ Você NÃO responde ao usuário e NÃO decide o que o sistema fará: só classif
 - PECA: o usuário quer saber qual peça de reposição serve, o código de uma peça ou a compatibilidade ("qual o código", "serve no meu", "preciso de uma peça").
 - MANUAL: o usuário tem uma dúvida de uso ou manutenção que o manual do proprietário responde (períodos de revisão, óleo recomendado, pressão dos pneus, luzes do painel, como fazer algo no carro).
 - FORA_DO_ESCOPO: pede algo que o sistema não faz: comprar, reservar, saber preço ou onde comprar, diagnosticar defeito.
+- ESQUECER: o usuário pede que o sistema apague os dados dele ou o histórico dele ("apague meus dados", "esqueça o que você sabe de mim").
 - INDEFINIDA: ainda não dá para saber (cumprimento, mensagem vaga, só dados do veículo sem dizer o que quer).
 
 Use a conversa inteira. Se a intenção já ficou clara antes e a última mensagem só traz um dado do veículo, mantenha a intenção anterior.
@@ -41,3 +42,6 @@ Conversa: usuário "Preciso de uma peça pro meu carro" / atendente "Qual é o m
 
 Mensagem: "oi, bom dia"
 {"intencao":"INDEFINIDA","modelo":null,"ano":null,"motorizacao":null,"fabricante":null,"nome_peca":null,"duvida":null}
+
+Mensagem: "Apague todos os meus dados, por favor."
+{"intencao":"ESQUECER","modelo":null,"ano":null,"motorizacao":null,"fabricante":null,"nome_peca":null,"duvida":null}

@@ -7,7 +7,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-Intencao = Literal['PECA', 'MANUAL', 'FORA_DO_ESCOPO', 'INDEFINIDA']
+Intencao = Literal['PECA', 'MANUAL', 'FORA_DO_ESCOPO', 'ESQUECER', 'INDEFINIDA']
 
 # Por que a execução acabou. Quem define é código, nunca o modelo.
 MotivoTermino = Literal[
@@ -21,9 +21,11 @@ MotivoTermino = Literal[
     'erro_ferramenta',
     'erro_modelo',
     'limite_turnos',
+    'esquecido',
+    'esquecimento_recusado',
 ]
 
-Situacao = Literal['respondido', 'faltam_dados', 'fora_do_escopo', 'sem_base', 'rejeitado', 'expirado', 'erro']
+Situacao = Literal['respondido', 'faltam_dados', 'fora_do_escopo', 'sem_base', 'rejeitado', 'expirado', 'esquecido', 'erro']
 
 
 class Extracao(BaseModel):
@@ -53,7 +55,7 @@ class LeituraManual(BaseModel):
 
 class Fonte(BaseModel):
     """O que sustenta o resultado, conferível."""
-    tipo: Literal['base_local', 'manual_pdf', 'catalogo_web', 'nenhuma']
+    tipo: Literal['base_local', 'manual_pdf', 'catalogo_web', 'memoria_semantica', 'memoria_episodica', 'nenhuma']
     origem: str
     evidencia: str
 
@@ -62,6 +64,11 @@ class RespostaAprovacao(BaseModel):
     """O que a pessoa devolve na pausa. `candidatas` só vem quando ela editou a lista (aprovar editando)."""
     decisao: Literal['aprovar', 'rejeitar']
     candidatas: Optional[list[Peca]] = None
+
+
+class RespostaConfirmacao(BaseModel):
+    """O que a pessoa devolve ao pedido de apagar os próprios dados."""
+    decisao: Literal['confirmar', 'cancelar']
 
 
 class Saida(BaseModel):

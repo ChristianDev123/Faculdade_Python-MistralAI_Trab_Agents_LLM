@@ -4,7 +4,7 @@ Código: [src/grafo.py](../src/grafo.py) (montagem), [src/nos.py](../src/nos.py)
 
 ## 1. Decisão de projeto: roteador, e não agente
 
-Antes, um laço livre deixava o modelo escolher a ferramenta a cada volta. Nos testes reais isso falhou de forma repetida: o modelo escrevia a tool call como texto JSON, respondia sem consultar, ou gastava voltas em ações inválidas. Hoje o modelo decide **só o que exige julgamento sobre texto livre**: qual é a intenção e quais dados do veículo o usuário já deu (nó `extrair`). Tudo o mais é regra em código.
+Antes, um laço livre deixava o modelo escolher a ferramenta a cada volta. Nos testes reais isso falhou de forma repetida: o modelo escrevia a tool call como texto JSON, respondia sem consultar, ou gastava voltas em ações inválidas. Hoje o modelo decide **só o que exige julgamento sobre texto livre**: qual é a intenção e quais dados do veículo o usuário já deu (nó `extrair`). Tudo o mais é regra em código, inclusive a memória (`lembrar`, `memorizar`) e o esquecimento (`esquecer`).
 
 Isso responde à pergunta do §3.3 do enunciado: a decisão que só o modelo toma é classificar a intenção e extrair os dados do texto livre. O nível de autonomia é **roteador**; o laço livre foi removido porque nenhuma outra decisão precisava de modelo. Custo medido: um pedido de peça que já está na base usa **1** chamada ao modelo (antes, de 4 a 8).
 
@@ -14,45 +14,45 @@ Isso responde à pergunta do §3.3 do enunciado: a decisão que só o modelo tom
 START
   │
   ▼
-entrada ───────────► extrair                      1 chamada ao modelo
-[código]             [MODELO] Extracao{intencao, veiculo, nome_peca, duvida}
-                        │
-                        ▼  rota_pos_extracao  [CÓDIGO]
-         ┌──────────────┼────────────────────────┐
-   fora do escopo   faltam dados /            completo
-         │          3ª repetição                  │
-         ▼              ▼                        ▼
-      recusar       perguntar              consultar_base
-      [código]      [código]                 [código]
-         │              │                        │ rota_pos_base [CÓDIGO]
-         │              │          ┌─────────────┼───────────────┐
-         │              │        achou      PECA sem base   MANUAL sem base
-         │              │          │             ▼                ▼
-         │              │          │          raspar          ler_manual
-         │              │          │         [MODELO]     [MODELO + embedding]
-         │              │          │       NÃO grava          RAG → {trecho, sanada}
-         │              │          │             │                │
-         │              │          │   rota_pos_raspagem    rota_pos_manual
-         │              │          │      [CÓDIGO]            [CÓDIGO]
-         │              │          │    ┌──────┴──────┐      ┌─────┴──────┐
-         │              │          │  erro/vazio  candidatas sanada   não sanada/erro
-         │              │          │    │             ▼        ▼           │
-         │              │          │    │     aprovar_gravacao registrar_   │
-         │              │          │    │      ⏸ INTERRUPT    duvida       │
-         │              │          │    │             │       [código,      │
-         │              │          │    │   rota_pos_aprovacao  grava]     │
-         │              │          │    │       [CÓDIGO]          │        │
-         │              │          │    │     ┌───────┴───────┐   │        │
-         │              │          │    │  rejeitou/      aprovou/ │       │
-         │              │          │    │  expirou        editou   │       │
-         │              │          │    │     │              ▼     │       │
-         │              │          │    │     │           gravar   │       │
-         │              │          │    │     │      [código, grava]       │
-         ▼              ▼          ▼    ▼     ▼              ▼     ▼       ▼
-        ═══════════════════════════ emitir ══════════════════════════════►  END
-                      [código] valida Saida (Pydantic), grava log e motivo_termino
-
- Também sai de `entrada` direto para `emitir` quando a conversa passou de MAX_TURNOS.
+entrada ─┬─ turno 1 ──► lembrar [código: lê a memória semântica] ──┐
+ [código]│                                                         ▼
+         ├─ turno > 1 ──────────────────────────────────────────► extrair            1 chamada ao modelo
+         │                                                      [MODELO] Extracao{intencao, veiculo, ...}
+         └─ passou do limite de turnos ─► emitir                    │
+                                                                    ▼  rota_pos_extracao  [CÓDIGO]
+        ┌───────────────┬──────────────┬──────────────┬────────────┘
+   ESQUECER      fora do escopo   faltam dados /     completo
+        │              │          3ª repetição           │
+        ▼              ▼              ▼                  ▼
+ confirmar_esquecimento recusar    perguntar        consultar_base [código]
+ ⏸ INTERRUPT [humano]  [código]    [código]        MANUAL: busca episódica por similaridade
+        │                 │           │                  │ rota_pos_base [CÓDIGO]
+   confirmou/cancelou     │           │       ┌──────────┼───────────────┐
+        │                 │           │     achou    PECA sem base   MANUAL sem base
+        ▼                 │           │       │           ▼                ▼
+    esquecer              │           │       │        raspar          ler_manual
+    [código: apaga]       │           │       │      [MODELO]     [busca textual + MODELO]
+        │                 │           │       │     NÃO grava        RAG → {trecho, sanada}
+        │                 │           │       │           │                │
+        │                 │           │       │   rota_pos_raspagem  rota_pos_manual
+        │                 │           │       │           │                │
+        │                 │           │       │    erro/vazio│candidatas  sanada│não sanada/erro
+        │                 │           │       │           ▼                ▼
+        │                 │           │       │   aprovar_gravacao   registrar_duvida
+        │                 │           │       │    ⏸ INTERRUPT       [código, grava a
+        │                 │           │       │           │           memória episódica]
+        │                 │           │       │   rota_pos_aprovacao        │
+        │                 │           │       │     aprovou/editou          │
+        │                 │           │       │           ▼                 │
+        │                 │           │       │        gravar               │
+        ▼                 ▼           ▼       ▼           ▼                 ▼
+       ═══════════════════════════════ emitir ═════════════════════════════════
+                  [código] valida Saida (Pydantic), grava log e motivo_termino
+                                       │ rota_pos_emissao [CÓDIGO]
+                              respondido│            │ qualquer outro motivo
+                                        ▼            ▼
+                                   memorizar        END
+                      [código: grava a memória semântica] ──► END
 ```
 
 ### Saída de `conferir_grafo.py`
@@ -72,6 +72,10 @@ NÓS
   gravar
   ler_manual
   registrar_duvida
+  lembrar
+  memorizar
+  confirmar_esquecimento
+  esquecer
   emitir
   __end__
 
@@ -79,16 +83,24 @@ ARESTAS  (origem -> destino; [condicional] = o destino depende de uma regra)
   __start__ -> entrada
   aprovar_gravacao -> emitir  [condicional]
   aprovar_gravacao -> gravar  [condicional]
+  confirmar_esquecimento -> emitir  [condicional]
+  confirmar_esquecimento -> esquecer  [condicional]
   consultar_base -> emitir  [condicional]
   consultar_base -> ler_manual  [condicional]
   consultar_base -> raspar  [condicional]
+  emitir -> __end__  [condicional]
+  emitir -> memorizar  [condicional]
   entrada -> emitir  [condicional]
   entrada -> extrair  [condicional]
+  entrada -> lembrar  [condicional]
+  esquecer -> emitir
+  extrair -> confirmar_esquecimento  [condicional]
   extrair -> consultar_base  [condicional]
   extrair -> emitir  [condicional]
   extrair -> perguntar  [condicional]
   extrair -> recusar  [condicional]
   gravar -> emitir
+  lembrar -> extrair
   ler_manual -> emitir  [condicional]
   ler_manual -> registrar_duvida  [condicional]
   perguntar -> emitir
@@ -96,7 +108,7 @@ ARESTAS  (origem -> destino; [condicional] = o destino depende de uma regra)
   raspar -> emitir  [condicional]
   recusar -> emitir
   registrar_duvida -> emitir
-  emitir -> __end__
+  memorizar -> __end__
 ```
 
 O desenho e as duas listas coincidem. Se divergirem um dia, vale o código.
@@ -106,15 +118,19 @@ O desenho e as duas listas coincidem. Se divergirem um dia, vale o código.
 | Nó | Quem executa | Efeito no mundo |
 |---|---|---|
 | `entrada` | código | zera o que é por turno e conta o turno |
+| `lembrar` | código | leitura: memória semântica (veículo do usuário) |
 | `extrair` | **modelo** (schema Pydantic) | nenhum |
 | `recusar`, `perguntar` | código | nenhum |
-| `consultar_base` | código | leitura (SQLite) |
+| `confirmar_esquecimento` | **humano** (`interrupt`) | pausa |
+| `esquecer` | código | **apaga** os dados do titular (ver memoria.md) |
+| `consultar_base` | código | leitura (SQLite; para dúvida de manual, a memória episódica) |
 | `raspar` | modelo (extração da página) + web | leitura externa; **não grava** |
 | `aprovar_gravacao` | **humano** (`interrupt`) | pausa |
 | `gravar` | código | **escrita**, idempotente |
-| `ler_manual` | modelo (resposta) + embedding; o PDF é escolhido por código a partir de modelo e ano | leitura |
-| `registrar_duvida` | código | **escrita**, idempotente; só se a dúvida foi sanada |
+| `ler_manual` | busca textual (BM25) por código + modelo (resposta fundamentada nos 6 trechos); o PDF é escolhido por código a partir de modelo e ano | leitura |
+| `registrar_duvida` | código | **escrita** (episódica), idempotente; só se a dúvida foi sanada |
 | `emitir` | código | valida `Saida` e grava o log |
+| `memorizar` | código | **escrita** (semântica), idempotente; só depois de `respondido` |
 
 ## 4. Padrões da Aula 05
 
@@ -133,12 +149,14 @@ Todas por **regra em código** (o degrau mais barato). O modelo escolhe **valore
 
 | Aresta | Condição |
 |---|---|
-| `rota_pos_entrada` | `turno > MAX_TURNOS` → `emitir`; senão `extrair` |
-| `rota_pos_extracao` | erro → `emitir`; `FORA_DO_ESCOPO` → `recusar`; campo obrigatório vazio → `perguntar`; completo → `consultar_base` |
+| `rota_pos_entrada` | `turno > MAX_TURNOS` → `emitir`; turno 1 → `lembrar`; senão `extrair` |
+| `rota_pos_extracao` | erro → `emitir`; `ESQUECER` → `confirmar_esquecimento`; `FORA_DO_ESCOPO` → `recusar`; campo obrigatório vazio → `perguntar`; completo → `consultar_base` |
 | `rota_pos_base` | erro ou linhas encontradas → `emitir`; senão `PECA` → `raspar`, `MANUAL` → `ler_manual` |
 | `rota_pos_raspagem` | sem erro e com candidatas → `aprovar_gravacao`; senão `emitir` |
 | `rota_pos_aprovacao` | `decisao == aprovar` → `gravar`; senão `emitir` |
 | `rota_pos_manual` | sem erro e `sanada` → `registrar_duvida`; senão `emitir` |
+| `rota_pos_confirmacao` | `decisao == confirmar` → `esquecer`; senão `emitir` |
+| `rota_pos_emissao` | `motivo_termino == respondido` → `memorizar`; qualquer outro → fim |
 
 Campos obrigatórios: `PECA` exige modelo, ano, motorização, montadora e nome da peça; `MANUAL` exige modelo, ano e a dúvida.
 
@@ -150,7 +168,7 @@ Campos obrigatórios: `PECA` exige modelo, ano, motorização, montadora e nome 
 | `turno` | int | `entrada` | `entrada`, rotas | sobrescreve (um só escritor) |
 | `passos` | lista | nós com modelo | `emitir` (log) | `acumular`: soma, `entrada` zera a cada turno |
 | `intencao` | texto | `extrair` | rotas | `manter_se_definida`: `INDEFINIDA` não apaga `PECA`/`MANUAL` |
-| `veiculo` | dict | `extrair` | consulta, raspagem, manual | `mesclar`: valor novo não nulo vence; nulo nunca apaga |
+| `veiculo` | dict | `lembrar` (do que a memória guarda), `extrair` | consulta, raspagem, manual | `mesclar`: valor novo não nulo vence; nulo nunca apaga; `LIMPAR` apaga de propósito (outro modelo de carro descarta ano e motorização do anterior) |
 | `nome_peca`, `duvida` | texto | `extrair` | consulta, raspagem, manual | `ultimo_nao_nulo` |
 | `avisos` | lista | `extrair` | `emitir` | `acumular` |
 | `tentativas_pergunta` | dict | `perguntar` | `perguntar` | `somar_por_chave` |
@@ -159,6 +177,10 @@ Campos obrigatórios: `PECA` exige modelo, ano, motorização, montadora e nome 
 | `evidencias` | lista | consulta, raspagem, gravação, manual | `emitir` | `acumular` |
 | `desvio` | texto | `entrada`, `recusar`, `perguntar` | `emitir` | sobrescreve; ramos exclusivos, nunca no mesmo passo |
 | `saida`, `motivo_termino` | dict, texto | `emitir` | CLI e log | sobrescreve |
+| `perfil_lembrado` | dict | `lembrar` | `emitir` (para declarar o que foi usado) | sobrescreve (um só escritor, no turno 1) |
+| `campos_ditos` | lista | `extrair` | `emitir` | `uniao`: só cresce; distingue o que o usuário disse do que veio da memória |
+| `memorizado` | dict | `memorizar` | log | sobrescreve; `entrada` zera |
+| `esquecimento` | dict | `confirmar_esquecimento`, `esquecer` | rotas e `emitir` | sobrescreve; sequenciais, nunca no mesmo passo; `entrada` zera |
 
 ### O que NÃO está no estado
 
@@ -202,3 +224,5 @@ O grafo do sistema é sequencial, então a demonstração roda num grafo mínimo
 - Existe a aresta `entrada -> emitir` (teto de turnos) e `recusar`/`perguntar` passam por `emitir`, que é o único nó que produz `Saida`.
 - A regra "mesma pergunta 3 vezes" vive no nó `perguntar`, não na aresta.
 - O estado ganhou o campo `desvio`.
+- **Memória (item 5):** o grafo passou de 11 para 15 nós (`lembrar`, `memorizar`, `confirmar_esquecimento`, `esquecer`). Há **duas** paradas humanas (a segunda é a confirmação de apagar os dados, que é irreversível), e `emitir` deixou de ser o último nó: depois dele, uma resposta entregue passa por `memorizar`. Ver [memoria.md](memoria.md).
+- O aviso de dado corrigido ficou "Considerei modelo = Onix (antes: Corsa)", sem dizer "você tinha dito", porque o valor antigo pode ter vindo da memória.

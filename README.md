@@ -71,6 +71,12 @@ aprovação:
 
 Você pode aprovar, rejeitar ou **aprovar editando** (remover itens ou corrigir um código). Se fechar o programa sem responder, a pendência fica salva: abra de novo com a mesma sessão e ela volta. Passado o prazo, nada é gravado. Detalhes em [docs/humano.md](docs/humano.md).
 
+**Dúvidas de manual.** O sistema escolhe o PDF pelo modelo e pelo ano do veículo (se não há manual desse ano, diz que não tem, sem aproximar), busca por termo os 6 trechos mais relevantes e responde só com eles; se os trechos não respondem, recusa. Medições, corpus e limites em [docs/rag.md](docs/rag.md); `python avaliar_rag.py perguntas` repete a avaliação.
+
+**Memória.** O sistema lembra o veículo de cada usuário entre conversas (na seguinte, não precisa dizer de novo; ele avisa "Usei o veículo que você informou antes...") e reaproveita uma dúvida de manual já respondida quando a pergunta é praticamente a mesma. Nada é guardado se a resposta não foi entregue com base. Detalhes em [docs/memoria.md](docs/memoria.md).
+
+**Apagar os próprios dados.** Basta pedir ("apague todos os meus dados"). O sistema conta o que vai apagar, **para e pede confirmação** (`confirmar` ou `cancelar`) e só então apaga o veículo lembrado, as dúvidas registradas, as conversas salvas e os logs. Quem administra usa `python src/esquecer.py <user_id>` e confere com `python verificar_remocao.py <user_id>`.
+
 **O que o sistema não faz e como recusa:**
 - compra, reserva, preço e diagnóstico de defeito: responde o que ele faz e encerra (`fora_do_escopo`);
 - sem dados suficientes: pergunta; depois de 3 perguntas iguais sem resposta, desiste e diz por quê;
@@ -79,9 +85,11 @@ Você pode aprovar, rejeitar ou **aprovar editando** (remover itens ou corrigir 
 ## Estrutura
 
 ```
-src/              o sistema (grafo, nós, estado, contrato, serviços)
+src/              o sistema (grafo, nós, estado, contrato, memória, serviços)
   prompts/        prompts em arquivo, carregados em tempo de execução
 conferir_grafo.py nós e arestas do grafo executado
+verificar_remocao.py varre todas as estruturas atrás de um identificador (prova da remoção)
+avaliar_rag.py   avalia o RAG com dados/perguntas_rag.json (`perguntas` pelo grafo, `manual` só pelo leitor)
 demo_reducer.py   demonstração do reducer num grafo paralelo
 interfaces/       formatos auxiliares usados pelos scripts de verificação
 databases/        SQLite local, índice ChromaDB e manuais em PDF

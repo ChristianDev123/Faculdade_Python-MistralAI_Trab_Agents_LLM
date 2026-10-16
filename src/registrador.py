@@ -7,6 +7,10 @@ import json
 
 # Coluna interna: hash do conteúdo da linha. Não aparece para o modelo, só impede gravar a mesma linha duas vezes.
 CHAVE = 'chave_idempotencia'
+# Colunas que não entram no hash do conteúdo: a mesma dúvida respondida duas vezes é a mesma linha, não importa a hora.
+FORA_DA_CHAVE = {'log_interacoes': ('created_at',)}
+# Linhas que existiam antes de a tabela ter dono e data recebem estes valores na migração (a data é aproximada).
+DEFAULT_DE_COLUNA_NOVA = {'log_interacoes': {'user_id': 'legado', 'created_at': '2026-10-12T00:00:00+00:00'}}
 
 
 class Registrador:
@@ -22,7 +26,16 @@ class Registrador:
             'motorizacao VARCHAR(150)',
             'duvida_usuario TEXT',
             'kws_duvida_usuario TEXT',
-            'resolucao TEXT'
+            'resolucao TEXT',
+            'user_id VARCHAR(100)',
+            'created_at VARCHAR(40)'
+        ])
+        self._cria_tabela('memoria_semantica', [
+            'id INTEGER PRIMARY KEY AUTOINCREMENT',
+            'user_id VARCHAR(100)',
+            'entidade VARCHAR(50)',
+            'valor TEXT',
+            'created_at VARCHAR(40)'
         ])
         self._cria_tabela('webcatalogos', [
             'id INTEGER PRIMARY KEY AUTOINCREMENT',
@@ -121,20 +134,63 @@ class Registrador:
                 'esquema': self.esquema(),
             }
 
+    def _onde_exato(self, tablename:str, filtros:dict) -> tuple[str, list]:
+        colunas = {nome for nome, _ in self._colunas(tablename)}
+        invalidas = [c for c in filtros if c not in colunas]
+        if invalidas or not filtros:
+            raise ValueError(f"Filtro exato inválido em '{tablename}': {invalidas or 'vazio'}. Colunas: {sorted(colunas)}")
+        return ' AND '.join(f"{c} = ?" for c in filtros), list(filtros.values())
+
+    def buscar_exato(self, tablename:str, filtros:dict) -> list[dict]:
+        """Igualdade exata (ao contrário de `resgatar`, que casa texto por "contém"): para chaves como user_id."""
+        onde, params = self._onde_exato(tablename, filtros)
+        colunas = [nome for nome, _ in self._colunas(tablename)]
+        with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
+            conn.row_factory = sqlite3.Row
+            return [dict(l) for l in conn.execute(f"SELECT {','.join(colunas)} FROM {tablename} WHERE {onde}", params)]
+
+    def apagar_exato(self, tablename:str, filtros:dict) -> int:
+        """Remove as linhas que casam exatamente com todos os filtros e devolve quantas saíram."""
+        onde, params = self._onde_exato(tablename, filtros)
+        with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
+            return conn.execute(f"DELETE FROM {tablename} WHERE {onde}", params).rowcount
+
+    def compactar(self) -> None:
+        """VACUUM: DELETE deixa o dado em páginas livres do arquivo; compactar o sobrescreve de verdade."""
+        conn = sqlite3.connect(self.PATH_DATABASE / 'db.sqlite')
+        try:
+            conn.execute('VACUUM')
+        finally:
+            conn.close()
+
     def _cria_tabela(self, tablename, fields:list[str]):
         self.tabelas_criadas.append(tablename)
         with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
             cursor = conn.cursor()
             cursor.execute(f"CREATE TABLE IF NOT EXISTS {tablename}({','.join(fields)})")
+        self._garantir_colunas(tablename, fields)
         self._garantir_chave(tablename)
 
-    def _chave_de(self, colunas:list[str], dados:dict) -> str:
+    def _garantir_colunas(self, tablename:str, fields:list[str]) -> None:
+        """Migra bancos antigos: acrescenta colunas que a definição ganhou. A chave das linhas antigas é recalculada."""
+        with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
+            existentes = {c[1] for c in conn.execute(f"PRAGMA table_info({tablename})")}
+            novas = [f for f in fields if f.split()[0] not in existentes]
+            for definicao in novas:
+                conn.execute(f"ALTER TABLE {tablename} ADD COLUMN {definicao}")
+            if novas:
+                for coluna, valor in DEFAULT_DE_COLUNA_NOVA.get(tablename, {}).items():
+                    conn.execute(f"UPDATE {tablename} SET {coluna} = ? WHERE {coluna} IS NULL", (valor,))
+                if CHAVE in existentes:
+                    conn.execute(f"UPDATE {tablename} SET {CHAVE} = NULL")
+
+    def _chave_de(self, colunas:list[str], dados:dict, ignorar:tuple = ()) -> str:
         """Hash do conteúdo: mesmas colunas e mesmos valores (sem diferenciar maiúsculas ou espaços) dão a mesma chave."""
-        canonico = {c: ('' if dados.get(c) is None else str(dados[c]).strip().casefold()) for c in colunas}
+        canonico = {c: ('' if dados.get(c) is None else str(dados[c]).strip().casefold()) for c in colunas if c not in ignorar}
         return hashlib.sha256(json.dumps(canonico, ensure_ascii=False, sort_keys=True).encode('utf-8')).hexdigest()
 
     def _chave(self, tablename:str, dados:dict) -> str:
-        return self._chave_de([nome for nome, _ in self._colunas(tablename) if nome != 'id'], dados)
+        return self._chave_de([nome for nome, _ in self._colunas(tablename) if nome != 'id'], dados, FORA_DA_CHAVE.get(tablename, ()))
 
     def _garantir_chave(self, tablename:str) -> None:
         """Migra bancos antigos: cria a coluna da chave, preenche as linhas existentes e impede novas duplicatas."""
@@ -146,7 +202,7 @@ class Registrador:
             conn.row_factory = sqlite3.Row
             usadas = {r[0] for r in conn.execute(f"SELECT {CHAVE} FROM {tablename} WHERE {CHAVE} IS NOT NULL")}
             for linha in conn.execute(f"SELECT id, {','.join(visiveis)} FROM {tablename} WHERE {CHAVE} IS NULL").fetchall():
-                chave = self._chave_de(visiveis, dict(linha))
+                chave = self._chave_de(visiveis, dict(linha), FORA_DA_CHAVE.get(tablename, ()))
                 if chave in usadas: continue  # duplicata antiga: fica sem chave, o índice único ignora NULL
                 conn.execute(f"UPDATE {tablename} SET {CHAVE}=? WHERE id=?", (chave, linha['id']))
                 usadas.add(chave)
@@ -163,16 +219,17 @@ class Registrador:
         desconhecidas = [k for k in dados if k not in colunas]
         if desconhecidas:
             raise ValueError(f"Colunas inexistentes em '{tablename}': {desconhecidas}. Colunas disponíveis: {colunas}")
-        chave = self._chave_de(colunas, dados)
+        chave = self._chave_de(colunas, dados, FORA_DA_CHAVE.get(tablename, ()))
         cols = [c for c in colunas if c in dados]
         with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
-            if conn.execute(f"SELECT 1 FROM {tablename} WHERE {CHAVE} = ?", (chave,)).fetchone():
-                return {'ja_existia': True}
-            conn.execute(
+            existente = conn.execute(f"SELECT id FROM {tablename} WHERE {CHAVE} = ?", (chave,)).fetchone()
+            if existente:
+                return {'ja_existia': True, 'id': existente[0]}
+            cursor = conn.execute(
                 f"INSERT INTO {tablename} ({','.join(cols + [CHAVE])}) VALUES ({','.join('?' * (len(cols) + 1))})",
                 [dados[c] for c in cols] + [chave]
             )
-        return {'ja_existia': False}
+        return {'ja_existia': False, 'id': cursor.lastrowid}
 
     def inserir(self, tablename:str, dados:dict) -> dict:
         """Escrita idempotente, com erro como dado. A chave vem do conteúdo: repetir a chamada não grava de novo."""

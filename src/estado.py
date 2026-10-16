@@ -13,6 +13,8 @@ from langgraph.graph.message import add_messages
 
 # Marcador que zera uma lista acumulada. O nó `entrada` o escreve no começo de cada turno.
 ZERAR = {'__zerar__': True}
+# Valor que apaga a chave num dict mesclado (ex.: ao trocar de veículo, o ano do anterior não vale mais).
+LIMPAR = '__limpar__'
 
 
 def acumular(atual: list | None, novo: list | None) -> list:
@@ -30,10 +32,19 @@ def manter_se_definida(atual: Optional[str], novo: Optional[str]) -> Optional[st
 
 
 def mesclar(atual: dict | None, novo: dict | None) -> dict:
-    """Valor novo não nulo vence; nulo nunca apaga o que já se sabe."""
+    """Valor novo não nulo vence; nulo nunca apaga o que já se sabe; LIMPAR apaga de propósito."""
     resultado = dict(atual or {})
-    resultado.update({k: v for k, v in (novo or {}).items() if v not in (None, '')})
+    for chave, valor in (novo or {}).items():
+        if valor == LIMPAR:
+            resultado.pop(chave, None)
+        elif valor not in (None, ''):
+            resultado[chave] = valor
     return resultado
+
+
+def uniao(atual: list | None, novo: list | None) -> list:
+    """Lista sem repetição que só cresce."""
+    return list(dict.fromkeys([*(atual or []), *(novo or [])]))
 
 
 def ultimo_nao_nulo(atual, novo):
@@ -60,6 +71,8 @@ class Estado(TypedDict, total=False):
     duvida: Annotated[Optional[str], ultimo_nao_nulo]
     avisos: Annotated[list[str], acumular]                 # escolhas declaradas (ex.: dado corrigido pelo usuário)
     tentativas_pergunta: Annotated[dict, somar_por_chave]  # quantas vezes cada campo foi perguntado
+    perfil_lembrado: Optional[dict]                        # veículo que a memória semântica devolveu no turno 1
+    campos_ditos: Annotated[list[str], uniao]              # campos do veículo que o próprio usuário disse nesta conversa
 
     # --- resultados por turno: um único escritor cada, entrada zera ---
     consulta: Optional[list]                               # linhas da base local
@@ -68,6 +81,8 @@ class Estado(TypedDict, total=False):
     gravadas: Optional[dict]                               # novas / ja_existiam / erros
     leitura: Optional[dict]                                # resposta do manual
     registro: Optional[dict]                               # registro da dúvida (ja_existia)
+    memorizado: Optional[dict]                             # o que a memória semântica gravou no fim do turno
+    esquecimento: Optional[dict]                           # decisão e contagens do pedido de apagar os dados
     evidencias: Annotated[list[dict], acumular]            # fontes consultadas no turno
     erro: Optional[dict]                                   # {'origem', 'mensagem'}
     pergunta: Optional[str]

@@ -17,7 +17,7 @@ from langchain_core.messages import HumanMessage
 from langgraph.types import Command
 
 from src.grafo import RECURSION_LIMIT, grafo
-from src.nos import _traj
+from src.nos import _traj, servicos
 
 AJUDA_APROVACAO = 'Não entendi. Use: aprovar | rejeitar | editar remover 3,5 | editar codigo 2 ABC123'
 
@@ -54,10 +54,16 @@ def interpretar_aprovacao(linha: str, candidatas: list[dict]) -> dict | None:
 
 def decidir(payload: dict) -> dict | None:
     print(payload['texto'])
+    esquecer = payload['acao'] == 'esquecer_dados'
     while True:
-        linha = ler('aprovação: ')
+        linha = ler('confirmação: ' if esquecer else 'aprovação: ')
         if linha is None:
             return None
+        if esquecer:
+            if linha.lower() in ('confirmar', 'cancelar'):
+                return {'decisao': linha.lower()}
+            print('Não entendi. Use: confirmar | cancelar')
+            continue
         resposta = interpretar_aprovacao(linha, payload['candidatas'])
         if resposta is not None:
             return resposta
@@ -70,10 +76,10 @@ def processar(entrada, cfg) -> dict | None:
     resultado = grafo.invoke(entrada, cfg)
     while '__interrupt__' in resultado:
         payload = resultado['__interrupt__'][0].value
-        traj.registrar('pausa', acao=payload['acao'], pausado_em=payload['pausado_em'], candidatas=len(payload['candidatas']))
+        traj.registrar('pausa', acao=payload['acao'], pausado_em=payload.get('pausado_em'), candidatas=len(payload.get('candidatas', [])))
         resposta = decidir(payload)
         if resposta is None:
-            print('Aprovação pendente: ela continua salva nesta conversa. Rode de novo com a mesma sessão para responder.')
+            print('Pedido pendente: ele continua salvo nesta conversa. Rode de novo com a mesma sessão para responder.')
             return None
         traj.registrar('resposta_humana', resposta=resposta)
         resultado = grafo.invoke(Command(resume=resposta), cfg)
@@ -88,6 +94,16 @@ def mostrar(resultado: dict | None) -> None:
     print(f"[{resultado['motivo_termino']} | suficiencia={saida['suficiencia']} | fonte: {', '.join(f['tipo'] for f in saida['fonte'])}]")
 
 
+def encerrar_se_esquecido(resultado: dict | None, thread_id: str) -> bool:
+    """Depois que o grafo terminou, apaga o checkpoint da própria conversa (o grafo não pode apagá-lo por dentro:
+    o framework o recriaria no passo seguinte). Devolve True se a conversa acabou."""
+    if resultado is None or resultado['motivo_termino'] != 'esquecido':
+        return False
+    servicos().memoria.apagar_thread(thread_id)
+    print('Dados apagados. Conversa encerrada.')
+    return True
+
+
 def main() -> None:
     sessao = sys.argv[1] if len(sys.argv) > 1 else time.strftime('%Y%m%d-%H%M%S')
     thread_id = f"{os.environ.get('USER_ID') or 'local'}:{sessao}"
@@ -100,7 +116,10 @@ def main() -> None:
         if resposta is None:
             return
         _traj(cfg).registrar('resposta_humana', resposta=resposta)
-        mostrar(processar(Command(resume=resposta), cfg))
+        resultado = processar(Command(resume=resposta), cfg)
+        mostrar(resultado)
+        if encerrar_se_esquecido(resultado, thread_id):
+            return
 
     while True:
         texto = ler('user: ')
@@ -111,6 +130,8 @@ def main() -> None:
         if resultado is None:
             return
         mostrar(resultado)
+        if encerrar_se_esquecido(resultado, thread_id):
+            return
 
 
 if __name__ == '__main__':

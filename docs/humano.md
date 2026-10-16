@@ -7,9 +7,10 @@ Código: nó `aprovar_gravacao` em [src/nos.py](../src/nos.py), laço de CLI em 
 | Parada | Critério | Perfil chamado |
 |---|---|---|
 | **`aprovar_gravacao`** (`interrupt`) | **escrita de dados de terceiro, não verificados, no cache que alimenta respostas futuras.** O catálogo web devolve o que a busca dele entende, e o sistema já viu o risco de um dado errado virar resposta (um "não encontrei" gravado como se fosse resposta). | o usuário principal: o mecânico ou o balconista em nome dele |
+| **`confirmar_esquecimento`** (`interrupt`) | **ação irreversível:** apagar os dados do titular (veículo lembrado, dúvidas, conversas salvas e logs). | o próprio titular, quem tem o `user_id` da conversa |
 | fim de cada turno | espera a próxima mensagem de texto. Não é aprovação: o estado fica no checkpoint e a conversa continua com o mesmo `thread_id` | o usuário |
 
-Não pedem aprovação: `registrar_duvida` (só grava se a dúvida foi sanada; é cache reversível por sobrescrita) e as leituras (base, manual, catálogo).
+Não pedem aprovação: `memorizar` (grava o veículo; é reversível pela contradição e pela remoção), `registrar_duvida` (só grava se a dúvida foi sanada; é cache reversível por sobrescrita) e as leituras (base, manual, catálogo).
 
 ## 2. O que a pessoa vê, e o que ela devolve
 
@@ -65,3 +66,22 @@ A gravação usa chave de idempotência derivada do conteúdo (hash dos campos d
 | consulta de duplicatas por (nome, código, modelo, ano, motorização) | 0 duplicadas | 31 |
 
 As linhas estão em `logs/local/<sessao>/trajetoria.jsonl`. Esses logs registram o commit `99a7289`, mas o código desta funcionalidade ainda não estava commitado quando rodaram.
+
+## 6. A segunda parada: confirmar antes de apagar os dados
+
+Quando a pessoa pede "apague todos os meus dados", o grafo conta o que será apagado (só leitura), **para** e mostra a ação exata:
+
+```
+Vou APAGAR todos os dados do usuário usuario-teste-7f3a: 2 fato(s) sobre o veículo, 1 dúvida(s) registrada(s) e 1 item(ns) do índice, 4 conversa(s) salva(s) (esta inclusive) e 4 arquivo(s) de log.
+Não dá para desfazer. Se ninguém confirmar, nada é apagado.
+Responda: confirmar | cancelar
+```
+
+| Resposta | Efeito |
+|---|---|
+| `confirmar` | apaga (cobertura em [memoria.md](memoria.md)); motivo `esquecido` |
+| `cancelar` | nada é apagado; motivo `esquecimento_recusado` |
+
+- **Se ninguém responder:** nada é apagado. Aqui o silêncio **nunca** executa, e a pendência fica no checkpoint como a da gravação. Não há prazo: apagar dados não tem urgência que justifique agir sem resposta.
+- **Aprovar duas vezes:** a remoção é idempotente por natureza (apagar o que já foi apagado devolve zero linhas), e a conversa em andamento é apagada depois, fora do grafo.
+- **Prova (execuções reais):** em uma execução a pessoa cancelou e nada saiu; em outra confirmou, a varredura independente deu 0 ocorrências e a conversa seguinte voltou a perguntar o veículo.

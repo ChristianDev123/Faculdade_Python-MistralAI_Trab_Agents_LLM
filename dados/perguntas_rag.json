@@ -1,0 +1,119 @@
+{
+  "descricao": "Conjunto de avaliação do RAG: 10 perguntas oficiais (cada uma com o trecho que a responde) e 30 casos do leitor de manual. Escrito a partir do que mecânicos e proprietários perguntam (ver docs/case.md), não do índice.",
+  "perguntas": [
+    {
+      "id": 1,
+      "pergunta": "Qual o código da palheta traseira do Corsa 2008 1.4 da Chevrolet?",
+      "forma": "consulta estruturada",
+      "resposta_esta_em": "databases/db.sqlite, tabela pecas_automoveis, linha id 2 (Palheta traseira ACDelco, código 93356933)",
+      "depende_de_excecao": false,
+      "esperado": {"situacao": "respondido", "contem": "93356933"},
+      "coberta_pelo_grafo": true
+    },
+    {
+      "id": 2,
+      "pergunta": "Qual o código da roda de liga leve do Corsa 2008 1.4 da Chevrolet?",
+      "forma": "consulta estruturada",
+      "resposta_esta_em": "databases/db.sqlite, tabela pecas_automoveis, linha id 7: a peça existe, mas o código no catálogo é 'N/A'",
+      "depende_de_excecao": true,
+      "excecao": "peça sem código no catálogo: a regra do domínio é dizer que não encontrou, nunca aproximar (case.md, 'o que dá errado hoje')",
+      "esperado": {"situacao": "sem_base", "contem": "sem código"},
+      "coberta_pelo_grafo": true
+    },
+    {
+      "id": 3,
+      "pergunta": "Qual a capacidade do tanque de combustível do meu Fox 2015?",
+      "forma": "busca textual",
+      "resposta_esta_em": "Volkswagen_Fox_2015.pdf, página 197: 'aproximadamente 50 litros, dos quais aproximadamente 7 litros de reserva'",
+      "depende_de_excecao": false,
+      "esperado": {"situacao": "respondido", "contem": "50 litros"},
+      "coberta_pelo_grafo": true
+    },
+    {
+      "id": 4,
+      "pergunta": "O meu Fox 2015 pode ser rebocado se a transmissão estiver sem lubrificante?",
+      "forma": "busca textual",
+      "resposta_esta_em": "Volkswagen_Fox_2015.pdf, página 313: 'Quando o veículo não pode ser rebocado? Se, devido a um dano, a transmissão do veículo não contiver mais lubrificante'",
+      "depende_de_excecao": true,
+      "excecao": "a regra geral permite rebocar (com as rodas dianteiras levantadas); a exceção da transmissão sem lubrificante proíbe",
+      "esperado": {"situacao": "respondido", "contem": "lubrificante"},
+      "coberta_pelo_grafo": true
+    },
+    {
+      "id": 5,
+      "pergunta": "Posso lavar o meu Fox 2015 com lavador de alta pressão?",
+      "forma": "busca textual",
+      "resposta_esta_em": "Volkswagen_Fox_2015.pdf, página 228: 'Manter distância suficiente entre o bico do jato e os pneus'; jamais limpar os pneus com bicos de jato circular",
+      "depende_de_excecao": true,
+      "excecao": "pode, mas só com distância do bico e sem jato circular nos pneus",
+      "esperado": {"situacao": "respondido", "contem": "dist"},
+      "coberta_pelo_grafo": true
+    },
+    {
+      "id": 6,
+      "pergunta": "Quais são os períodos de manutenção do meu Fox 2015?",
+      "forma": "busca textual (a resposta não está no corpus)",
+      "resposta_esta_em": "Não está no manual: ele só remete ao caderno 'Manutenção e garantia' (páginas 176, 211 e 219), que não faz parte do corpus",
+      "depende_de_excecao": false,
+      "esperado": {"situacao": "sem_base", "contem": "não traz uma resposta clara"},
+      "coberta_pelo_grafo": true
+    },
+    {
+      "id": 7,
+      "pergunta": "Quantos litros cabem no tanque do meu Fox 2015?",
+      "forma": "busca vetorial (memória episódica: pergunta já respondida com outras palavras)",
+      "resposta_esta_em": "Mesma resposta da pergunta 3. Só é reaproveitada se a pergunta 3 foi gravada e se a similaridade passar do limiar",
+      "depende_de_excecao": false,
+      "esperado": {"situacao": "respondido", "contem": "50 litros"},
+      "coberta_pelo_grafo": true
+    },
+    {
+      "id": 8,
+      "pergunta": "Que carros usam a palheta traseira ACDelco de código 93356933?",
+      "forma": "grafo (relação peça -> veículos)",
+      "resposta_esta_em": "databases/db.sqlite, pecas_automoveis.carros_compatíveis da linha id 2 (Corsa A Hatch, Pickup, Sedan, Wagon). Hoje é uma lista em texto numa coluna, não uma relação",
+      "depende_de_excecao": false,
+      "esperado": {"situacao": "respondido", "contem": "Corsa A"},
+      "coberta_pelo_grafo": false
+    },
+    {
+      "id": 9,
+      "pergunta": "Quais são as dúvidas de manual mais perguntadas?",
+      "forma": "agregação (pré-cálculo)",
+      "resposta_esta_em": "databases/db.sqlite, tabela log_interacoes (uma consulta GROUP BY resolve)",
+      "depende_de_excecao": false,
+      "esperado": {"situacao": "respondido", "contem": "tanque"},
+      "coberta_pelo_grafo": false
+    },
+    {
+      "id": 10,
+      "pergunta": "O meu Fox 2020 tem Android Auto e Apple CarPlay?",
+      "forma": "busca textual",
+      "resposta_esta_em": "Volkswagen_Fox_2020.pdf, páginas 141, 143 e 144 (App-Connect). O manual de 2015 não menciona nenhum dos dois",
+      "depende_de_excecao": false,
+      "esperado": {"situacao": "respondido", "contem": "Android Auto"},
+      "coberta_pelo_grafo": true
+    }
+  ],
+  "avaliacao_manual": {
+    "manual": "Volkswagen_Fox_2015.pdf",
+    "veiculo": {"modelo": "Fox", "ano": 2015, "motorizacao": "1.6", "fabricante": "Volkswagen"},
+    "sufixo_da_pergunta": " do meu Fox 2015",
+    "com_resposta": [
+      {"assunto": "tanque", "paginas": [197], "fato": "\\d+[,.]?\\d*\\s*(l\\b|litros)", "perguntas": ["Qual a capacidade do tanque de combustível?", "Quantos litros cabem no tanque do Fox?"]},
+      {"assunto": "argola", "paginas": [312, 313, 314, 315, 316], "fato": "para-?choque|rosque|cobertura", "perguntas": ["Como montar a argola de reboque dianteira?", "Onde coloco a argola para rebocar o carro?"]},
+      {"assunto": "lampada", "paginas": [296, 297, 298, 299, 300, 301, 302], "fato": "soquete|cobertura|conector|girar", "perguntas": ["Como trocar a lâmpada do farol?", "Queimou a lâmpada do farol, como substituo?"]},
+      {"assunto": "bateria", "paginas": [221, 222, 223, 224, 225], "fato": "desconect|cabo|ignição", "perguntas": ["Como substituir a bateria do veículo?", "O que devo fazer antes de desconectar a bateria?"]},
+      {"assunto": "pneu max", "paginas": [250], "fato": "350|51\\s*psi", "perguntas": ["Qual a pressão máxima de inflação do pneu?", "Quantos kPa suporta o pneu no máximo?"]},
+      {"assunto": "luz oleo", "paginas": [208], "fato": "não é um indicador|nível do óleo", "perguntas": ["A luz de advertência da pressão do óleo indica o nível do óleo?", "O que significa a luz da pressão do óleo no painel?"]},
+      {"assunto": "desembacador", "paginas": [188, 193], "fato": "botão|console|desemba", "perguntas": ["Como funciona o desembaçador do vidro traseiro?", "Como desembaçar o vidro de trás?"]},
+      {"assunto": "airbag", "paginas": [83, 85], "fato": "não t[óo]xico|p[óo] fino|inc[êe]ndio", "perguntas": ["O pó que sai do airbag é perigoso?", "É normal sair fumaça ou pó quando o airbag dispara?"]},
+      {"assunto": "lavagem", "paginas": [228], "fato": "dist[âa]ncia|alta press[ãa]o|jato", "perguntas": ["Posso lavar o carro com lavador de alta pressão?", "Cuidados ao lavar o veículo com jato de alta pressão"]}
+    ],
+    "sem_resposta": [
+      {"grupo": "assunto ausente", "perguntas": ["Qual o preço do Fox zero quilômetro?", "Qual a receita de bolo de cenoura?", "Quem ganhou a Copa do Mundo de 2014?", "Como programar o piloto automático?", "Como pagar o IPVA?", "Quais as condições de financiamento?", "Quanto custa a revisão de 10.000 km?", "Qual a cor mais popular?"]},
+      {"grupo": "termo presente, resposta ausente", "perguntas": ["Como trocar a embreagem?", "Como trocar as pastilhas de freio?", "Qual o melhor posto de gasolina da cidade?", "Quanto custa a gasolina aditivada?"]},
+      {"grupo": "manutenção (caderno externo)", "perguntas": ["Quais são os períodos de manutenção?", "De quanto em quanto tempo devo fazer a revisão?"]}
+    ]
+  }
+}
