@@ -1,25 +1,18 @@
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
-from interfaces.agent import Agent
-from interfaces.message import Message
-from interfaces.json_format import createJsonFormat
-from openai import OpenAI
 import hashlib
 import sqlite3
 import json
 
 # Coluna interna: hash do conteúdo da linha. Não aparece para o modelo, só impede gravar a mesma linha duas vezes.
 CHAVE = 'chave_idempotencia'
-# Teto de saída das chamadas estruturadas: sem ele, uma geração presa num schema roda até o timeout.
-MAX_TOKENS_SAIDA = 600
 
 
-class Registrador(Agent):
-    
-    def __init__(self, client:OpenAI):
-        super().__init__('registrador',client, f_entrada="", f_saida="")
-        self.send_message(Message('system',self.read_system_prompts('registrador_system_prompt.md')))
+class Registrador:
+    """Acesso ao SQLite local. Só regra em código: nenhuma chamada de modelo passa por aqui."""
+
+    def __init__(self):
         self.PATH_DATABASE = Path(__file__).resolve().parent.parent / 'databases'
         self.tabelas_criadas = []
         self._cria_tabela('log_interacoes', [
@@ -47,9 +40,6 @@ class Registrador(Agent):
             'carros_compatíveis TEXT',           
         ])
         self._default_data()
-        self.send_message(Message('system', f"Ao Realizar uma operação, você estritamente só poderá escolher entre as tabelas :[{','.join(self.tabelas_criadas)}]"))
-        self.tool_calls = []
-        self.tool_calls_func = {}
 
     def _default_data(self):
         # Esta lista é a fonte da verdade dos catálogos: o ausente é criado e o gravado com link ou regra
@@ -131,17 +121,6 @@ class Registrador(Agent):
                 'esquema': self.esquema(),
             }
 
-    def _get_db_json_format(self, tablename):
-        type_str = ['VARCHAR', 'TEXT', 'CHAR']
-        # PRAGMA table_info: nome, tipo; a coluna `id` é gerada pelo banco e não entra no schema
-        list_props = [
-            {
-                'name':nome,
-                'type':tipo.lower() if not any(x in tipo for x in type_str) else 'string'
-            }
-            for nome, tipo in self._colunas(tablename) if(nome != 'id')]
-        return createJsonFormat(f'{tablename}_json_format', list_props)
-
     def _cria_tabela(self, tablename, fields:list[str]):
         self.tabelas_criadas.append(tablename)
         with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
@@ -205,53 +184,3 @@ class Registrador(Agent):
             'sucesso': 'Linha já existia, nada foi gravado.' if resultado['ja_existia'] else 'Linha registrada com sucesso!',
             **resultado
         }
-
-    def _loop_insert_data(self, sys_message):
-        try:
-            conteudo = json.loads(sys_message['conteudo'])
-            json_format = self._get_db_json_format(conteudo['nm_tabela'])
-            messages = [
-                Message('system', 'Estruture os dados que serão enviados pelo o usuário em um json').to_dict(),
-                Message('user', str(conteudo['dado_a_ser_registrado'])).to_dict()
-            ] 
-            # Técnica: extração estruturada zero-shot.
-            # Contrato: schema estrito derivado das colunas da tabela (PRAGMA table_info), sem `id`.
-            # Impede: coluna inexistente ou valor de tipo errado chegar ao INSERT.
-            response = json.loads(self.client.chat.completions.create(
-                model= self.model,
-                messages=messages,
-                response_format=json_format,
-                temperature=0,
-                max_tokens=MAX_TOKENS_SAIDA
-            ).choices[0].message.content)
-            return self.inserir(conteudo['nm_tabela'], response)
-        except Exception as err:
-            print(err)
-            return {'erro': f'Falha ao tentar inserir registro: {err}'}
-
-    def _loop_select_data(self, sys_message):
-        try:
-            conteudo = json.loads(sys_message['conteudo'])
-            return self.resgatar(conteudo['nm_tabela'], conteudo.get('filtros'))
-        except Exception as err:
-            print(err)
-            return {'erro': f'Falha ao tentar recuperar dados: {err}'}
-   
-    def run(self):
-        response_format = createJsonFormat('loop_json_format', [
-            {'name':'pensamento', 'type':'string'},
-            {'name':'acao', 'type':'string', 'enum':["RESGATAR_DADOS", "INSERIR_DADOS"]},
-            {'name':'conteudo', 'type':'string'},
-        ])
-        for _ in range(1):
-            self.send_message(Message('system','escolha qual será o proximo passo.'))
-            # Técnica: roteamento zero-shot entre duas ações, com `pensamento` como justificativa curta.
-            # Contrato: schema estrito {pensamento, acao: RESGATAR_DADOS|INSERIR_DADOS, conteudo: JSON em string}.
-            #   O enum garante que a ação é válida, não que seja a certa.
-            # Impede: ação fora das duas permitidas e resposta em texto livre.
-            sys_message = json.loads(self.get_answer(response_format=response_format, temperature=0, max_tokens=MAX_TOKENS_SAIDA).content)
-            
-            if(sys_message['acao'] == "INSERIR_DADOS"):
-                return self._loop_insert_data(sys_message)
-            elif(sys_message['acao'] == "RESGATAR_DADOS"):
-                return self._loop_select_data(sys_message)

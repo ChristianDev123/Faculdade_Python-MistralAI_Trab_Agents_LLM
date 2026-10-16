@@ -1,18 +1,13 @@
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
-from interfaces.agent import Agent
-from interfaces.message import Message
-from interfaces.tool_call import ToolCall
-from interfaces.json_format import createJsonFormat
 import os
-from openai import OpenAI
-import json
-import inspect
 import chromadb
 from chromadb.utils import embedding_functions
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from src.contrato import LeituraManual
+from src.util import ler_prompt, modelo_em_uso
 
 # Primeira página com conteúdo real de cada manual. As anteriores são capa, sumário e índice,
 # que respondem "onde está" e não "o que fazer". Medido nos PDFs do repositório:
@@ -26,47 +21,27 @@ PRIMEIRA_PAGINA_CONTEUDO = {
 PRIMEIRA_PAGINA_PADRAO = 6
 K_TRECHOS = 15  # trechos (chunks de 800 caracteres) levados ao modelo; justificativa do valor em docs/rag.md
 
-class LeitorManualPDF(Agent):
-    def __init__(self, client:OpenAI):
-        f_entrada = createJsonFormat('entrada_leitura_pdf',[
-            {'name':'duvida_usuario', 'type':'string'},
-            {'name':'modelo', 'type':'string'},
-            {'name':'ano', 'type':'integer'},
-            {'name':'motorizacao', 'type':'string'},
-        ])
-        f_saida = createJsonFormat('retorno_leitura_pdf', [
-            {'name': 'duvida_usuario', 'type': 'string'},
-            {'name': 'kws_duvida_usuario', 'type': 'array', 'items': {'type': 'string'}},
-            {'name': 'resolucao', 'type': 'string'},
-        ])
-        super().__init__('leitor_manual_pdf', client, f_entrada=f_entrada, f_saida=f_saida)
-        self.tool_calls = []
-        self.tool_calls_func_link = {}
-        self._create_tool_calls()
-        self.send_message(Message('system', self.read_system_prompts('leitor_manual_pdf/leitor_manual_pdf_prompt.md')))
+MAX_TOKENS_LEITURA = 600  # teto de saída da leitura: sem ele, uma geração presa num schema roda até o timeout
+
+
+class LeitorManualPDF:
+    """Recuperação no manual (Chroma) + leitura fundamentada pelo modelo. A escolha do PDF é regra em código."""
+
+    def __init__(self, client):
+        self.client = client
         self.PROJECT_PATH = Path(__file__).resolve().parent.parent
         self.chroma_client = chromadb.PersistentClient(f"{self.PROJECT_PATH}/databases/chroma_db")
 
-    def _create_tool_calls(self):
-        get_pdf_filename = ToolCall('get_pdf_filename', """
-            Utilize para receber uma lista de nomes de arquivos
-            de manuais de automóveis disponíveis para leitura.
-        """)
-        self.tool_calls.append(get_pdf_filename.to_dict())
-        self.tool_calls_func_link['get_pdf_filename'] = self._get_pdf_filenames
+    def manuais(self) -> list[str]:
+        return sorted(f for f in os.listdir(f'{self.PROJECT_PATH}/databases/manuais/') if f.endswith('.pdf'))
 
-        exec_read = ToolCall('exec_read',"""
-            Resposabilidade: ler arquivos de manuais arquivados em formato pdf.
-            Utilize assim que tiver o nome do arquivo à ser lido.
-        """)
-        exec_read.insert_prop('namefile', {'type':'string','description':'Nome do arquivo pdf à ser lido'})
-        exec_read.insert_prop('duvida_usuario', {'type':'string', 'description':'Duvida do Usuário'})
-        self.tool_calls.append(exec_read.to_dict())
-        self.tool_calls_func_link['exec_read'] = self._exec_read
-
-    def _get_pdf_filenames(self):
-        path_project = f'{self.PROJECT_PATH}/databases/manuais/'
-        return list(filter(lambda x: str(x).endswith('.pdf'), os.listdir(path_project)))
+    def escolher_manual(self, modelo: str, ano: int) -> str | None:
+        """Manual cujo nome contém o modelo e o ano. Sem correspondência exata, não há manual: não se aproxima."""
+        alvo = modelo.lower().replace(' ', '_')
+        for nome in self.manuais():
+            if alvo in nome.lower() and str(ano) in nome:
+                return nome
+        return None
 
     def _chroma_collection(self, namefile):
         ef_default = embedding_functions.SentenceTransformerEmbeddingFunction(model_name='all-MiniLM-L6-v2')
@@ -116,86 +91,39 @@ class LeitorManualPDF(Agent):
         total_encontrado = len(resultados.get("ids", []))
         return total_encontrado > 0
         
-    def _exec_read(self, namefile, duvida_usuario):
-        if(not self._verify_document_indexed(namefile)): self._pdf_indexer(namefile)
+    def ler(self, namefile: str, duvida: str) -> dict:
+        """Busca os trechos mais próximos da dúvida e pede ao modelo uma resposta só com eles.
+        Devolve {'leitura': LeituraManual, 'paginas': [...]} ou {'erro': ...}."""
+        if not self._verify_document_indexed(namefile): self._pdf_indexer(namefile)
         collection = self._chroma_collection(namefile)
         result = collection.query(
-            query_texts=[duvida_usuario],
-            n_results = K_TRECHOS,
+            query_texts=[duvida],
+            n_results=K_TRECHOS,
             where={"pagina": {"$gte": PRIMEIRA_PAGINA_CONTEUDO.get(namefile, PRIMEIRA_PAGINA_PADRAO)}}
         )
         if not result['documents'][0]:
-            return {'erro':'Nenhum resultado encontrado'}
+            return {'erro': 'Nenhum trecho encontrado no manual'}
 
-        jf_read_pages_return = createJsonFormat('read_pdf_pages_return', [
-            {'name':'pensamento', 'type':'string'},
-            {'name':'trecho_original', 'type':'string'},
-            {'name':'resumo', 'type':'string'},
-        ])
+        trechos = [f"[trecho {i + 1} | página {meta['pagina']}]\n{doc}"
+                   for i, (doc, meta) in enumerate(zip(result['documents'][0], result['metadatas'][0]))]
+        paginas = sorted({meta['pagina'] for meta in result['metadatas'][0]})
 
-        pdf_pages = [Message('user', page).to_dict() for page in result['documents'][0]]
-        sys_prompt = Message('system',self.read_system_prompts('leitor_manual_pdf/tool_call_leitura_pdf.md')).to_dict()
-        messages = [sys_prompt] + pdf_pages
-
-        # Técnica: geração fundamentada nos trechos recuperados (RAG), com `pensamento` antes do resumo (cadeia de pensamento).
-        # Contrato: schema estrito {pensamento, trecho_original, resumo}; o limite de 100 palavras do resumo vale só pelo prompt.
-        # Impede: usar índice ou glossário como resposta e resumir sem citar o trecho de origem.
-        response_completion = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
+        # Técnica: geração fundamentada nos trechos recuperados (RAG), com `pensamento` antes da resposta (cadeia de pensamento).
+        # Contrato: LeituraManual {pensamento, trecho_original, resumo, sanada}; o limite de 100 palavras vale só pelo prompt.
+        # Impede: usar índice ou glossário como resposta, e completar com conhecimento que não está nos trechos.
+        resposta = self.client.chat.completions.create(
+            model=modelo_em_uso(),
+            messages=[
+                {'role': 'system', 'content': ler_prompt('leitor_manual_pdf/tool_call_leitura_pdf.md')},
+                {'role': 'user', 'content': f"Dúvida: {duvida}\n\nTrechos do manual:\n\n" + "\n\n".join(trechos)},
+            ],
             temperature=0,
-            response_format=jf_read_pages_return
+            max_tokens=MAX_TOKENS_LEITURA,
+            response_format={'type': 'json_schema', 'json_schema': {
+                'name': 'leitura_manual', 'strict': True, 'schema': LeituraManual.model_json_schema()}},
         )
-        resultado = json.loads(response_completion.choices[0].message.content)
-        print(messages)
-        return resultado                        
-
-    def run(self):
-        # Técnica: zero-shot com function calling (get_pdf_filename -> exec_read), roteiro no prompt do leitor.
-        # Contrato: só tool calls; o JSON final é pedido na mensagem seguinte ao laço.
-        # Impede: ler o manual de outro veículo só por haver palavras-chave parecidas.
-        sys_message = self.get_answer(
-            tools=self.tool_calls,
-            temperature=0
-        )
-        while getattr(sys_message, 'tool_calls', None):
-            self.send_message(sys_message)
-            for tool in sys_message.tool_calls:
-                func = self.tool_calls_func_link[tool.function.name]
-                argumentos = json.loads(tool.function.arguments)
-                sig = inspect.signature(func)
-                
-                if len(sig.parameters) == 0: result = func()
-                else: result = func(**argumentos)
-
-                print(f"""
-                    --- Acionando TOOL CALL -- 
-                    nome: {tool.function.name}
-                    argumentos: {argumentos}
-                """)
-
-                self.send_message(Message(
-                    role='tool',
-                    tool_call_id=tool.id,
-                    content=json.dumps(result)
-                ))
-
-            sys_message = self.get_answer(
-                tools=self.tool_calls,
-                temperature=0
-            )
-
-        self.send_message(Message('user', """
-            Com base no histórico da conversa, devolva as seguintes informações no formato JSON especificado:
-            - Dúvida do usuário (duvida_usuario)
-            - Palavras-chave da dúvida do usuário (kws_duvida_usuario)
-            - Resumo elaborado a partir da leitura do manual (resolucao)
-        """))
-
-        # Técnica: formatação do histórico em JSON (zero-shot).
-        # Contrato: schema estrito `f_saida` {duvida_usuario, kws_duvida_usuario[], resolucao}.
-        # Impede: devolver ao orquestrador texto livre em vez do objeto esperado.
-        return self.get_answer(
-            response_format=self.f_saida,
-            temperature=0
-        ).content
+        try:
+            leitura = LeituraManual.model_validate_json(resposta.choices[0].message.content)
+        except ValueError as err:
+            return {'erro': f'Resposta do modelo fora do contrato LeituraManual: {err}'}
+        return {'leitura': leitura, 'paginas': paginas}

@@ -1,78 +1,22 @@
 from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).resolve().parent.parent))
-from interfaces.agent import Agent
-from interfaces.message import Message
-from interfaces.json_format import createJsonFormat
-from interfaces.tool_call import ToolCall
 import json
-import inspect
 import re
 from urllib.parse import quote_plus
-from openai import Client
 from bs4 import BeautifulSoup, Comment
 from playwright.sync_api import sync_playwright
+from src.util import ler_prompt, modelo_em_uso
 
-MAX_PECAS_RETORNO = 15  # peças devolvidas ao modelo no resumo da raspagem, para não encher o contexto
+MAX_TOKENS_EXTRACAO = 4096  # teto de saída da extração por página
+CHROMIUM = '/usr/bin/chromium'
 
-class WebScrapper(Agent):
-    def __init__(self, client:Client, register:Agent):
-        f_entrada = createJsonFormat('entrada_webscrapper', [
-            {'name':'modelo', 'type':'string'},
-            {'name':'ano', 'type':'integer'},
-            {'name':'motorizacao', 'type':'string'},
-            {'name':'fabricante', 'type':'string'},
-            {'name':'nome_peca', 'type':'string', 'description':'Peça procurada pelo usuário (ex: palheta traseira). Vazio se ele não disse.'}
-        ])
-        super().__init__('webscrapper', client, f_entrada=f_entrada, f_saida="")
-        self.register = register
-        self.pedido = {}  # último pedido estruturado recebido do orquestrador (modelo, ano, motorizacao, fabricante, nome_peca)
-        self.send_message(Message('system',self.read_system_prompts('webscrapper/geral.md')))
-        self.tool_calls = []
-        self.tool_calls_links = {}
-        self._create_tool_calls()
 
-    def _create_tool_calls(self):
-        get_catalog_site = ToolCall('get_catalog_site', '''
-            Devolve o webcatalogo previamente cadastrado de uma montadora.
-        ''')
-        get_catalog_site.insert_prop('make', {'type':'string', 'description':'fabricante do veículo'})
-        self.tool_calls.append(get_catalog_site.to_dict())
-        self.tool_calls_links[get_catalog_site.name] = self._get_catalog_site
+class WebScrapper:
+    """Busca peças no catálogo web de uma montadora. Só lê: gravar é decisão do grafo, depois da aprovação humana."""
 
-        get_data = ToolCall('get_data', 'Executa Webscrapping sobre o link informado')
-        get_data.insert_prop('link', {'type':'string', 'description':'Endereço do webcatalogo à ser consultado, resgatado em banco de dados'})
-        get_data.insert_prop('regra', {'type':'string', 'description':'Regras de consulta do webcatálogo, resgatado em banco de dados'})
-        get_data.insert_prop('nm_modelo', {'type':'string', 'description':'Modelo do veículo à ser consultado, informado pelo usuário'})
-        get_data.insert_prop('ano', {'type':'string', 'description':'Ano do veículo à ser consultado, informado pelo usuário'})
-        get_data.insert_prop('motorizacao', {'type':'string', 'description':'Motorizacao do veículo à ser consultado, informado pelo usuário'})
-        get_data.insert_prop('nm_peca', {'type':'string', 'description':'Nome da peça procurada, informado pelo usuário (campo nome_peca). Vazio se ele não disse.'})
-        self.tool_calls.append(get_data.to_dict())
-        self.tool_calls_links[get_data.name] = self._get_data
-
-    def _get_catalog_site(self, make:str):
-        # Make -> Fabricante
-        return_format = createJsonFormat('retorno_tool_web_catalogo',[
-            {'name':'fabricante', 'type':'string'},
-            {'name':'link', 'type':'string'},
-            {'name':'regra', 'type':'string'}
-        ])
-
-        messages = [Message('system',self.read_system_prompts('webscrapper/tool_webcatalog.md')).to_dict()]
-        self.register.send_message(Message('user', 'Resgate os links de catálogo de Sites'))
-        messages.append(Message('user',f"""
-            Lista de Links: {self.register.run()}
-            Fabricante Procurada: {make}
-        """).to_dict())
-        # Técnica: seleção por correspondência (zero-shot); os sinônimos de fabricante vêm no prompt.
-        # Contrato: schema estrito {fabricante, link, regra}.
-        # Impede: inventar um catálogo que não está na lista cadastrada.
-        return self.client.chat.completions.create(
-            model = self.model,
-            messages = messages,
-            response_format = return_format,
-            temperature = 0
-        ).choices[0].message.content
+    def __init__(self, client):
+        self.client = client
 
     def processar_html_generico_para_markdown(self, html_content: str, preservar_nav_html: bool = True) -> str:
         soup = BeautifulSoup(html_content, "html.parser")
@@ -165,220 +109,113 @@ class WebScrapper(Agent):
 
         return resultado.strip()
 
-    def _get_data(self, link:str, regra:str ,nm_modelo:str, ano:int, motorizacao:str, nm_peca:str = ''):
+    def buscar_candidatas(self, link: str, regra: str, modelo: str, ano: int, motorizacao: str, nome_peca: str) -> dict:
+        """Abre o catálogo, percorre as páginas e devolve {'consulta', 'pecas': [...], 'erro'}. Não grava nada."""
         curr_num_page = 1
-        mx_num_page = 1        
-        
+        mx_num_page = 1
+
         if(link.endswith('/') or link.endswith('?')): link = link[:-1]
-        
-        # O que o usuário disse (já estruturado pelo orquestrador) vale mais que o que o modelo redigitou
-        # nos argumentos da tool call: o modelo pequeno troca a peça por outra que viu no histórico.
-        nm_modelo = self.pedido.get('modelo') or nm_modelo
-        ano = self.pedido.get('ano') or ano
-        motorizacao = self.pedido.get('motorizacao') or motorizacao
-        nm_peca = self.pedido['nome_peca'] if 'nome_peca' in self.pedido else nm_peca
 
         consulta = regra
-        for lacuna, valor in {'<modelo>': nm_modelo, '<ano>': ano, '<motorizacao>': motorizacao, '<nome_peca>': nm_peca}.items():
+        for lacuna, valor in {'<modelo>': modelo, '<ano>': ano, '<motorizacao>': motorizacao, '<nome_peca>': nome_peca}.items():
             consulta = consulta.replace(lacuna, quote_plus(str(valor)))
         link += f'?{consulta}'
-        print(f"""--- EXTRAINDO DADOS VIA WEBSCRAPPING ---""")
+        print("--- EXTRAINDO DADOS VIA WEBSCRAPPING ---")
 
-        json_format_return = createJsonFormat('retorno_webscrapping', [
-            {
-                'name': 'dados_peca', 
-                'type':'array', 
-                'description': 'Lista de peças encontradas no HTML',
-                "items": {
-                    "type": "object",
-                    "properties": {
-                    "nome_peca": {
-                        "type": "string",
-                        "description": "Nome da peça automotiva"
-                    },
-                    "carros_compativeis": {
-                        "type": "array",
-                        "items": {
-                        "type": "string"
+        json_format_return = {'type': 'json_schema', 'json_schema': {'name': 'retorno_webscrapping', 'strict': True, 'schema': {
+            'type': 'object',
+            'properties': {
+                'dados_peca': {
+                    'type': 'array',
+                    'description': 'Lista de peças encontradas no HTML',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'nome_peca': {'type': 'string', 'description': 'Nome da peça automotiva'},
+                            'carros_compativeis': {'type': 'array', 'items': {'type': 'string'}, 'description': 'Lista de carros compatíveis com a peça'},
+                            'codigo_peca': {'type': 'string', 'description': 'Código da peça (ex: VW 373201238A)'},
                         },
-                        "description": "Lista de carros compatíveis com a peça"
+                        'required': ['nome_peca', 'carros_compativeis', 'codigo_peca'],
+                        'additionalProperties': False,
                     },
-                    "codigo_peca": {
-                        "type": "string",
-                        "description": "Código da peça (ex: VW 373201238A)"
-                    }
-                    },
-                    "required": ["nome_peca","carros_compativeis","codigo_peca"],
-                    "additionalProperties": False
-                }
-            }, 
-            {
-                'name':'max_pagina',
-                'type':'integer',
-                'description':'página final do site'
-            }
-        ])
-        sys_prompt = self.read_system_prompts('webscrapper/tool_scrapping.md')
-        pecas_processadas = set()
-        novas, ja_existiam, erros, pecas_encontradas = 0, 0, [], []
+                },
+                'max_pagina': {'type': 'integer', 'description': 'página final do site'},
+            },
+            'required': ['dados_peca', 'max_pagina'],
+            'additionalProperties': False,
+        }}}
+        sys_prompt = ler_prompt('webscrapper/tool_scrapping.md')
+        vistas = set()
+        pecas = []
         selector_proximo = (
         "//button[contains(text(), '>') or text()='>' or contains(text(), '»') or contains(@aria-label, 'Next') or contains(@class, 'next') or contains(text(), 'Próximo') or contains(text(), 'Proximo')]"
         " | "
         "//a[contains(text(), '>') or text()='>' or contains(text(), '»') or contains(@aria-label, 'Next') or contains(@class, 'next') or contains(text(), 'Próximo') or contains(text(), 'Proximo')]"
         )
 
-        with sync_playwright() as p:
-            browser = p.chromium.launch(
-                executable_path="/usr/bin/chromium", 
-                headless=True
-            )
-            context = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                viewport={"width": 1280, "height": 800}
-            )
-            page = context.new_page()
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(executable_path=CHROMIUM, headless=True)
+                context = browser.new_context(
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    viewport={"width": 1280, "height": 800}
+                )
+                page = context.new_page()
 
-            while curr_num_page <= mx_num_page:
-                print(f'Processando Página {curr_num_page}/{mx_num_page} (URL Atual: {page.url or link})')
-                try:
+                while curr_num_page <= mx_num_page:
+                    print(f'Processando Página {curr_num_page}/{mx_num_page} (URL Atual: {page.url or link})')
                     if curr_num_page == 1:
                         page.goto(link, wait_until="networkidle", timeout=30000)
                     else:
                         botao_proximo = page.locator(selector_proximo).first
-                        if botao_proximo.is_visible():
-                            print("Botão de navegação '>' encontrado. Clicando...")
-                            botao_proximo.click()
-                            page.wait_for_load_state("networkidle", timeout=15000)
-                        else:
+                        if not botao_proximo.is_visible():
                             print("Botão '>' não encontrado ou não está visível. Encerrando paginação.")
                             break
-                except Exception as e:
-                    print(f"Erro ao carregar ou navegar na página {curr_num_page} via Playwright: {e}")
-                    return {'erro': 'Página não encontrada'}
+                        botao_proximo.click()
+                        page.wait_for_load_state("networkidle", timeout=15000)
 
-                html_content = page.content()
-                soup = BeautifulSoup(html_content, 'html.parser')
-                
-                for element in soup(['script', 'style', 'img', 'image', 'path', 'svg', 'rect', 'head', 'footer', 'header']):
-                    element.decompose()
-                    
-                for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
-                    comment.extract()
+                    soup = BeautifulSoup(page.content(), 'html.parser')
+                    for element in soup(['script', 'style', 'img', 'image', 'path', 'svg', 'rect', 'head', 'footer', 'header']):
+                        element.decompose()
+                    for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
+                        comment.extract()
 
-                links_tags = []
-                for a in soup.find_all('a'):
-                    if not a.find_parent('nav') and not a.find('nav'):
-                        for attr in list(a.attrs):
-                            if attr not in ['href']:
-                                del a[attr]
-                        
-                        texto_a = " ".join(str(a).split())
-                        if len(texto_a) > 0:
-                            links_tags.append(texto_a)
+                    links_tags = []
+                    for a in soup.find_all('a'):
+                        if not a.find_parent('nav') and not a.find('nav'):
+                            for attr in list(a.attrs):
+                                if attr not in ['href']:
+                                    del a[attr]
+                            texto_a = " ".join(str(a).split())
+                            if len(texto_a) > 0:
+                                links_tags.append(texto_a)
 
-                nav_tags = [" ".join(str(nav).split()) for nav in soup.find_all('nav')]
-                
-                html_filtrado = "--- LINKS E CARDS DA PAGINA ---\n" + "\n".join(links_tags)
-                if nav_tags:
-                    html_filtrado += "\n\n--- COMPONENTES DE NAVEGACAO E PAGINACAO ---\n" + "\n".join(nav_tags)
+                    nav_tags = [" ".join(str(nav).split()) for nav in soup.find_all('nav')]
+                    html_filtrado = "--- LINKS E CARDS DA PAGINA ---\n" + "\n".join(links_tags)
+                    if nav_tags:
+                        html_filtrado += "\n\n--- COMPONENTES DE NAVEGACAO E PAGINACAO ---\n" + "\n".join(nav_tags)
 
-                messages = [
-                    Message('system', sys_prompt).to_dict(),
-                    Message('user', self.processar_html_generico_para_markdown(html_filtrado)).to_dict()        
-                ]   
-                # Técnica: extração estruturada com 1 exemplo (one-shot) de card em markdown, no prompt.
-                # Contrato: schema estrito {dados_peca: [{nome_peca, carros_compativeis[], codigo_peca}], max_pagina}.
-                # Impede: tratar links de menu como peça e esquecer a paginação (sem `nav`, max_pagina = 1).
-                response = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                    response_format=json_format_return,
-                    temperature=0,
-                    max_completion_tokens=4096
-                )
-
-                data = json.loads(response.choices[0].message.content)
-                
-                mx_num_page = data.get('max_pagina', mx_num_page)
-                novas_pagina = 0
-
-                for peca in data.get('dados_peca', []):
-                    chave_unica = f"{peca.get('codigo_peca')}_{peca.get('nome_peca')}"
-
-                    if chave_unica not in pecas_processadas:
-                        pecas_processadas.add(chave_unica)
-                        # Gravação por regra em código, sem passar pelo modelo do Registrador: os campos já vêm
-                        # validados pelo schema da extração, e a chave de conteúdo evita linha repetida.
-                        resultado = self.register.inserir('pecas_automoveis', {
-                            'nm_peca': peca.get('nome_peca'),
-                            'codigo_peca': peca.get('codigo_peca'),
-                            'modelo': nm_modelo,
-                            'ano_fabricacao': ano,
-                            'motorizacao': motorizacao,
-                            'carros_compatíveis': ','.join(peca.get('carros_compativeis') or []),
-                        })
-                        if resultado.get('erro'): erros.append(resultado['erro'])
-                        elif resultado['ja_existia']: ja_existiam += 1
-                        else: novas += 1; novas_pagina += 1
-                        pecas_encontradas.append({'nome_peca': peca.get('nome_peca'), 'codigo_peca': peca.get('codigo_peca')})
-
-                print(f'{novas_pagina} novas peças inseridas nesta página!')
-
-                curr_num_page += 1
-        return {
-            'sucesso': 'Webcatálogo acessado!',
-            'consulta': link,
-            'novas': novas,
-            'ja_existiam': ja_existiam,
-            'erros': erros[:3],
-            'pecas': pecas_encontradas[:MAX_PECAS_RETORNO],
-        }
-        
-    def run(self):
-        # Técnica: zero-shot com function calling (get_catalog_site -> get_data), roteiro no prompt `geral.md`.
-        # Contrato: só tool calls; a resposta final é texto em lista (padrão pedido ao final de `run`).
-        # Impede: o modelo preencher a `regra` do catálogo por conta própria ou repassá-la alterada.
-        sys_message = self.get_answer(
-            tools=self.tool_calls,
-            temperature=0
-        )
-
-        while getattr(sys_message, 'tool_calls', None):
-            self.send_message(sys_message)
-            for tool in sys_message.tool_calls:
-                func = self.tool_calls_links[tool.function.name]
-                argumentos = json.loads(tool.function.arguments)
-                sig = inspect.signature(func)
-                if len(sig.parameters) == 0: result = func()
-                else: result = func(**argumentos)
-                # print(f"""
-                #     --- ACIONANDO TOOL CALLS--- 
-                #     - name: {tool.function.name}
-                #     - argumentos: {tool.function.arguments}
-                #     - retorno : {result}
-                # """)
-
-                self.send_message(Message(
-                    role='tool',
-                    tool_call_id=tool.id,
-                    content=json.dumps(result)
-                ))
-
-            sys_message = self.get_answer(
-                tools=self.tool_calls,
-                temperature=0
-            )
-
-        self.send_message(Message('user', """
-            Devolva uma lista contendo todos os dados extraídos via webscrapping.
-            Utilize o padrão:
-            =========================================
-                Peça: xxxxx
-                codigo_peca: xxxxxx
-                carros_compativeis: [xxx, xxx, xxx]
-            =========================================
-        """))
-
-        return self.get_answer(
-            temperature=0
-        ).content
+                    # Técnica: extração estruturada com 1 exemplo (one-shot) de card em markdown, no prompt.
+                    # Contrato: schema estrito {dados_peca: [{nome_peca, carros_compativeis[], codigo_peca}], max_pagina}.
+                    # Impede: tratar links de menu como peça e esquecer a paginação (sem `nav`, max_pagina = 1).
+                    response = self.client.chat.completions.create(
+                        model=modelo_em_uso(),
+                        messages=[
+                            {'role': 'system', 'content': sys_prompt},
+                            {'role': 'user', 'content': self.processar_html_generico_para_markdown(html_filtrado)},
+                        ],
+                        response_format=json_format_return,
+                        temperature=0,
+                        max_tokens=MAX_TOKENS_EXTRACAO
+                    )
+                    data = json.loads(response.choices[0].message.content)
+                    mx_num_page = data.get('max_pagina', mx_num_page)
+                    for peca in data.get('dados_peca', []):
+                        chave = f"{peca.get('codigo_peca')}_{peca.get('nome_peca')}"
+                        if chave not in vistas:
+                            vistas.add(chave)
+                            pecas.append(peca)
+                    curr_num_page += 1
+        except Exception as err:
+            return {'consulta': link, 'pecas': pecas, 'erro': f'{type(err).__name__}: {err}'}
+        return {'consulta': link, 'pecas': pecas, 'erro': None}

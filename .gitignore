@@ -222,3 +222,5 @@ __marimo__/
 *Zone.Identifier
 
 ./logs
+# Checkpoint das conversas (estado local, nao versionar)
+databases/checkpoints.sqlite*
