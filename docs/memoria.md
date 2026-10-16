@@ -91,7 +91,7 @@ O titular pode pedir pelo chat ("apague todos os meus dados"): o sistema conta o
 | **checkpoint** | mensagens e argumentos de cada passo | `delete_thread` de todo `thread_id` que começa com `<user_id>:` |
 | **logs** | a fala do usuário e a resposta, por passo | remove `logs/<user_id>/` |
 | **procedural** | nenhuma linha pode citá-lo | a varredura confirma; se achar, exige edição humana |
-| compactação | páginas livres dos SQLite | `VACUUM` em `db.sqlite` e em `checkpoints.sqlite` |
+| compactação | páginas livres dos SQLite e o journal do checkpoint | `VACUUM` em `db.sqlite` e em `checkpoints.sqlite`, mais `PRAGMA wal_checkpoint(TRUNCATE)` neste último |
 
 - **A conversa em andamento é apagada por último e fora do grafo**: se o nó apagasse o próprio checkpoint, o framework o recriaria no passo seguinte. A CLI o remove depois que o grafo termina, e o log desta conversa é silenciado para a pasta não ser recriada.
 - **O registro da remoção não tem dado pessoal:** `logs/_remocoes.jsonl` guarda só o hash do identificador e as contagens.
@@ -114,6 +114,10 @@ O titular pode pedir pelo chat ("apague todos os meus dados"): o sistema conta o
 | 7. cancelar | o pedido foi cancelado em outra execução e nada foi apagado (`esquecimento_recusado`) |
 
 **Recuperação de incidente (execução real):** `python src/esquecer.py --episodio 2` removeu a linha e o vetor (`{'linhas': 1, 'vetores': 1}`); a pergunta seguinte voltou a ler o manual.
+
+### O que a varredura achou depois: o journal do checkpoint
+
+Ao gerar os exemplos (`gerar_exemplos.py`), a varredura reprovou logo após apagar: 1 ocorrência em `databases/checkpoints.sqlite-wal`. O `VACUUM` reescreve o banco, mas o journal (WAL) ainda guardava as páginas da conversa apagada enquanto o processo estava no ar; no encerramento do processo ele é compactado, por isso os testes anteriores, que terminavam o processo antes de varrer, deram 0. A correção é forçar `PRAGMA wal_checkpoint(TRUNCATE)` depois do `VACUUM` (`compactar_checkpoint`, em `src/memoria.py`). Com ela, a varredura feita **durante** a execução também dá 0.
 
 ### O que a varredura achou na primeira versão
 

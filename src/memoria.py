@@ -68,6 +68,15 @@ def texto_procedural(secao: str | None = None) -> str:
     return ''
 
 
+def compactar_checkpoint(conexao: sqlite3.Connection) -> None:
+    """Depois de apagar conversas: VACUUM reescreve o banco e o checkpoint do WAL, truncando-o, apaga do journal as
+    páginas antigas. Sem isso o texto da conversa apagada continua em checkpoints.sqlite-wal até o processo terminar.
+    O truncamento é de melhor esforço: se outra conexão estiver lendo, o SQLite o adia, e o encerramento o conclui."""
+    conexao.commit()
+    conexao.execute('VACUUM')
+    conexao.execute('PRAGMA wal_checkpoint(TRUNCATE)')
+
+
 def _canonico(valor: dict) -> str:
     return json.dumps({k: str(v).strip().casefold() for k, v in valor.items()}, sort_keys=True, ensure_ascii=False)
 
@@ -212,8 +221,7 @@ class Memoria:
                 if thread != manter_thread:
                     saver.delete_thread(thread)
                     apagadas += 1
-            conexao.commit()
-            conexao.execute('VACUUM')
+            compactar_checkpoint(conexao)
             conexao.close()
         contagens['conversas_salvas'] = apagadas
 
@@ -233,8 +241,7 @@ class Memoria:
         from langgraph.checkpoint.sqlite import SqliteSaver
         conexao = sqlite3.connect(CHECKPOINT_PATH)
         SqliteSaver(conexao).delete_thread(thread_id)
-        conexao.commit()
-        conexao.execute('VACUUM')
+        compactar_checkpoint(conexao)
         conexao.close()
 
     def esquecer_episodio(self, linha_id: int) -> dict:

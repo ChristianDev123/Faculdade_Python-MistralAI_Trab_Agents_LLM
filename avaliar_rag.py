@@ -25,7 +25,7 @@ def avaliar_perguntas(usuario: str = 'rag-avaliacao') -> int:
 
     from src.grafo import RECURSION_LIMIT, grafo
     from src.nos import _log, _traj
-    from src.trajetoria import commit_atual
+    from src.trajetoria import estado_do_codigo
     from src.util import modelo_em_uso
 
     saidas, acertos = [], 0
@@ -53,7 +53,7 @@ def avaliar_perguntas(usuario: str = 'rag-avaliacao') -> int:
     destino = RAIZ / 'logs' / usuario
     destino.mkdir(parents=True, exist_ok=True)
     (destino / 'resultado.json').write_text(json.dumps(
-        {'commit': commit_atual(), 'data': time.strftime('%Y-%m-%d'), 'modelo': modelo_em_uso(), 'resultados': saidas},
+        {**estado_do_codigo(), 'data': time.strftime('%Y-%m-%d'), 'modelo': modelo_em_uso(), 'resultados': saidas},
         ensure_ascii=False, indent=2), encoding='utf-8')
     print(f'Resultado gravado em {destino / "resultado.json"}')
     return 0

@@ -70,14 +70,16 @@ def decidir(payload: dict) -> dict | None:
         print(AJUDA_APROVACAO)
 
 
-def processar(entrada, cfg) -> dict | None:
-    """Roda o grafo até ele terminar o turno. Se parar numa aprovação, pergunta e retoma; sem resposta, a pausa fica salva."""
+def processar(entrada, cfg, decisor=None) -> dict | None:
+    """Roda o grafo até ele terminar o turno. Se parar numa aprovação, pergunta e retoma; sem resposta, a pausa fica salva.
+    `decisor` troca a pergunta no terminal por outra fonte de resposta (gerar_exemplos.py usa respostas roteirizadas)."""
+    decisor = decisor or decidir
     traj = _traj(cfg)
     resultado = grafo.invoke(entrada, cfg)
     while '__interrupt__' in resultado:
         payload = resultado['__interrupt__'][0].value
         traj.registrar('pausa', acao=payload['acao'], pausado_em=payload.get('pausado_em'), candidatas=len(payload.get('candidatas', [])))
-        resposta = decidir(payload)
+        resposta = decisor(payload)
         if resposta is None:
             print('Pedido pendente: ele continua salvo nesta conversa. Rode de novo com a mesma sessão para responder.')
             return None

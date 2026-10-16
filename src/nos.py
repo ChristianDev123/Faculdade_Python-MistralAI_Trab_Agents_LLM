@@ -19,7 +19,7 @@ from pydantic import ValidationError
 from src.contrato import Extracao, Fonte, Peca, RespostaAprovacao, RespostaConfirmacao, Saida
 from src.estado import LIMPAR, ZERAR
 from src.memoria import COLECAO_EPISODICA as COLECAO, JANELA_TOKENS, Memoria, janela_historico, texto_procedural
-from src.trajetoria import Trajetoria, carimbo_prompts, commit_atual
+from src.trajetoria import Trajetoria, carimbo_prompts, estado_do_codigo
 from src.util import ler_prompt, modelo_em_uso, tokens_estimados
 
 MAX_TURNOS = int(os.environ.get('MAX_TURNOS') or 15)                      # mensagens do usuário por conversa
@@ -79,7 +79,7 @@ def _traj(config) -> Trajetoria:
     if thread_id not in _trajetorias:
         usuario, _, sessao = thread_id.partition(':')
         _trajetorias[thread_id] = Trajetoria(usuario, sessao or 'sessao')
-        _trajetorias[thread_id].registrar('inicio', thread_id=thread_id, commit=commit_atual(),
+        _trajetorias[thread_id].registrar('inicio', thread_id=thread_id, **estado_do_codigo(),
                                           modelo=modelo_em_uso(), parametros_extracao=PARAMS_EXTRACAO,
                                           limites={'max_turnos': MAX_TURNOS, 'max_perguntas_iguais': MAX_PERGUNTAS_IGUAIS,
                                                    'prazo_aprovacao_horas': PRAZO_APROVACAO_HORAS},
@@ -164,6 +164,9 @@ def texto_aprovacao(veiculo: dict, candidatas: list[dict]) -> str:
 @registrando
 def entrada(state, config):
     turno = state.get('turno', 0) + 1
+    mensagens = state.get('mensagens') or []
+    if mensagens:  # o texto exato que a pessoa digitou: sem ele o log não prova de qual entrada saiu a resposta
+        _log(config, 'entrada_usuario', turno=turno, texto=mensagens[-1].content)
     return {
         'turno': turno,
         'passos': [ZERAR], 'evidencias': [ZERAR], 'avisos': [ZERAR],

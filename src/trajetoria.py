@@ -19,6 +19,27 @@ def commit_atual() -> str:
         return 'desconhecido'
 
 
+# O que NÃO é código: documentação, logs e bancos mudam a cada execução e não alteram o comportamento do sistema.
+FORA_DO_CODIGO = ('docs', 'logs', 'databases', 'venv', 'README.md', '01-primeira-entrega.md', '02-segunda-entrega.md')
+
+
+def estado_do_codigo() -> dict:
+    """Commit atual e se o código (src/, scripts, dados de cenário, requirements) tem alteração por commitar.
+    Sem isto o commit do carimbo mente: um log com o commit X pode ter rodado com código que não está em X."""
+    try:
+        saida = subprocess.run(
+            # autocrlf: o repositório é editado no Windows (CRLF) e rodado no WSL; sem normalizar, todo arquivo parece alterado.
+            # --no-optional-locks: consultar o estado não pode reescrever o índice.
+            ['git', '--no-optional-locks', '-c', 'core.autocrlf=true', 'status', '--porcelain', '--untracked-files=all', '--', '.',
+             *[f':(exclude){c}' for c in FORA_DO_CODIGO]],
+            cwd=PROJECT_PATH, capture_output=True, text=True, timeout=10
+        )
+        alterados = [linha[3:].strip() for linha in saida.stdout.splitlines() if linha.strip()]
+        return {'commit': commit_atual(), 'codigo_limpo': not alterados, 'arquivos_alterados': alterados[:20]}
+    except Exception:
+        return {'commit': commit_atual(), 'codigo_limpo': None, 'arquivos_alterados': []}
+
+
 def carimbo_prompts() -> dict:
     """Hash de cada arquivo em src/prompts/: identifica a versão exata em uso na execução."""
     carimbo = {}

@@ -90,6 +90,7 @@ src/              o sistema (grafo, nós, estado, contrato, memória, serviços)
 conferir_grafo.py nós e arestas do grafo executado
 verificar_remocao.py varre todas as estruturas atrás de um identificador (prova da remoção)
 avaliar_rag.py   avalia o RAG com dados/perguntas_rag.json (`perguntas` pelo grafo, `manual` só pelo leitor)
+gerar_exemplos.py roda os cenários de dados/exemplos.json no sistema real e grava logs/exemplos/ (os exemplos da documentação)
 demo_reducer.py   demonstração do reducer num grafo paralelo
 interfaces/       formatos auxiliares usados pelos scripts de verificação
 databases/        SQLite local, índice ChromaDB e manuais em PDF
