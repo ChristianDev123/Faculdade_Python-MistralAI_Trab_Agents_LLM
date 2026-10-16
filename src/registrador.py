@@ -11,6 +11,8 @@ import json
 
 # Coluna interna: hash do conteúdo da linha. Não aparece para o modelo, só impede gravar a mesma linha duas vezes.
 CHAVE = 'chave_idempotencia'
+# Teto de saída das chamadas estruturadas: sem ele, uma geração presa num schema roda até o timeout.
+MAX_TOKENS_SAIDA = 600
 
 
 class Registrador(Agent):
@@ -219,7 +221,8 @@ class Registrador(Agent):
                 model= self.model,
                 messages=messages,
                 response_format=json_format,
-                temperature=0
+                temperature=0,
+                max_tokens=MAX_TOKENS_SAIDA
             ).choices[0].message.content)
             return self.inserir(conteudo['nm_tabela'], response)
         except Exception as err:
@@ -246,7 +249,7 @@ class Registrador(Agent):
             # Contrato: schema estrito {pensamento, acao: RESGATAR_DADOS|INSERIR_DADOS, conteudo: JSON em string}.
             #   O enum garante que a ação é válida, não que seja a certa.
             # Impede: ação fora das duas permitidas e resposta em texto livre.
-            sys_message = json.loads(self.get_answer(response_format=response_format, temperature=0).content)
+            sys_message = json.loads(self.get_answer(response_format=response_format, temperature=0, max_tokens=MAX_TOKENS_SAIDA).content)
             
             if(sys_message['acao'] == "INSERIR_DADOS"):
                 return self._loop_insert_data(sys_message)

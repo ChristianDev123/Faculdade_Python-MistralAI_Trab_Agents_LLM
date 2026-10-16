@@ -6,18 +6,23 @@ from interfaces.message import Message
 from interfaces.agent import Agent
 from interfaces.tool_call import ToolCall
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI, APIError
 from interfaces.json_format import createJsonFormat
 from src.trajetoria import Trajetoria, carimbo_prompts, commit_atual
 import json
 import inspect
+import os
 import re
 import time
 
 load_dotenv()
 
-MAX_ITERACOES = 10        # voltas do laço externo; cada volta termina esperando uma entrada do usuário
-MAX_RODADAS_TOOL = 5      # rodadas seguidas de tool calls dentro de uma volta
+# Dois tetos independentes, ajustáveis por variável de ambiente (o padrão está aqui):
+#   turnos: mensagens do usuário numa conversa. A coleta já gasta 5 (dúvida, modelo, ano, motorização, fabricante).
+#   passos: chamadas ao modelo entre duas mensagens do usuário (tool calls, correções, retentativas).
+#           Reinicia a cada mensagem do usuário, então correção de ferramenta não consome turno.
+MAX_TURNOS = int(os.environ.get('MAX_TURNOS') or 15)
+MAX_PASSOS_POR_TURNO = int(os.environ.get('MAX_PASSOS_POR_TURNO') or 12)
 MAX_ERROS_SEGUIDOS = 3    # a mesma ferramenta falhando N vezes seguidas encerra a execução
 MAX_RESULTADO_LOG = 4000  # caracteres do retorno de ferramenta gravados no log
 PARAMS_MODELO = {'temperature': 0, 'max_tokens': 400}
@@ -102,20 +107,23 @@ class Orquestrador(Agent):
                 return {'erro': 'query_filter deve ser um objeto JSON no formato {coluna: valor}'}
         return self._agente('REGISTRADOR').resgatar(tablename, query_filter)
 
-    def _insert_db_question(self, modelo:str, ano:str, motorizacao:str, duvida:str, kw_duvidas:list[str], resolucao:str):
-        agent = self._agente('REGISTRADOR')
-        message_user = f""" Registre essa dúvida:
-            {{
-                'modelo':{modelo},
-                'ano':{ano},
-                'motorizacao':{motorizacao},
-                'duvida':{duvida},
-                'kws_duvida':{kw_duvidas},
-                'resolucao':{resolucao}
-            }}
-        """
-        agent.send_message(Message('user', message_user))
-        return agent.run()
+    def _insert_db_question(self, modelo:str, ano:int, motorizacao:str, duvida:str, kw_duvidas:list[str], resolucao:str):
+        # Escrita por regra em código: a tabela das dúvidas é sempre log_interacoes, então não há decisão para o
+        # modelo do Registrador tomar (ele chegou a escolher pecas_automoveis) nem chamada extra que possa travar.
+        # A chave de conteúdo do Registrador faz repetir o mesmo registro devolver ja_existia em vez de duplicar.
+        try:
+            ano = int(ano)
+        except (TypeError, ValueError):
+            return {'erro': f"'ano' deve ser um número inteiro (recebido: {ano!r})"}
+        palavras = kw_duvidas if isinstance(kw_duvidas, list) else [kw_duvidas]
+        return self._agente('REGISTRADOR').inserir('log_interacoes', {
+            'modelo': modelo,
+            'ano_fabricacao': ano,
+            'motorizacao': motorizacao,
+            'duvida_usuario': duvida,
+            'kws_duvida_usuario': ', '.join(map(str, palavras)),
+            'resolucao': resolucao,
+        })
 
     def _read_manual_pdf(self):
         agent = self._agente('LEITOR_MANUAL_PDF')
@@ -190,27 +198,34 @@ class Orquestrador(Agent):
         if texto: self.trajetoria.registrar('entrada_usuario', texto=texto)
         return texto or None
 
-    def _human_loop(self, limit_iterator):
+    def _chamar_modelo(self):
+        """Uma chamada ao modelo, contada contra o teto de passos do turno."""
+        self._passos += 1
+        return self.get_answer(
+            tools=self.tool_calls,
+            **PARAMS_MODELO
+        )
+
+    def _limite_passos(self) -> dict:
+        return {'finish': 'LIMITE_PASSOS', 'detalhe': f'Mais de {MAX_PASSOS_POR_TURNO} chamadas ao modelo sem nova mensagem do usuário'}
+
+    def _human_loop(self):
         erros_seguidos = {}
+        turnos = 0        # mensagens do usuário já recebidas
+        self._passos = 0  # chamadas ao modelo desde a última mensagem do usuário
         while True:
-            if(limit_iterator == 0): return {'finish': 'LIMITE_ITERACOES', 'detalhe': f'Programa terminou por limite de {MAX_ITERACOES} iterações'}
-            limit_iterator -= 1
+            if self._passos >= MAX_PASSOS_POR_TURNO: return self._limite_passos()
 
             # Técnica: zero-shot com function calling; o campo `pensamento` do JSON é uma justificativa curta.
             # Contrato: ou `tool_calls`, ou JSON {pensamento, acao: RESPONDER_USUARIO|CHAMAR_SUBAGENTE, conteudo}.
             #   `json_format_orquestrador` não é passado à chamada: o contrato vale só pelo prompt,
             #   e o código tolera texto fora do JSON (ramo JSONDecodeError abaixo).
             # Impede: responder tecnicamente sem consultar ferramenta e pedir vários dados de uma vez.
-            response = self.get_answer(
-                tools=self.tool_calls,
-                **PARAMS_MODELO
-            )
+            response = self._chamar_modelo()
 
-            rodadas = 0
             while getattr(response, 'tool_calls', None) and len(response.tool_calls) > 0:
-                if rodadas == MAX_RODADAS_TOOL:
-                    return {'finish': 'LIMITE_RODADAS_TOOL', 'detalhe': f'Mais de {MAX_RODADAS_TOOL} rodadas seguidas de ferramentas sem resposta ao usuário'}
-                rodadas += 1
+                # sem passo sobrando para o modelo ler o resultado, não vale executar a ferramenta
+                if self._passos >= MAX_PASSOS_POR_TURNO: return self._limite_passos()
                 self.send_message(response)
 
                 for tool in response.tool_calls:
@@ -233,10 +248,7 @@ class Orquestrador(Agent):
                     ))
 
                 # Reconsulta o modelo para ele processar o retorno da Tool
-                response = self.get_answer(
-                    tools=self.tool_calls,
-                    **PARAMS_MODELO
-                )
+                response = self._chamar_modelo()
 
             if response.content:
                 try:
@@ -252,7 +264,7 @@ class Orquestrador(Agent):
 
                 if acao != 'RESPONDER_USUARIO':
                     # `acao` não executa nada sozinha: devolve o erro ao modelo, que corrige na próxima volta.
-                    self.trajetoria.registrar('acao_invalida', acao=acao)
+                    self.trajetoria.registrar('acao_invalida', acao=acao, bruto=response.content[:500])
                     self.send_message(Message('system', (
                         f"A ação '{acao}' não executa nada: ferramenta não se chama escrevendo o nome no campo 'acao'. "
                         "Use o mecanismo de tool call, ou responda com acao RESPONDER_USUARIO. "
@@ -273,9 +285,13 @@ class Orquestrador(Agent):
 
                 self.trajetoria.registrar('resposta', texto=texto, formato=formato, consultas=list(self.consultas))
                 print(f"Bot: {texto}")
+                if turnos == MAX_TURNOS:
+                    return {'finish': 'LIMITE_TURNOS', 'detalhe': f'Conversa encerrada após {MAX_TURNOS} mensagens do usuário'}
                 user_input = self._ler_usuario()
                 if not user_input:
                     return {'finish': 'ENCERRADO_PELO_USUARIO', 'detalhe': 'O usuário terminou o programa ao não enviar input.'}
+                turnos += 1
+                self._passos = 0
                 self.send_message(Message('user', user_input))
 
     def _ferramentas_validas(self) -> str:
@@ -294,8 +310,8 @@ class Orquestrador(Agent):
             'modelos': {a.name: a.model for a in [self, *self.agents]},
             'parametros_orquestrador': PARAMS_MODELO,
             'limites': {
-                'max_iteracoes': MAX_ITERACOES,
-                'max_rodadas_tool': MAX_RODADAS_TOOL,
+                'max_turnos': MAX_TURNOS,
+                'max_passos_por_turno': MAX_PASSOS_POR_TURNO,
                 'max_erros_seguidos': MAX_ERROS_SEGUIDOS,
             },
             'prompts': carimbo_prompts(),
@@ -304,7 +320,10 @@ class Orquestrador(Agent):
     def run(self):
         self.trajetoria.registrar('inicio', user_id=self.user_id, session_id=self.session_id, **self._carimbo())
         total_execution_time = time.time()
-        finish_reason = self._human_loop(MAX_ITERACOES)
+        try:
+            finish_reason = self._human_loop()
+        except APIError as err:  # inclui timeout e conexão recusada: o laço acaba com motivo, sem traceback
+            finish_reason = {'finish': 'ERRO_MODELO', 'detalhe': f'{type(err).__name__}: {err}'}
         total_execution_time = time.time() - total_execution_time
         self.trajetoria.registrar('termino', tempo_s=round(total_execution_time, 3), **finish_reason)
         print(finish_reason)

@@ -16,7 +16,10 @@ else:
     base_url = "https://api.groq.com/openai/v1"
     api_key = os.environ["GROQ_API_KEY"]
     
+# Sem timeout, uma geração presa trava o programa para sempre. Tempo por requisição, em segundos.
 client = OpenAI(
     base_url = base_url,
     api_key = api_key,
+    timeout = float(os.environ.get('LLM_TIMEOUT') or 90),
+    max_retries = 1,
 )

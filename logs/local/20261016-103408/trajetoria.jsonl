@@ -1,0 +1,14 @@
+{"passo": 1, "ts": "2026-10-16T10:34:08", "evento": "inicio", "user_id": "local", "session_id": "20261016-103408", "commit": "d44a907", "modelos": {"conversacional": "qwen2.5:7b", "webscrapper": "qwen2.5:7b", "registrador": "qwen2.5:7b", "leitor_manual_pdf": "qwen2.5:7b"}, "parametros_orquestrador": {"temperature": 0, "max_tokens": 400}, "limites": {"max_turnos": 15, "max_passos_por_turno": 2, "max_erros_seguidos": 3}, "prompts": {"leitor_manual_pdf/leitor_manual_pdf_prompt.md": "3c6d843fee7a", "leitor_manual_pdf/tool_call_leitura_pdf.md": "d63ce274be28", "orquestrador_system_prompt.md": "9be9b9d5b7be", "registrador_system_prompt.md": "42a957af85d4", "webscrapper/geral.md": "bbfc8cf892fe", "webscrapper/tool_scrapping.md": "05f6cdea7fe1", "webscrapper/tool_webcatalog.md": "30ad6861c498"}}
+{"passo": 2, "ts": "2026-10-16T10:34:09", "evento": "resposta", "texto": "Olá! Para ajudar você, preciso saber qual é o modelo do seu veículo.", "formato": "json", "consultas": []}
+{"passo": 3, "ts": "2026-10-16T10:34:09", "evento": "entrada_usuario", "texto": "Quais são os períodos de manutenção do meu carro?"}
+{"passo": 4, "ts": "2026-10-16T10:34:11", "evento": "resposta", "texto": "Para me ajudar a responder a sua pergunta, por favor, informe o modelo do seu veículo.", "formato": "json", "consultas": []}
+{"passo": 5, "ts": "2026-10-16T10:34:11", "evento": "entrada_usuario", "texto": "Fox"}
+{"passo": 6, "ts": "2026-10-16T10:34:12", "evento": "resposta", "texto": "Ótimo! Agora, poderia me informar o ano do modelo do seu carro Fox?", "formato": "json", "consultas": []}
+{"passo": 7, "ts": "2026-10-16T10:34:12", "evento": "entrada_usuario", "texto": "2015"}
+{"passo": 8, "ts": "2026-10-16T10:34:13", "evento": "resposta", "texto": "Entendido. Por fim, qual é a motorização do seu carro Fox de 2015?", "formato": "json", "consultas": []}
+{"passo": 9, "ts": "2026-10-16T10:34:13", "evento": "entrada_usuario", "texto": "1.6"}
+{"passo": 10, "ts": "2026-10-16T10:34:14", "evento": "resposta", "texto": "Perfeito! Agora, poderia me informar a fabricante do seu veículo Fox?", "formato": "json", "consultas": []}
+{"passo": 11, "ts": "2026-10-16T10:34:14", "evento": "entrada_usuario", "texto": "Volkswagen"}
+{"passo": 12, "ts": "2026-10-16T10:34:15", "evento": "tool", "ferramenta": "get_all_table_names", "argumentos": {}, "resultado": "{'log_interacoes': ['id', 'modelo', 'ano_fabricacao', 'motorizacao', 'duvida_usuario', 'kws_duvida_usuario', 'resolucao'], 'webcatalogos': ['id', 'fabricante', 'link', 'regra'], 'pecas_automoveis': ['id', 'nm_peca', 'codigo_peca', 'modelo', 'ano_fabricacao', 'motorizacao', 'carros_compatíveis']}", "erro": false, "duracao_s": 0.016}
+{"passo": 13, "ts": "2026-10-16T10:34:16", "evento": "acao_invalida", "acao": "rescue_db_data"}
+{"passo": 14, "ts": "2026-10-16T10:34:16", "evento": "termino", "tempo_s": 8.021, "finish": "LIMITE_PASSOS", "detalhe": "Mais de 2 chamadas ao modelo sem nova mensagem do usuário"}
