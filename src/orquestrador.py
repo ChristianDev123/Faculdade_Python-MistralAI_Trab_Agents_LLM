@@ -11,6 +11,7 @@ from interfaces.json_format import createJsonFormat
 from src.trajetoria import Trajetoria, carimbo_prompts, commit_atual
 import json
 import inspect
+import re
 import time
 
 load_dotenv()
@@ -20,11 +21,16 @@ MAX_RODADAS_TOOL = 5      # rodadas seguidas de tool calls dentro de uma volta
 MAX_ERROS_SEGUIDOS = 3    # a mesma ferramenta falhando N vezes seguidas encerra a execução
 MAX_RESULTADO_LOG = 4000  # caracteres do retorno de ferramenta gravados no log
 PARAMS_MODELO = {'temperature': 0, 'max_tokens': 400}
+# Fontes de informação do sistema. As demais ferramentas só descrevem as tabelas ou gravam.
+FERRAMENTAS_CONSULTA = {'rescue_db_data', 'read_manual_pdf', 'execute_scrapping'}
+# Heurística de "o bot está pedindo um dado ao usuário": pergunta, ou verbo de pedido.
+PEDIDO_DE_DADO = re.compile(r'\?|\b(informe|informar|preciso saber|gostaria de saber|poderia|qual)\b', re.IGNORECASE)
 
 class Orquestrador(Agent):
     def __init__(self, client:OpenAI, agents:list[Agent] = [], user_id:str = 'local', session_id:str|None = None):
         super().__init__('conversacional', client = client, f_entrada="", f_saida="")
         self.agents = agents
+        self.consultas = []  # ferramentas de consulta já concluídas sem erro nesta conversa
         self.user_id = user_id
         self.session_id = session_id or time.strftime('%Y%m%d-%H%M%S')
         self.trajetoria = Trajetoria(self.user_id, self.session_id)
@@ -134,6 +140,10 @@ class Orquestrador(Agent):
             temperature = 0,
             response_format = agent.f_entrada
         ).content
+        try:
+            agent.pedido = json.loads(formated_data)
+        except json.JSONDecodeError:
+            agent.pedido = {}
         agent.send_message(Message('user', formated_data))
         return agent.run()
 
@@ -213,6 +223,7 @@ class Orquestrador(Agent):
                             return {'finish': 'ERRO_SISTEMICO', 'ferramenta': nome, 'erro': result}
                     else:
                         erros_seguidos[nome] = 0
+                        if nome in FERRAMENTAS_CONSULTA: self.consultas.append(nome)
 
                     content_to_send = result if isinstance(result, str) else json.dumps(result, ensure_ascii=False, default=str)
                     self.send_message(Message(
@@ -231,29 +242,51 @@ class Orquestrador(Agent):
                 try:
                     sys_message = json.loads(response.content)
                 except json.JSONDecodeError:
-                    self.trajetoria.registrar('resposta', texto=response.content, formato='texto_livre')
-                    print(f"Bot: {response.content}")
-                    user_input = self._ler_usuario()
-                    if not user_input:
-                        return {'finish': 'ENCERRADO_PELO_USUARIO', 'detalhe': 'O usuário terminou o programa ao não enviar input.'}
-                    self.send_message(Message('user', user_input))
-                    continue
-
-                acao = sys_message.get('acao') if isinstance(sys_message, dict) else None
-                if acao == 'RESPONDER_USUARIO':
-                    self.trajetoria.registrar('resposta', texto=sys_message.get('conteudo'), formato='json')
-                    print(f"Bot: {sys_message.get('conteudo')}")
-                    user_input = self._ler_usuario()
-                    if not user_input:
-                        return {'finish': 'ENCERRADO_PELO_USUARIO', 'detalhe': 'O usuário terminou o programa ao não enviar input.'}
-                    self.send_message(Message('user', user_input))
+                    # texto fora do JSON é tolerado como resposta ao usuário (ver contrato acima)
+                    acao, texto, formato = 'RESPONDER_USUARIO', response.content, 'texto_livre'
                 else:
+                    ehdict = isinstance(sys_message, dict)
+                    acao = sys_message.get('acao') if ehdict else None
+                    texto = sys_message.get('conteudo') if ehdict else None
+                    formato = 'json'
+
+                if acao != 'RESPONDER_USUARIO':
                     # `acao` não executa nada sozinha: devolve o erro ao modelo, que corrige na próxima volta.
                     self.trajetoria.registrar('acao_invalida', acao=acao)
                     self.send_message(Message('system', (
-                        f"A ação '{acao}' não executa nada sem uma tool call. "
-                        "Emita a tool call da ferramenta necessária ou responda com acao RESPONDER_USUARIO."
+                        f"A ação '{acao}' não executa nada: ferramenta não se chama escrevendo o nome no campo 'acao'. "
+                        "Use o mecanismo de tool call, ou responda com acao RESPONDER_USUARIO. "
+                        f"{self._ferramentas_validas()}"
                     )))
+                    continue
+
+                if self._afirma_sem_consulta(texto):
+                    # Trava: afirmação ao usuário sem nenhuma fonte consultada antes é resposta inventada.
+                    self.trajetoria.registrar('resposta_bloqueada', texto=texto, consultas=list(self.consultas))
+                    self.send_message(Message('system', (
+                        "Resposta recusada: você afirmou algo ao usuário sem ter consultado nenhuma fonte nesta conversa. "
+                        "Se ainda faltam dados do veículo, peça-os ao usuário em forma de pergunta. "
+                        "Caso contrário, consulte a ferramenta adequada por tool call antes de responder. "
+                        f"{self._ferramentas_validas()}"
+                    )))
+                    continue
+
+                self.trajetoria.registrar('resposta', texto=texto, formato=formato, consultas=list(self.consultas))
+                print(f"Bot: {texto}")
+                user_input = self._ler_usuario()
+                if not user_input:
+                    return {'finish': 'ENCERRADO_PELO_USUARIO', 'detalhe': 'O usuário terminou o programa ao não enviar input.'}
+                self.send_message(Message('user', user_input))
+
+    def _ferramentas_validas(self) -> str:
+        return (f"Ferramentas válidas: {list(self.tool_calls_func_link)}. "
+                f"Fontes de consulta: {sorted(FERRAMENTAS_CONSULTA)}.")
+
+    def _afirma_sem_consulta(self, texto) -> bool:
+        """Código decide (não o modelo): pedir dado ao usuário é livre; afirmar algo exige consulta prévia."""
+        if self.consultas:
+            return False
+        return not PEDIDO_DE_DADO.search(texto or '')
 
     def _carimbo(self) -> dict:
         return {

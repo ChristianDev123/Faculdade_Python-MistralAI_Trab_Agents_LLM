@@ -8,9 +8,12 @@ from interfaces.tool_call import ToolCall
 import json
 import inspect
 import re
+from urllib.parse import quote_plus
 from openai import Client
 from bs4 import BeautifulSoup, Comment
 from playwright.sync_api import sync_playwright
+
+MAX_PECAS_RETORNO = 15  # peças devolvidas ao modelo no resumo da raspagem, para não encher o contexto
 
 class WebScrapper(Agent):
     def __init__(self, client:Client, register:Agent):
@@ -18,10 +21,12 @@ class WebScrapper(Agent):
             {'name':'modelo', 'type':'string'},
             {'name':'ano', 'type':'integer'},
             {'name':'motorizacao', 'type':'string'},
-            {'name':'fabricante', 'type':'string'}
+            {'name':'fabricante', 'type':'string'},
+            {'name':'nome_peca', 'type':'string', 'description':'Peça procurada pelo usuário (ex: palheta traseira). Vazio se ele não disse.'}
         ])
         super().__init__('webscrapper', client, f_entrada=f_entrada, f_saida="")
         self.register = register
+        self.pedido = {}  # último pedido estruturado recebido do orquestrador (modelo, ano, motorizacao, fabricante, nome_peca)
         self.send_message(Message('system',self.read_system_prompts('webscrapper/geral.md')))
         self.tool_calls = []
         self.tool_calls_links = {}
@@ -41,6 +46,7 @@ class WebScrapper(Agent):
         get_data.insert_prop('nm_modelo', {'type':'string', 'description':'Modelo do veículo à ser consultado, informado pelo usuário'})
         get_data.insert_prop('ano', {'type':'string', 'description':'Ano do veículo à ser consultado, informado pelo usuário'})
         get_data.insert_prop('motorizacao', {'type':'string', 'description':'Motorizacao do veículo à ser consultado, informado pelo usuário'})
+        get_data.insert_prop('nm_peca', {'type':'string', 'description':'Nome da peça procurada, informado pelo usuário (campo nome_peca). Vazio se ele não disse.'})
         self.tool_calls.append(get_data.to_dict())
         self.tool_calls_links[get_data.name] = self._get_data
 
@@ -159,17 +165,23 @@ class WebScrapper(Agent):
 
         return resultado.strip()
 
-    def _get_data(self, link:str, regra:str ,nm_modelo:str, ano:int, motorizacao:str):
+    def _get_data(self, link:str, regra:str ,nm_modelo:str, ano:int, motorizacao:str, nm_peca:str = ''):
         curr_num_page = 1
         mx_num_page = 1        
         
         if(link.endswith('/') or link.endswith('?')): link = link[:-1]
         
-        link += f'?{
-            regra.replace('<modelo>', nm_modelo)\
-            .replace('<ano>', str(ano))\
-            .replace('<motorizacao>', motorizacao)\
-        }'
+        # O que o usuário disse (já estruturado pelo orquestrador) vale mais que o que o modelo redigitou
+        # nos argumentos da tool call: o modelo pequeno troca a peça por outra que viu no histórico.
+        nm_modelo = self.pedido.get('modelo') or nm_modelo
+        ano = self.pedido.get('ano') or ano
+        motorizacao = self.pedido.get('motorizacao') or motorizacao
+        nm_peca = self.pedido['nome_peca'] if 'nome_peca' in self.pedido else nm_peca
+
+        consulta = regra
+        for lacuna, valor in {'<modelo>': nm_modelo, '<ano>': ano, '<motorizacao>': motorizacao, '<nome_peca>': nm_peca}.items():
+            consulta = consulta.replace(lacuna, quote_plus(str(valor)))
+        link += f'?{consulta}'
         print(f"""--- EXTRAINDO DADOS VIA WEBSCRAPPING ---""")
 
         json_format_return = createJsonFormat('retorno_webscrapping', [
@@ -208,6 +220,7 @@ class WebScrapper(Agent):
         ])
         sys_prompt = self.read_system_prompts('webscrapper/tool_scrapping.md')
         pecas_processadas = set()
+        novas, ja_existiam, erros, pecas_encontradas = 0, 0, [], []
         selector_proximo = (
         "//button[contains(text(), '>') or text()='>' or contains(text(), '»') or contains(@aria-label, 'Next') or contains(@class, 'next') or contains(text(), 'Próximo') or contains(text(), 'Proximo')]"
         " | "
@@ -238,7 +251,7 @@ class WebScrapper(Agent):
                             page.wait_for_load_state("networkidle", timeout=15000)
                         else:
                             print("Botão '>' não encontrado ou não está visível. Encerrando paginação.")
-                            return {'sucesso':'Botão não encontrado, todos os dados coletados'}
+                            break
                 except Exception as e:
                     print(f"Erro ao carregar ou navegar na página {curr_num_page} via Playwright: {e}")
                     return {'erro': 'Página não encontrada'}
@@ -287,29 +300,39 @@ class WebScrapper(Agent):
                 data = json.loads(response.choices[0].message.content)
                 
                 mx_num_page = data.get('max_pagina', mx_num_page)
-                novas_pecas = 0
-                
+                novas_pagina = 0
+
                 for peca in data.get('dados_peca', []):
                     chave_unica = f"{peca.get('codigo_peca')}_{peca.get('nome_peca')}"
-                    
+
                     if chave_unica not in pecas_processadas:
                         pecas_processadas.add(chave_unica)
-                        peca['modelo'] = nm_modelo
-                        peca['ano_fabricacao'] = ano
-                        peca['motorizacao'] = motorizacao
-                        if(peca.get('carros_compativeis')):
-                            arr_carros_comp = peca.get('carros_compativeis')
-                            del peca['carros_compativeis']
-                            peca['carros_compativeis'] = ','.join(arr_carros_comp)
+                        # Gravação por regra em código, sem passar pelo modelo do Registrador: os campos já vêm
+                        # validados pelo schema da extração, e a chave de conteúdo evita linha repetida.
+                        resultado = self.register.inserir('pecas_automoveis', {
+                            'nm_peca': peca.get('nome_peca'),
+                            'codigo_peca': peca.get('codigo_peca'),
+                            'modelo': nm_modelo,
+                            'ano_fabricacao': ano,
+                            'motorizacao': motorizacao,
+                            'carros_compatíveis': ','.join(peca.get('carros_compativeis') or []),
+                        })
+                        if resultado.get('erro'): erros.append(resultado['erro'])
+                        elif resultado['ja_existia']: ja_existiam += 1
+                        else: novas += 1; novas_pagina += 1
+                        pecas_encontradas.append({'nome_peca': peca.get('nome_peca'), 'codigo_peca': peca.get('codigo_peca')})
 
-                        self.register.send_message(Message('user', f'Registre essa peça: {peca}'))
-                        self.register.run()
-                        novas_pecas += 1
+                print(f'{novas_pagina} novas peças inseridas nesta página!')
 
-                print(f'{novas_pecas} novas peças inseridas!')
-                
                 curr_num_page += 1
-        return {'sucesso':'Webcatálogo acessado!'}
+        return {
+            'sucesso': 'Webcatálogo acessado!',
+            'consulta': link,
+            'novas': novas,
+            'ja_existiam': ja_existiam,
+            'erros': erros[:3],
+            'pecas': pecas_encontradas[:MAX_PECAS_RETORNO],
+        }
         
     def run(self):
         # Técnica: zero-shot com function calling (get_catalog_site -> get_data), roteiro no prompt `geral.md`.
