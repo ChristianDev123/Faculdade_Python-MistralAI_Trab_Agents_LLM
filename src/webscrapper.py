@@ -1,6 +1,6 @@
 from pathlib import Path
 import sys
-sys.path.append(Path(__file__).resolve().parent.parent)
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 from interfaces.agent import Agent
 from interfaces.message import Message
 from interfaces.json_format import createJsonFormat
@@ -58,10 +58,14 @@ class WebScrapper(Agent):
             Lista de Links: {self.register.run()}
             Fabricante Procurada: {make}
         """).to_dict())
+        # Técnica: seleção por correspondência (zero-shot); os sinônimos de fabricante vêm no prompt.
+        # Contrato: schema estrito {fabricante, link, regra}.
+        # Impede: inventar um catálogo que não está na lista cadastrada.
         return self.client.chat.completions.create(
             model = self.model,
             messages = messages,
-            response_format = return_format
+            response_format = return_format,
+            temperature = 0
         ).choices[0].message.content
 
     def processar_html_generico_para_markdown(self, html_content: str, preservar_nav_html: bool = True) -> str:
@@ -237,7 +241,7 @@ class WebScrapper(Agent):
                             return {'sucesso':'Botão não encontrado, todos os dados coletados'}
                 except Exception as e:
                     print(f"Erro ao carregar ou navegar na página {curr_num_page} via Playwright: {e}")
-                    return {'erro', 'Página não encontrada'}
+                    return {'erro': 'Página não encontrada'}
 
                 html_content = page.content()
                 soup = BeautifulSoup(html_content, 'html.parser')
@@ -269,6 +273,9 @@ class WebScrapper(Agent):
                     Message('system', sys_prompt).to_dict(),
                     Message('user', self.processar_html_generico_para_markdown(html_filtrado)).to_dict()        
                 ]   
+                # Técnica: extração estruturada com 1 exemplo (one-shot) de card em markdown, no prompt.
+                # Contrato: schema estrito {dados_peca: [{nome_peca, carros_compativeis[], codigo_peca}], max_pagina}.
+                # Impede: tratar links de menu como peça e esquecer a paginação (sem `nav`, max_pagina = 1).
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=messages,
@@ -305,6 +312,9 @@ class WebScrapper(Agent):
         return {'sucesso':'Webcatálogo acessado!'}
         
     def run(self):
+        # Técnica: zero-shot com function calling (get_catalog_site -> get_data), roteiro no prompt `geral.md`.
+        # Contrato: só tool calls; a resposta final é texto em lista (padrão pedido ao final de `run`).
+        # Impede: o modelo preencher a `regra` do catálogo por conta própria ou repassá-la alterada.
         sys_message = self.get_answer(
             tools=self.tool_calls,
             temperature=0

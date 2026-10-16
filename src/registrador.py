@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-sys.path.append(Path(__file__).resolve().parent.parent)
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 from interfaces.agent import Agent
 from interfaces.message import Message
 from interfaces.json_format import createJsonFormat
@@ -62,31 +62,58 @@ class Registrador(Agent):
             for data in datalist: 
                 self._inserir_tabela('webcatalogos',data)
 
-    def _get_data(self, tablename:str, filter:list[str] = []):
+    def _validar_tabela(self, tablename:str) -> None:
+        # Nome de tabela não pode ser parametrizado em SQL: só entra na query se estiver na lista fixa.
+        if tablename not in self.tabelas_criadas:
+            raise ValueError(f"Tabela '{tablename}' não existe. Tabelas disponíveis: {self.tabelas_criadas}")
+
+    def _colunas(self, tablename:str) -> list[tuple[str, str]]:
+        """(nome, tipo) de cada coluna da tabela, na ordem em que foram criadas."""
+        self._validar_tabela(tablename)
+        with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
+            return [(col[1], str(col[2]).upper()) for col in conn.execute(f"PRAGMA table_info({tablename})")]
+
+    def esquema(self) -> dict[str, list[str]]:
+        """{tabela: [colunas]}: o que o modelo precisa saber para montar filtros válidos."""
+        return {t: [nome for nome, _ in self._colunas(t)] for t in self.tabelas_criadas}
+
+    def _get_data(self, tablename:str, filter:dict|None = None):
+        colunas = dict(self._colunas(tablename))
+        where, params = [], []
+        for coluna, valor in (filter or {}).items():
+            if coluna not in colunas:
+                raise ValueError(f"Coluna '{coluna}' não existe em '{tablename}'. Colunas disponíveis: {list(colunas)}")
+            if any(t in colunas[coluna] for t in ('CHAR', 'TEXT')):
+                where.append(f"{coluna} LIKE ? COLLATE NOCASE")
+                params.append(f"%{valor}%")
+            else:
+                where.append(f"{coluna} = ?")
+                params.append(valor)
+        sql = f"SELECT * FROM {tablename}" + (f" WHERE {' AND '.join(where)}" if where else "")
         with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
             conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute(f"""SELECT * FROM {tablename}""")
-            return [dict(line) for line in cursor.fetchall()]
-        
+            return [dict(line) for line in conn.execute(sql, params).fetchall()]
+
+    def resgatar(self, tablename:str, filtros:dict|None = None):
+        """Leitura com erro como dado: tabela ou coluna inválida volta como {'erro': ...} listando o que existe."""
+        if filtros is not None and not isinstance(filtros, dict):
+            return {'erro': 'Os filtros devem ser um objeto no formato {coluna: valor}'}
+        try:
+            return self._get_data(tablename, filtros)
+        except ValueError as err:
+            return {'erro': str(err)}
+
     def _get_db_json_format(self, tablename):
-        with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
-            cursor = conn.cursor()
-            cursor.execute(f"PRAGMA table_info({tablename})")
+        type_str = ['VARCHAR', 'TEXT', 'CHAR']
+        # PRAGMA table_info: nome, tipo; a coluna `id` é gerada pelo banco e não entra no schema
+        list_props = [
+            {
+                'name':nome,
+                'type':tipo.lower() if not any(x in tipo for x in type_str) else 'string'
+            }
+            for nome, tipo in self._colunas(tablename) if(nome != 'id')]
+        return createJsonFormat(f'{tablename}_json_format', list_props)
 
-            # Estrutura: cid, nome_campo, tipo campo, not null (0=false, 1=true), default_value, primary key (0=False, 1=True)
-            columns = cursor.fetchall()
-
-            type_str = ['VARCHAR', 'TEXT', 'CHAR']
-            
-            list_props = [
-                {
-                    'name':col[1], 
-                    'type':str(col[2]).lower() if not any(map(lambda x: x in col[2], type_str)) else 'string' 
-                } 
-                for col in columns if(col[1] != 'id')]
-            return createJsonFormat(f'{tablename}_json_format', list_props)
-            
     def _cria_tabela(self, tablename, fields:list[str]):
         self.tabelas_criadas.append(tablename)
         with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
@@ -99,54 +126,48 @@ class Registrador(Agent):
                 - nm_tabela: {tablename}
                 - dados: {data}
         """)
+        colunas = [nome for nome, _ in self._colunas(tablename) if nome != 'id']
+        dados = {k: v for k, v in data.items() if k != 'id'}
+        desconhecidas = [k for k in dados if k not in colunas]
+        if desconhecidas:
+            raise ValueError(f"Colunas inexistentes em '{tablename}': {desconhecidas}. Colunas disponíveis: {colunas}")
+        cols = [c for c in colunas if c in dados]
         with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
-            cursor = conn.cursor()
-            cursor.execute(f"SELECT * FROM {tablename} LIMIT 0")
-            if(data.get('id')): del data['id']
-            cols = [str(col[0]) for col in cursor.description if(str(col[0]) != 'id')]
-            desc_db = self._get_db_json_format(tablename)['json_schema']['schema']['properties']
-            ordenated_data=dict(sorted(data.items(), key=lambda item: cols.index(item[0])))
-            def func_map(key):    
-                if(str(desc_db[key]['type']).lower() in ['integer', 'float', 'decimal']):
-                    return str(ordenated_data[key])
-                else:
-                    return f"'{ordenated_data[key]}'"
-            ordenated_data = list(map(func_map, ordenated_data.keys()))
-            cursor.execute(f"""
-                INSERT INTO {tablename} 
-                ({','.join(cols)})
-                VALUES
-                ({','.join(ordenated_data)})
-            """)
+            conn.execute(
+                f"INSERT INTO {tablename} ({','.join(cols)}) VALUES ({','.join('?' * len(cols))})",
+                [dados[c] for c in cols]
+            )
 
     def _loop_insert_data(self, sys_message):
-        conteudo = json.loads(sys_message['conteudo'])
-        json_format = self._get_db_json_format(conteudo['nm_tabela'])
-        messages = [
-            Message('system', 'Estruture os dados que serão enviados pelo o usuário em um json').to_dict(),
-            Message('user', str(conteudo['dado_a_ser_registrado'])).to_dict()
-        ] 
-        response = json.loads(self.client.chat.completions.create(
-            model= self.model,
-            messages=messages,
-            response_format=json_format,
-            temperature=0
-        ).choices[0].message.content)
         try:
+            conteudo = json.loads(sys_message['conteudo'])
+            json_format = self._get_db_json_format(conteudo['nm_tabela'])
+            messages = [
+                Message('system', 'Estruture os dados que serão enviados pelo o usuário em um json').to_dict(),
+                Message('user', str(conteudo['dado_a_ser_registrado'])).to_dict()
+            ] 
+            # Técnica: extração estruturada zero-shot.
+            # Contrato: schema estrito derivado das colunas da tabela (PRAGMA table_info), sem `id`.
+            # Impede: coluna inexistente ou valor de tipo errado chegar ao INSERT.
+            response = json.loads(self.client.chat.completions.create(
+                model= self.model,
+                messages=messages,
+                response_format=json_format,
+                temperature=0
+            ).choices[0].message.content)
             self._inserir_tabela(conteudo['nm_tabela'], response)
-            return {'Sucesso': 'Linha registrada com sucesso!'}
+            return {'sucesso': 'Linha registrada com sucesso!'}
         except Exception as err:
             print(err)
-            return {'Erro':'Falha ao tentar inserir registro!'}
+            return {'erro': f'Falha ao tentar inserir registro: {err}'}
 
     def _loop_select_data(self, sys_message):
-        conteudo = json.loads(sys_message['conteudo'])
         try:
-            response = self._get_data(conteudo['nm_tabela'],[])
-            return response
+            conteudo = json.loads(sys_message['conteudo'])
+            return self.resgatar(conteudo['nm_tabela'], conteudo.get('filtros'))
         except Exception as err:
             print(err)
-            return {'Erro': 'Falha ao tentar recuperar dados'}
+            return {'erro': f'Falha ao tentar recuperar dados: {err}'}
    
     def run(self):
         response_format = createJsonFormat('loop_json_format', [
@@ -156,7 +177,11 @@ class Registrador(Agent):
         ])
         for _ in range(1):
             self.send_message(Message('system','escolha qual será o proximo passo.'))
-            sys_message = json.loads(self.get_answer(response_format=response_format).content)
+            # Técnica: roteamento zero-shot entre duas ações, com `pensamento` como justificativa curta.
+            # Contrato: schema estrito {pensamento, acao: RESGATAR_DADOS|INSERIR_DADOS, conteudo: JSON em string}.
+            #   O enum garante que a ação é válida, não que seja a certa.
+            # Impede: ação fora das duas permitidas e resposta em texto livre.
+            sys_message = json.loads(self.get_answer(response_format=response_format, temperature=0).content)
             
             if(sys_message['acao'] == "INSERIR_DADOS"):
                 return self._loop_insert_data(sys_message)

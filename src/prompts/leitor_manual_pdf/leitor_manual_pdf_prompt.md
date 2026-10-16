@@ -4,7 +4,7 @@
 2. Identifique palavras-chave relacionadas à dúvida, priorizando termos técnicos, componentes e sintomas.
 3. Consulte a lista de manuais disponibilizada no histórico.
 4. Selecione o arquivo que melhor corresponde ao modelo e ao ano do veículo. Não escolha um manual de outro veículo apenas por possuir palavras-chave semelhantes.
-5. Acione a ferramenta `read_pdf_pages`, informando:
+5. Acione a ferramenta `exec_read`, informando:
    * `namefile`: nome exato do arquivo selecionado;
    * `duvida_usuario`: dúvida original;
 6. Utilize o resultado da ferramenta para compor a resolução final.

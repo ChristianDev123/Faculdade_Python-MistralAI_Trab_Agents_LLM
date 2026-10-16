@@ -5,20 +5,29 @@ sys.path.append(PROJECT_PATH)
 from interfaces.message import Message
 from interfaces.agent import Agent
 from interfaces.tool_call import ToolCall
-from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
 from interfaces.json_format import createJsonFormat
+from src.trajetoria import Trajetoria, carimbo_prompts, commit_atual
 import json
 import inspect
 import time
 
 load_dotenv()
 
+MAX_ITERACOES = 10        # voltas do laço externo; cada volta termina esperando uma entrada do usuário
+MAX_RODADAS_TOOL = 5      # rodadas seguidas de tool calls dentro de uma volta
+MAX_ERROS_SEGUIDOS = 3    # a mesma ferramenta falhando N vezes seguidas encerra a execução
+MAX_RESULTADO_LOG = 4000  # caracteres do retorno de ferramenta gravados no log
+PARAMS_MODELO = {'temperature': 0, 'max_tokens': 400}
+
 class Orquestrador(Agent):
-    def __init__(self, client:OpenAI, agents:list[Agent] = []):
+    def __init__(self, client:OpenAI, agents:list[Agent] = [], user_id:str = 'local', session_id:str|None = None):
         super().__init__('conversacional', client = client, f_entrada="", f_saida="")
         self.agents = agents
+        self.user_id = user_id
+        self.session_id = session_id or time.strftime('%Y%m%d-%H%M%S')
+        self.trajetoria = Trajetoria(self.user_id, self.session_id)
         self.json_format_orquestrador = createJsonFormat('descisao_orquestrador',[
             {'name':'pensamento', 'type':'string'},
             {'name':'acao', 'type':'string', 'enum':["RESPONDER_USUARIO", "CHAMAR_SUBAGENTE"]},
@@ -30,13 +39,17 @@ class Orquestrador(Agent):
         self._create_tool_calls()
 
     def _create_tool_calls(self):
-        get_all_table_names = ToolCall('get_all_table_names', "Utilize para receber uma lista de nomes de tabelas préviamente criadas")
+        get_all_table_names = ToolCall('get_all_table_names', "Utilize para receber as tabelas préviamente criadas e as colunas de cada uma")
         self.tool_calls.append(get_all_table_names.to_dict())
         self.tool_calls_func_link['get_all_table_names'] = self._get_all_table_names
 
         rescue_db_data = ToolCall('rescue_db_data',"Utilize para resgatar dados dentro da base de dados local do projeto.")
         rescue_db_data.insert_prop('tablename', {'type':'string','description':'nome da tabela à ser lida'})
-        rescue_db_data.insert_prop('query_filter', {'type':'string', 'description':'Filtros à serem aplicados na busca'})
+        rescue_db_data.insert_prop('query_filter', {
+            'type':'object',
+            'description':'Filtros no formato {coluna: valor}. Use {} para trazer a tabela inteira. Colunas de texto casam por "contém", sem diferenciar maiúsculas; colunas numéricas casam por igualdade.',
+            'additionalProperties': True
+        })
         self.tool_calls.append(rescue_db_data.to_dict())
         self.tool_calls_func_link['rescue_db_data'] = self._rescue_db_data
 
@@ -67,20 +80,24 @@ class Orquestrador(Agent):
         self.tool_calls.append(execute_scrapping.to_dict())
         self.tool_calls_func_link['execute_scrapping'] = self._execute_scrapping
 
-    def _get_all_table_names(self):
-        agent = next((a for a in self.agents if a.name.upper() == 'REGISTRADOR'), None)
-        return agent.tabelas_criadas
+    def _agente(self, nome:str) -> Agent:
+        return next((a for a in self.agents if a.name.upper() == nome), None)
 
-    def _rescue_db_data(self, tablename:str, query_filter:list[str] = []):
-        agent = next((a for a in self.agents if a.name.upper() == 'REGISTRADOR'), None)
-        message_user = f'Resgate todos os dados da tabela {tablename}'
-        if(len(query_filter)): message_user += f'\n aplicando os filtros: {query_filter}'
-        agent.send_message(Message('user', message_user))
-        retorno = agent.run()
-        return retorno
+    def _get_all_table_names(self):
+        return self._agente('REGISTRADOR').esquema()
+
+    def _rescue_db_data(self, tablename:str, query_filter:dict|str|None = None):
+        # Consulta por regra em código: o orquestrador já sabe a tabela e os filtros,
+        # então não há por que gastar uma chamada de modelo no Registrador para repassá-los.
+        if isinstance(query_filter, str):
+            try:
+                query_filter = json.loads(query_filter) if query_filter.strip() else {}
+            except json.JSONDecodeError:
+                return {'erro': 'query_filter deve ser um objeto JSON no formato {coluna: valor}'}
+        return self._agente('REGISTRADOR').resgatar(tablename, query_filter)
 
     def _insert_db_question(self, modelo:str, ano:str, motorizacao:str, duvida:str, kw_duvidas:list[str], resolucao:str):
-        agent = next((a for a in self.agents if a.name.upper() == 'REGISTRADOR'), None)
+        agent = self._agente('REGISTRADOR')
         message_user = f""" Registre essa dúvida:
             {{
                 'modelo':{modelo},
@@ -93,16 +110,13 @@ class Orquestrador(Agent):
         """
         agent.send_message(Message('user', message_user))
         return agent.run()
-        
-    def _write_conversation_log(self, user_id:str, section_id:str):
-        logs_path = Path(PROJECT_PATH) / 'logs' / str(user_id) / str(section_id) / 'log.txt'
-        logs_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(logs_path, 'a', encoding='utf-8') as f:
-            f.write(f'{self.messages}')
 
     def _read_manual_pdf(self):
-        agent = next((a for a in self.agents if a.name.upper() == 'LEITOR_MANUAL_PDF'), None)
+        agent = self._agente('LEITOR_MANUAL_PDF')
         self.send_message(Message('user', 'Estruture os dados do veículo e dúvida que você recebeu do usuário em JSON'))
+        # Técnica: extração estruturada zero-shot, sobre o histórico da conversa.
+        # Contrato: schema estrito `agent.f_entrada` (duvida_usuario, modelo, ano:int, motorizacao).
+        # Impede: repassar texto livre ao leitor e ano como string.
         formated_data = self.get_answer(
             temperature = 0,
             response_format = agent.f_entrada
@@ -111,47 +125,96 @@ class Orquestrador(Agent):
         return agent.run()
 
     def _execute_scrapping(self):
-        agent = next((a for a in self.agents if a.name.upper() == 'WEBSCRAPPER'), None)
+        agent = self._agente('WEBSCRAPPER')
         self.send_message(Message('user', 'Estruture os dados que você recebeu em JSON'))
+        # Técnica: extração estruturada zero-shot, sobre o histórico da conversa.
+        # Contrato: schema estrito `agent.f_entrada` (modelo, ano:int, motorizacao, fabricante).
+        # Impede: o scrapper receber dados incompletos ou em formato livre.
         formated_data = self.get_answer(
             temperature = 0,
             response_format = agent.f_entrada
-        )
+        ).content
         agent.send_message(Message('user', formated_data))
         return agent.run()
 
+    @staticmethod
+    def _eh_erro(result) -> bool:
+        return isinstance(result, dict) and any(str(k).lower() == 'erro' for k in result)
+
+    def _executar_tool(self, tool) -> object:
+        """Executa uma tool call. Qualquer falha volta como dado {'erro': ...} para o modelo se corrigir."""
+        nome = tool.function.name
+        func = self.tool_calls_func_link.get(nome)
+        if func is None:
+            return {'erro': f"Ferramenta '{nome}' não existe.", 'ferramentas_disponiveis': list(self.tool_calls_func_link)}
+        try:
+            argumentos = json.loads(tool.function.arguments or '{}')
+        except json.JSONDecodeError:
+            return {'erro': f"Os argumentos de '{nome}' não são um JSON válido.", 'recebido': tool.function.arguments}
+
+        print(f"""
+            --- Acionando TOOL CALL --
+            nome: {nome}
+            argumentos: {argumentos}
+        """)
+        inicio = time.time()
+        try:
+            result = func() if len(inspect.signature(func).parameters) == 0 else func(**argumentos)
+        except Exception as err:
+            result = {'erro': f'{type(err).__name__}: {err}'}
+        self.trajetoria.registrar(
+            'tool',
+            ferramenta=nome,
+            argumentos=argumentos,
+            resultado=str(result)[:MAX_RESULTADO_LOG],
+            erro=self._eh_erro(result),
+            duracao_s=round(time.time() - inicio, 3)
+        )
+        return result
+
+    def _ler_usuario(self) -> str | None:
+        try:
+            texto = input('user: ').strip()
+        except EOFError:
+            return None
+        if texto: self.trajetoria.registrar('entrada_usuario', texto=texto)
+        return texto or None
+
     def _human_loop(self, limit_iterator):
-        while True:        
-            if(limit_iterator == 0): return {'finish': 'Programa Terminou por limite de iterações excedido'}
-            
+        erros_seguidos = {}
+        while True:
+            if(limit_iterator == 0): return {'finish': 'LIMITE_ITERACOES', 'detalhe': f'Programa terminou por limite de {MAX_ITERACOES} iterações'}
+            limit_iterator -= 1
+
+            # Técnica: zero-shot com function calling; o campo `pensamento` do JSON é uma justificativa curta.
+            # Contrato: ou `tool_calls`, ou JSON {pensamento, acao: RESPONDER_USUARIO|CHAMAR_SUBAGENTE, conteudo}.
+            #   `json_format_orquestrador` não é passado à chamada: o contrato vale só pelo prompt,
+            #   e o código tolera texto fora do JSON (ramo JSONDecodeError abaixo).
+            # Impede: responder tecnicamente sem consultar ferramenta e pedir vários dados de uma vez.
             response = self.get_answer(
                 tools=self.tool_calls,
-                temperature=0,
-                max_tokens=400
+                **PARAMS_MODELO
             )
 
+            rodadas = 0
             while getattr(response, 'tool_calls', None) and len(response.tool_calls) > 0:
+                if rodadas == MAX_RODADAS_TOOL:
+                    return {'finish': 'LIMITE_RODADAS_TOOL', 'detalhe': f'Mais de {MAX_RODADAS_TOOL} rodadas seguidas de ferramentas sem resposta ao usuário'}
+                rodadas += 1
                 self.send_message(response)
-                
+
                 for tool in response.tool_calls:
-                    func = self.tool_calls_func_link[tool.function.name]
-                    argumentos = json.loads(tool.function.arguments)
-                    sig = inspect.signature(func)
-                    
-                    print(f"""
-                        --- Acionando TOOL CALL -- 
-                        nome: {tool.function.name}
-                        argumentos: {argumentos}
-                    """)
-                    
-                    if len(sig.parameters) == 0: result = func()
-                    else: result = func(**argumentos)
+                    result = self._executar_tool(tool)
 
-                    if(type(result) is dict and result.get('erro')): return {'finish': 'Erro do sistema', 'erro': result['erro']}
-                    
-                    self._write_conversation_log('1','1')        
-                    content_to_send = result if isinstance(result, str) else json.dumps(result)
+                    nome = tool.function.name
+                    if self._eh_erro(result):
+                        erros_seguidos[nome] = erros_seguidos.get(nome, 0) + 1
+                        if erros_seguidos[nome] >= MAX_ERROS_SEGUIDOS:
+                            return {'finish': 'ERRO_SISTEMICO', 'ferramenta': nome, 'erro': result}
+                    else:
+                        erros_seguidos[nome] = 0
 
+                    content_to_send = result if isinstance(result, str) else json.dumps(result, ensure_ascii=False, default=str)
                     self.send_message(Message(
                         role='tool',
                         tool_call_id=tool.id,
@@ -161,32 +224,57 @@ class Orquestrador(Agent):
                 # Reconsulta o modelo para ele processar o retorno da Tool
                 response = self.get_answer(
                     tools=self.tool_calls,
-                    temperature=0,
-                    max_tokens=400
+                    **PARAMS_MODELO
                 )
 
             if response.content:
                 try:
                     sys_message = json.loads(response.content)
-                    if sys_message.get('acao') == 'RESPONDER_USUARIO':
-                        print(f"Bot: {sys_message.get('conteudo')}")
-                        user_input = input('user: ').strip()
-                        if not user_input:
-                            return {'finish': 'O usuário terminou o programa ao não enviar input.'}
-                        self.send_message(Message('user', user_input))
                 except json.JSONDecodeError:
+                    self.trajetoria.registrar('resposta', texto=response.content, formato='texto_livre')
                     print(f"Bot: {response.content}")
-                    user_input = input('user: ').strip()
+                    user_input = self._ler_usuario()
                     if not user_input:
-                        return {'finish': 'O usuário terminou o programa ao não enviar input.'}
+                        return {'finish': 'ENCERRADO_PELO_USUARIO', 'detalhe': 'O usuário terminou o programa ao não enviar input.'}
                     self.send_message(Message('user', user_input))
-                
-                
+                    continue
 
+                acao = sys_message.get('acao') if isinstance(sys_message, dict) else None
+                if acao == 'RESPONDER_USUARIO':
+                    self.trajetoria.registrar('resposta', texto=sys_message.get('conteudo'), formato='json')
+                    print(f"Bot: {sys_message.get('conteudo')}")
+                    user_input = self._ler_usuario()
+                    if not user_input:
+                        return {'finish': 'ENCERRADO_PELO_USUARIO', 'detalhe': 'O usuário terminou o programa ao não enviar input.'}
+                    self.send_message(Message('user', user_input))
+                else:
+                    # `acao` não executa nada sozinha: devolve o erro ao modelo, que corrige na próxima volta.
+                    self.trajetoria.registrar('acao_invalida', acao=acao)
+                    self.send_message(Message('system', (
+                        f"A ação '{acao}' não executa nada sem uma tool call. "
+                        "Emita a tool call da ferramenta necessária ou responda com acao RESPONDER_USUARIO."
+                    )))
 
-    def run(self):    
+    def _carimbo(self) -> dict:
+        return {
+            'commit': commit_atual(),
+            'modelos': {a.name: a.model for a in [self, *self.agents]},
+            'parametros_orquestrador': PARAMS_MODELO,
+            'limites': {
+                'max_iteracoes': MAX_ITERACOES,
+                'max_rodadas_tool': MAX_RODADAS_TOOL,
+                'max_erros_seguidos': MAX_ERROS_SEGUIDOS,
+            },
+            'prompts': carimbo_prompts(),
+        }
+
+    def run(self):
+        self.trajetoria.registrar('inicio', user_id=self.user_id, session_id=self.session_id, **self._carimbo())
         total_execution_time = time.time()
-        finish_reason = self._human_loop(10)
+        finish_reason = self._human_loop(MAX_ITERACOES)
         total_execution_time = time.time() - total_execution_time
+        self.trajetoria.registrar('termino', tempo_s=round(total_execution_time, 3), **finish_reason)
         print(finish_reason)
         print(f'Tempo total de execução da aplicação: {total_execution_time:.6f} segundos')
+        print(f'Trajetória gravada em: {self.trajetoria.path}')
+        return finish_reason

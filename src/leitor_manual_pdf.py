@@ -14,6 +14,18 @@ from chromadb.utils import embedding_functions
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+# Primeira página com conteúdo real de cada manual. As anteriores são capa, sumário e índice,
+# que respondem "onde está" e não "o que fazer". Medido nos PDFs do repositório:
+#   Fox 2015: índice nas páginas 4-5, conteúdo a partir da 6
+#   Fox 2020: índice nas páginas 6-8, conteúdo a partir da 9
+# Manual novo sem entrada aqui usa o padrão abaixo: confira a página do índice antes de indexá-lo.
+PRIMEIRA_PAGINA_CONTEUDO = {
+    'Volkswagen_Fox_2015.pdf': 6,
+    'Volkswagen_Fox_2020.pdf': 9,
+}
+PRIMEIRA_PAGINA_PADRAO = 6
+K_TRECHOS = 15  # trechos (chunks de 800 caracteres) levados ao modelo; justificativa do valor em docs/rag.md
+
 class LeitorManualPDF(Agent):
     def __init__(self, client:OpenAI):
         f_entrada = createJsonFormat('entrada_leitura_pdf',[
@@ -109,8 +121,8 @@ class LeitorManualPDF(Agent):
         collection = self._chroma_collection(namefile)
         result = collection.query(
             query_texts=[duvida_usuario],
-            n_results = 15, # maximo 5 páginas recuperadas
-            where={"pagina": {"$gt": 5}}
+            n_results = K_TRECHOS,
+            where={"pagina": {"$gte": PRIMEIRA_PAGINA_CONTEUDO.get(namefile, PRIMEIRA_PAGINA_PADRAO)}}
         )
         if not result['documents'][0]:
             return {'erro':'Nenhum resultado encontrado'}
@@ -125,6 +137,9 @@ class LeitorManualPDF(Agent):
         sys_prompt = Message('system',self.read_system_prompts('leitor_manual_pdf/tool_call_leitura_pdf.md')).to_dict()
         messages = [sys_prompt] + pdf_pages
 
+        # Técnica: geração fundamentada nos trechos recuperados (RAG), com `pensamento` antes do resumo (cadeia de pensamento).
+        # Contrato: schema estrito {pensamento, trecho_original, resumo}; o limite de 100 palavras do resumo vale só pelo prompt.
+        # Impede: usar índice ou glossário como resposta e resumir sem citar o trecho de origem.
         response_completion = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
@@ -136,6 +151,9 @@ class LeitorManualPDF(Agent):
         return resultado                        
 
     def run(self):
+        # Técnica: zero-shot com function calling (get_pdf_filename -> exec_read), roteiro no prompt do leitor.
+        # Contrato: só tool calls; o JSON final é pedido na mensagem seguinte ao laço.
+        # Impede: ler o manual de outro veículo só por haver palavras-chave parecidas.
         sys_message = self.get_answer(
             tools=self.tool_calls,
             temperature=0
@@ -174,6 +192,9 @@ class LeitorManualPDF(Agent):
             - Resumo elaborado a partir da leitura do manual (resolucao)
         """))
 
+        # Técnica: formatação do histórico em JSON (zero-shot).
+        # Contrato: schema estrito `f_saida` {duvida_usuario, kws_duvida_usuario[], resolucao}.
+        # Impede: devolver ao orquestrador texto livre em vez do objeto esperado.
         return self.get_answer(
             response_format=self.f_saida,
             temperature=0
