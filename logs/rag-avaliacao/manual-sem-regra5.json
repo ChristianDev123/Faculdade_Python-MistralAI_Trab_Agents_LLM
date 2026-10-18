@@ -1,10 +1,7 @@
 {
-  "commit": "1ff9b8a",
-  "codigo_limpo": false,
-  "arquivos_alterados": [
-    "avaliar_rag.py",
-    "src/prompts/leitor_manual_pdf/tool_call_leitura_pdf.md"
-  ],
+  "commit": "b1880be",
+  "codigo_limpo": true,
+  "arquivos_alterados": [],
   "data": "2026-10-18",
   "modelo": "qwen2.5:7b",
   "contexto_ollama": "8192",

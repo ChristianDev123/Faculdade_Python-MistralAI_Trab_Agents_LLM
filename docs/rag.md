@@ -63,24 +63,26 @@ A classificação **não concentrou tudo em "assunto"**: 2 consultas estruturada
 
 ### Resultado das dez no grafo real
 
-Execução de 2026-10-16 (`python avaliar_rag.py perguntas`, um usuário, uma conversa por pergunta). Os logs estão em `logs/rag-avaliacao/` e o resumo em `logs/rag-avaliacao/resultado.json`.
+Execução de **2026-10-18**, commit `b1880be`, árvore limpa, `qwen2.5:7b`, contexto do Ollama em 8192, prompt do leitor **sem a regra 5** (`python avaliar_rag.py perguntas`, um usuário, uma conversa por pergunta). Os logs estão em `logs/rag-avaliacao/q1` a `q10` (cada `trajetoria.jsonl` guarda as duas execuções, a de 2026-10-16 e esta, cada uma começando por um evento `inicio` com commit e hash dos prompts) e o resumo em `logs/rag-avaliacao/resultado.json`.
 
 | # | Resultado | Situação | Fonte |
 |---|---|---|---|
 | 1 | **ok:** "Palheta traseira ACDelco — código 93356933" | respondido | base local |
 | 2 | **ok:** "Encontrei 'Roda de liga leve' ... mas sem código cadastrado. Sem o código não indico a peça" | sem_base | base local |
-| 3 | **ok:** "aproximadamente 50 litros, com 7 litros reservados" | respondido | manual |
-| 4 | **falhou:** disse que o manual "não especifica" (recusa) | sem_base | manual |
-| 5 | **falhou:** recusou | sem_base | manual |
+| 3 | **ok:** "aproximadamente 50 litros" (páginas 195 a 197) | respondido | manual |
+| 4 | **ok:** "não pode ser rebocado se a transmissão estiver sem lubrificante" (páginas 158, 312, 313, 317) | respondido | manual |
+| 5 | **ok pelo critério automático, resposta fraca:** "é possível lavar com lavador de alta pressão, mas é necessário seguir as orientações de segurança e utilizar a pressão e distância corretas" | respondido | manual |
 | 6 | **ok:** recusou, por ser fora do corpus | sem_base | manual |
 | 7 | **ok:** respondeu 50 litros, **lendo o manual de novo**, não pela memória | respondido | manual |
 | 8 | fora da cobertura: perguntou a motorização | faltam_dados | — |
 | 9 | fora da cobertura: perguntou se é peça ou manual | faltam_dados | — |
-| 10 | **ok:** respondeu a partir do manual de 2020 (64 s: inclui a indexação do manual) | respondido | manual |
+| 10 | **ok:** respondeu a partir do manual de 2020 (66 s: inclui a indexação do manual) | respondido | manual |
 
-**6 de 10; 6 de 8 entre as que o grafo cobre.** O defeito encontrado na pergunta 2 foi **corrigido** no meio desta frente: antes, o sistema respondia "Roda de liga leve — código N/A" com `suficiencia=True`; agora uma peça sem código vira `sem_base`.
+**8 de 10; 8 de 8 entre as que o grafo cobre.** Na execução anterior (2026-10-16, commit `97aea9b`, prompt do leitor com a regra 5) foram **6 de 10** (6 de 8): as perguntas 4 e 5 falharam, com "o manual não especifica". O defeito encontrado na pergunta 2 foi **corrigido** no meio desta frente: antes, o sistema respondia "Roda de liga leve — código N/A" com `suficiencia=True`; agora uma peça sem código vira `sem_base`.
 
-**As falhas 4 e 5 são de leitura, não de busca** (diagnóstico feito): na 4 o trecho com a resposta é o **1º** do ranking; na 5 ele é o 2º, o 5º e o 8º. O modelo de 7 bilhões de parâmetros, com a frase "a transmissão não contiver mais lubrificante" na frente, concluiu que o manual não especifica; na 5 o trecho vem fragmentado, porque o PDF tem duas colunas e a extração intercala as linhas. São justamente as duas perguntas que dependem de exceção. Não medi com o `gpt-oss-120b`.
+**Não atribuo a melhora de 6 para 8 só ao prompt.** Entre as duas execuções o commit mudou de `97aea9b` para `b1880be`, que inclui a busca textual (BM25, `k=6`) e outras mudanças da memória. A atribuição ao prompt vem da medição isolada da §6.2.1 (mesmas 32 perguntas, 3 rodadas, só a regra 5 diferente: de 11 para 15 com o fato). Cada pergunta do conjunto roda uma vez, então 8 de 10 é uma faixa, não um número.
+
+**O diagnóstico das falhas 4 e 5 da execução anterior** (leitura, não busca): na 4 o trecho com a resposta era o **1º** do ranking; na 5 era o 2º, o 5º e o 8º. O modelo de 7 bilhões de parâmetros, com a frase "a transmissão não contiver mais lubrificante" na frente, concluía que o manual não especifica. Hoje as duas respondem. **A resposta da 5 é genérica** ("distância corretas"), sem dizer o que o manual diz (manter distância dos pneus, sem jato circular nelas): passa no critério automático, não numa leitura crítica. A 5 ainda depende de um trecho fragmentado, porque o PDF tem duas colunas e a extração intercala as linhas. Não medi com o `gpt-oss-120b`.
 
 **A pergunta 7 não foi reaproveitada da memória**, por escolha de projeto: o corte de similaridade é 0,12 e esta paráfrase ficou mais longe (seção 6 de [memoria.md](memoria.md)).
 
@@ -155,7 +157,7 @@ A ablação das regras do prompt ([prompts.md](prompts.md) §4) mostrou que a re
 | com a regra 5 (anterior) | 12, 11, 11 de 18 | 11, 10, 10 | 14 de 14 | 0 |
 | **sem a regra 5 (atual)** | **16, 16, 16 de 18** | **15, 15, 15** | **14 de 14** | **0** |
 
-5 perguntas passaram a acertar, nenhuma deixou de acertar, e as 14 sem resposta (inclusive as do grupo "termo presente, resposta ausente") continuam recusadas. **A faixa honesta do sistema real passa a ser 16 de 18 respondidas e 15 com o fato** (antes, 10 a 12 e 9 a 11); a tabela acima e o parágrafo anterior descrevem o prompt antigo. Seguem erradas, nas 3 rodadas, "Como substituir a bateria do veículo?", "Como desembaçar o vidro de trás?" e "O pó que sai do airbag é perigoso?". A tabela da §3 (as 10 perguntas pelo grafo, 2026-10-16) e as falhas 4 e 5 foram medidas com o prompt antigo e não foram refeitas.
+5 perguntas passaram a acertar, nenhuma deixou de acertar, e as 14 sem resposta (inclusive as do grupo "termo presente, resposta ausente") continuam recusadas. **A faixa honesta do sistema real passa a ser 16 de 18 respondidas e 15 com o fato** (antes, 10 a 12 e 9 a 11); a tabela acima e o parágrafo anterior descrevem o prompt antigo. Seguem erradas, nas 3 rodadas, "Como substituir a bateria do veículo?", "Como desembaçar o vidro de trás?" e "O pó que sai do airbag é perigoso?". A medição **sem** a regra 5 foi refeita com a árvore limpa (commit `b1880be`, `codigo_limpo: true`) e deu o mesmo, 16/15/0 nas 3 rodadas (`manual-sem-regra5.json`); o controle **com** a regra 5 (`manual-com-regra5.json`) tem o carimbo sujo, só pelo script de avaliação. As 10 perguntas pelo grafo foram refeitas na §3.
 
 ### 6.3 Falsa resposta, o risco que o prompt permissivo poderia ter piorado
 
