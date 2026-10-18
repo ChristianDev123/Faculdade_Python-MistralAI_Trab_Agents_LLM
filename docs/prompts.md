@@ -128,15 +128,18 @@ Nada em `src/prompts/` foi alterado por esta ablação, então não há "frase q
 | | Rodada 1 | Rodada 2 |
 |---|---|---|
 | Página enviada | 73.354 caracteres, 202 cartões de peça | idem |
-| Peças devolvidas pelo modelo | 54 | 54 |
-| Nome da peça está na página | 54/54 | 54/54 |
-| Carros compatíveis estão na página | 54/54 (todos) | 54/54 |
-| **Código da peça está na página** | **13/54** | **13/54** |
-| Código com forma de código (3 a 20 caracteres alfanuméricos) | 51/54 | 51/54 |
+| Peças devolvidas pelo modelo | 34 | 30 |
+| Nome da peça está na página | 34/34 | 30/30 |
+| Carros compatíveis estão na página | 34/34 (todos) | 30/30 (todos) |
+| **Código da peça está na página** | **13/34** | **13/30** |
+| Código é um preço da página reformatado | 0 | 0 |
+| Código com forma de código (3 a 20 caracteres alfanuméricos) | 34/34 | 30/30 |
 | Código repetido entre peças | 0 | 0 |
-| Tempo | 75 s | 73 s |
+| Tempo | 57 s | 41 s |
 
-**Leitura.** Os nomes e as aplicações são fiéis ao texto; os **códigos não**: 41 dos 54 (76%) não existem na página. O cartão de exemplo do prompt mostra um código de 8 dígitos ("Nº original GM: 98551033"), e o modelo devolve números de 3 a 6 dígitos que parecem código mas que ele **inventou**. A medição anterior (contexto 4096, não guardada no log) já mostrava o mesmo: 8 de 24 códigos na página e 15 de 24 eram **preços reformatados** ("2.097,65" virando "2097.65"). A checagem `codigo_e_preco_da_pagina` existe por isso e deu 0 desta vez.
+Medição feita com a árvore limpa (commit `a7104d3`, `codigo_limpo: true`). Uma rodada anterior no mesmo dia, com a árvore suja pelo script de avaliação (e portanto fora do log), devolveu 54 e 54 peças, também com 13 códigos na página. Em todas as rodadas já feitas **o número de peças muda muito** (24, 54, 54, 34, 30) e o de códigos reais fica em 13.
+
+**Leitura.** Os nomes e as aplicações são fiéis ao texto; os **códigos não**: 21 de 34 e 17 de 30 (57% a 62%) não existem na página. O cartão de exemplo do prompt mostra um código de 8 dígitos ("Nº original GM: 98551033"), e o modelo devolve números curtos que parecem código mas que ele **inventou** (nas rodadas de 54 peças, 41 delas). A medição anterior (contexto 4096, não guardada no log) já mostrava o mesmo: 8 de 24 códigos na página e 15 de 24 eram **preços reformatados** ("2.097,65" virando "2097.65"). A checagem `codigo_e_preco_da_pagina` existe por isso e deu 0 desta vez.
 
 **Por que, e o que isso exige do prompt.** A página tem 34.591 tokens contando o prompt; o servidor entrega ao modelo **no máximo 4.098** (12%; com o padrão 4096, 2.050, ou 6%), **o fim da página**. O modelo vê uma fração dos cartões e, sem o código à vista, preenche o campo com algo plausível. Isso é uma falha do **desenho** (enviar a página inteira a um modelo pequeno e pedir tudo), não de uma frase do prompt: nenhuma ablação de frase a conserta. A correção tem opções que não apliquei (mudam o código, não o prompt):
 
@@ -182,5 +185,5 @@ Cada resultado leva `commit`, `codigo_limpo`, `arquivos_alterados`, data e model
 - O leitor varia entre rodadas: 2 rodadas por variante distinguem diferenças de 3 ou mais perguntas, não de 1.
 - A regra de decisão da extração foi revista depois de ver dados parciais (§3.4).
 - O stamp das ablações e da raspagem mostra `codigo_limpo: false`.
-- A raspagem varia no contexto: 54 peças com 8192; a medição anterior com 4096 devolveu 24. O número de peças depende do quanto da página o servidor entrega.
+- A raspagem varia muito entre rodadas (24, 54, 54, 34, 30 peças); só a rodada limpa está no log. O número de peças depende do quanto da página o servidor entrega e do acaso do modelo; o de códigos reais (13) não muda.
 - `erro_ferramenta` (término por falha de ferramenta) nunca foi observado, então não está testado.
