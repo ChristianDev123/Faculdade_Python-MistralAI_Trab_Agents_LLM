@@ -3,13 +3,96 @@ import sys
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import json
 import re
+import time
+import unicodedata
 from urllib.parse import quote_plus
 from bs4 import BeautifulSoup, Comment
 from playwright.sync_api import sync_playwright
 from src.util import ler_prompt, modelo_em_uso
 
-MAX_TOKENS_EXTRACAO = 4096  # teto de saída da extração por página
+MAX_TOKENS_EXTRACAO = 4096  # teto de saída da extração por lote (só na reserva com modelo)
 CHROMIUM = '/usr/bin/chromium'
+
+# Tetos da raspagem: sem eles, a quantidade de páginas era a que o modelo dissesse (chegou a dizer 43) e o tempo não tinha limite.
+# O de tempo é conferido entre páginas e entre lotes; uma única chamada ao modelo já tem o seu (LLM_TIMEOUT).
+MAX_PAGINAS = 3
+MAX_SEGUNDOS = 120
+# Tamanho de cada lote enviado ao modelo na reserva. O Ollama corta, em silêncio e pelo começo, o que passa do contexto (4096 por padrão);
+# 5.000 caracteres da página (~2.400 tokens) mais o prompt (~900) cabem com folga, e nenhum lote perde o prompt de sistema.
+LOTE_CARACTERES = 5000
+# Cartão de peça no markdown: "### [Nome](/peca/<código>/<slug>)". O código vem do endereço do link, não de um modelo.
+CABECALHO_CARTAO = re.compile(r'### \[(?P<nome>[^\]]+)\]\(/peca/(?P<codigo>[^/\s)]+)/[^)\s]*\)')
+SELETOR_PROXIMO = (
+    "//button[contains(text(), '>') or text()='>' or contains(text(), '»') or contains(@aria-label, 'Next') or contains(@class, 'next') or contains(text(), 'Próximo') or contains(text(), 'Proximo')]"
+    " | "
+    "//a[contains(text(), '>') or text()='>' or contains(text(), '»') or contains(@aria-label, 'Next') or contains(@class, 'next') or contains(text(), 'Próximo') or contains(text(), 'Proximo')]"
+)
+
+FORMATO_RETORNO = {'type': 'json_schema', 'json_schema': {'name': 'retorno_webscrapping', 'strict': True, 'schema': {
+    'type': 'object',
+    'properties': {
+        'dados_peca': {
+            'type': 'array',
+            'description': 'Lista de peças encontradas no texto',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'nome_peca': {'type': 'string', 'description': 'Nome da peça automotiva'},
+                    'carros_compativeis': {'type': 'array', 'items': {'type': 'string'}, 'description': 'Lista de carros compatíveis com a peça'},
+                    'codigo_peca': {'type': 'string', 'description': 'Código da peça, copiado do texto (ex: VW 373201238A)'},
+                },
+                'required': ['nome_peca', 'carros_compativeis', 'codigo_peca'],
+                'additionalProperties': False,
+            },
+        },
+    },
+    'required': ['dados_peca'],
+    'additionalProperties': False,
+}}}
+
+
+def _dobrar(texto: str) -> str:
+    return re.sub(r'\s+', ' ', ''.join(c for c in unicodedata.normalize('NFKD', str(texto).lower()) if not unicodedata.combining(c)))
+
+
+def codigo_esta_no_texto(codigo: str, texto: str) -> bool:
+    """O código tem forma de código (5 ou mais caracteres, com algum dígito) e aparece no texto como item próprio, sem ser pedaço de outro número?
+    É a verificação que pega o código inventado e o preço reformatado ("2097.65" a partir de "2.097,65")."""
+    codigo = str(codigo).strip()
+    if len(codigo) < 5 or not any(c.isdigit() for c in codigo):
+        return False
+    return re.search(r'(?<![\w.,])' + re.escape(_dobrar(codigo)) + r'(?![\w])', _dobrar(texto)) is not None
+
+
+def ler_cartoes(markdown: str) -> list[dict]:
+    """Lê em código os cartões `### [nome](/peca/<código>/<slug>)` do markdown. Devolve [] se a página não tem esse formato."""
+    pecas = []
+    for bloco in re.split(r'(?m)^(?=### \[)', markdown):
+        m = CABECALHO_CARTAO.match(bloco)
+        if not m:
+            continue
+        detalhes = [l[2:].strip() for l in bloco.splitlines()[1:] if l.startswith('- ')]
+        aplicacoes = []
+        if 'Aplicações:' in detalhes:
+            i = detalhes.index('Aplicações:')
+            if i + 1 < len(detalhes) and not detalhes[i + 1].endswith(':'):
+                aplicacoes = [a.strip() for a in detalhes[i + 1].split(',') if a.strip()]
+        pecas.append({'nome_peca': m['nome'].strip(), 'carros_compativeis': aplicacoes, 'codigo_peca': m['codigo']})
+    return pecas
+
+
+def em_lotes(markdown: str, limite: int = LOTE_CARACTERES) -> list[str]:
+    """Parte o markdown em lotes de até `limite` caracteres, sem cortar um cartão ao meio (um cartão maior que o limite vai sozinho)."""
+    blocos = [b for b in re.split(r'(?m)^(?=### \[)', markdown) if b.strip()]
+    lotes, atual = [], ''
+    for b in blocos:
+        if atual and len(atual) + len(b) > limite:
+            lotes.append(atual)
+            atual = ''
+        atual += b
+    if atual:
+        lotes.append(atual)
+    return lotes
 
 
 class WebScrapper:
@@ -109,12 +192,36 @@ class WebScrapper:
 
         return resultado.strip()
 
-    def buscar_candidatas(self, link: str, regra: str, modelo: str, ano: int, motorizacao: str, nome_peca: str) -> dict:
-        """Abre o catálogo, percorre as páginas e devolve {'consulta', 'pecas': [...], 'erro'}. Não grava nada."""
-        curr_num_page = 1
-        mx_num_page = 1
+    def _extrair_com_modelo(self, markdown: str, prazo: float) -> tuple[list[dict], int, bool]:
+        """Reserva, para página sem cartões no formato conhecido: o modelo propõe as peças, lote a lote, e o código confere.
+        Devolve (peças cujo código está no lote, quantas foram descartadas, se o prazo acabou antes do último lote)."""
+        sys_prompt = ler_prompt('webscrapper/tool_scrapping.md')
+        pecas, descartadas = [], 0
+        for lote in em_lotes(markdown):
+            if time.monotonic() > prazo:
+                return pecas, descartadas, True
+            # Técnica: extração estruturada com 1 exemplo (one-shot) de card em markdown, no prompt.
+            # Contrato: schema estrito {dados_peca: [{nome_peca, carros_compativeis[], codigo_peca}]}.
+            # Impede: tratar links de menu como peça. O que o modelo devolve é proposta: só vale o código que está no lote.
+            response = self.client.chat.completions.create(
+                model=modelo_em_uso(),
+                messages=[{'role': 'system', 'content': sys_prompt}, {'role': 'user', 'content': lote}],
+                response_format=FORMATO_RETORNO, temperature=0, max_tokens=MAX_TOKENS_EXTRACAO)
+            for peca in json.loads(response.choices[0].message.content).get('dados_peca', []):
+                if codigo_esta_no_texto(peca.get('codigo_peca', ''), lote):
+                    pecas.append(peca)
+                else:
+                    descartadas += 1
+        return pecas, descartadas, False
 
-        if(link.endswith('/') or link.endswith('?')): link = link[:-1]
+    def buscar_candidatas(self, link: str, regra: str, modelo: str, ano: int, motorizacao: str, nome_peca: str, forcar_modelo: bool = False) -> dict:
+        """Abre o catálogo, percorre até MAX_PAGINAS páginas em até MAX_SEGUNDOS e devolve
+        {'consulta', 'pecas', 'erro', 'avisos', 'paginas_lidas', 'modo'}. Não grava nada.
+        Cartões no formato `/peca/<código>/<slug>` são lidos em código; só a página sem esse formato vai ao modelo (e `forcar_modelo` obriga o modelo, para medi-lo)."""
+        inicio = time.monotonic()
+        prazo = inicio + MAX_SEGUNDOS
+        if link.endswith('/') or link.endswith('?'):
+            link = link[:-1]
 
         consulta = regra
         for lacuna, valor in {'<modelo>': modelo, '<ano>': ano, '<motorizacao>': motorizacao, '<nome_peca>': nome_peca}.items():
@@ -122,37 +229,8 @@ class WebScrapper:
         link += f'?{consulta}'
         print("--- EXTRAINDO DADOS VIA WEBSCRAPPING ---")
 
-        json_format_return = {'type': 'json_schema', 'json_schema': {'name': 'retorno_webscrapping', 'strict': True, 'schema': {
-            'type': 'object',
-            'properties': {
-                'dados_peca': {
-                    'type': 'array',
-                    'description': 'Lista de peças encontradas no HTML',
-                    'items': {
-                        'type': 'object',
-                        'properties': {
-                            'nome_peca': {'type': 'string', 'description': 'Nome da peça automotiva'},
-                            'carros_compativeis': {'type': 'array', 'items': {'type': 'string'}, 'description': 'Lista de carros compatíveis com a peça'},
-                            'codigo_peca': {'type': 'string', 'description': 'Código da peça (ex: VW 373201238A)'},
-                        },
-                        'required': ['nome_peca', 'carros_compativeis', 'codigo_peca'],
-                        'additionalProperties': False,
-                    },
-                },
-                'max_pagina': {'type': 'integer', 'description': 'página final do site'},
-            },
-            'required': ['dados_peca', 'max_pagina'],
-            'additionalProperties': False,
-        }}}
-        sys_prompt = ler_prompt('webscrapper/tool_scrapping.md')
-        vistas = set()
-        pecas = []
-        selector_proximo = (
-        "//button[contains(text(), '>') or text()='>' or contains(text(), '»') or contains(@aria-label, 'Next') or contains(@class, 'next') or contains(text(), 'Próximo') or contains(text(), 'Proximo')]"
-        " | "
-        "//a[contains(text(), '>') or text()='>' or contains(text(), '»') or contains(@aria-label, 'Next') or contains(@class, 'next') or contains(text(), 'Próximo') or contains(text(), 'Proximo')]"
-        )
-
+        vistas, pecas, avisos, modos = set(), [], [], []
+        paginas_lidas = 0
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(executable_path=CHROMIUM, headless=True)
@@ -161,17 +239,12 @@ class WebScrapper:
                     viewport={"width": 1280, "height": 800}
                 )
                 page = context.new_page()
-
-                while curr_num_page <= mx_num_page:
-                    print(f'Processando Página {curr_num_page}/{mx_num_page} (URL Atual: {page.url or link})')
-                    if curr_num_page == 1:
+                while True:
+                    print(f'Processando página {paginas_lidas + 1} de no máximo {MAX_PAGINAS} (URL atual: {page.url or link})')
+                    if paginas_lidas == 0:
                         page.goto(link, wait_until="networkidle", timeout=30000)
                     else:
-                        botao_proximo = page.locator(selector_proximo).first
-                        if not botao_proximo.is_visible():
-                            print("Botão '>' não encontrado ou não está visível. Encerrando paginação.")
-                            break
-                        botao_proximo.click()
+                        page.locator(SELETOR_PROXIMO).first.click()
                         page.wait_for_load_state("networkidle", timeout=15000)
 
                     soup = BeautifulSoup(page.content(), 'html.parser')
@@ -194,28 +267,32 @@ class WebScrapper:
                     html_filtrado = "--- LINKS E CARDS DA PAGINA ---\n" + "\n".join(links_tags)
                     if nav_tags:
                         html_filtrado += "\n\n--- COMPONENTES DE NAVEGACAO E PAGINACAO ---\n" + "\n".join(nav_tags)
+                    markdown = self.processar_html_generico_para_markdown(html_filtrado)
 
-                    # Técnica: extração estruturada com 1 exemplo (one-shot) de card em markdown, no prompt.
-                    # Contrato: schema estrito {dados_peca: [{nome_peca, carros_compativeis[], codigo_peca}], max_pagina}.
-                    # Impede: tratar links de menu como peça e esquecer a paginação (sem `nav`, max_pagina = 1).
-                    response = self.client.chat.completions.create(
-                        model=modelo_em_uso(),
-                        messages=[
-                            {'role': 'system', 'content': sys_prompt},
-                            {'role': 'user', 'content': self.processar_html_generico_para_markdown(html_filtrado)},
-                        ],
-                        response_format=json_format_return,
-                        temperature=0,
-                        max_tokens=MAX_TOKENS_EXTRACAO
-                    )
-                    data = json.loads(response.choices[0].message.content)
-                    mx_num_page = data.get('max_pagina', mx_num_page)
-                    for peca in data.get('dados_peca', []):
-                        chave = f"{peca.get('codigo_peca')}_{peca.get('nome_peca')}"
-                        if chave not in vistas:
-                            vistas.add(chave)
+                    da_pagina = [] if forcar_modelo else ler_cartoes(markdown)
+                    if da_pagina:
+                        modos.append('codigo')
+                    else:
+                        modos.append('modelo')
+                        da_pagina, descartadas, sem_prazo = self._extrair_com_modelo(markdown, prazo)
+                        if descartadas:
+                            avisos.append(f"Descartei {descartadas} peça(s) da página {paginas_lidas + 1}: o código que o modelo leu não estava no texto da página.")
+                        if sem_prazo:
+                            avisos.append(f"O tempo máximo da raspagem ({MAX_SEGUNDOS} s) acabou no meio da página {paginas_lidas + 1}; a leitura dela ficou incompleta.")
+                    for peca in da_pagina:
+                        if peca['codigo_peca'] not in vistas:
+                            vistas.add(peca['codigo_peca'])
                             pecas.append(peca)
-                    curr_num_page += 1
+                    paginas_lidas += 1
+
+                    if not page.locator(SELETOR_PROXIMO).first.is_visible():
+                        break
+                    if paginas_lidas >= MAX_PAGINAS:
+                        avisos.append(f"Li {paginas_lidas} páginas e o catálogo tem mais (teto de {MAX_PAGINAS}); podem faltar peças.")
+                        break
+                    if time.monotonic() > prazo:
+                        avisos.append(f"O tempo máximo da raspagem ({MAX_SEGUNDOS} s) acabou depois de {paginas_lidas} página(s); podem faltar peças.")
+                        break
         except Exception as err:
-            return {'consulta': link, 'pecas': pecas, 'erro': f'{type(err).__name__}: {err}'}
-        return {'consulta': link, 'pecas': pecas, 'erro': None}
+            return {'consulta': link, 'pecas': pecas, 'erro': f'{type(err).__name__}: {err}', 'avisos': avisos, 'paginas_lidas': paginas_lidas, 'modo': modos}
+        return {'consulta': link, 'pecas': pecas, 'erro': None, 'avisos': avisos, 'paginas_lidas': paginas_lidas, 'modo': modos}

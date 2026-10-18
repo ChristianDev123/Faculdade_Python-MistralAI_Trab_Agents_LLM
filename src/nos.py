@@ -257,7 +257,7 @@ def consultar_base(state, config):
 
 @registrando
 def raspar(state, config):
-    # Técnica (dentro do scraper): extração estruturada one-shot de cada página do catálogo.
+    # Dentro do scraper: os cartões `/peca/<código>/` são lidos em código; só a página sem esse formato vai ao modelo (one-shot, em lotes), e o código é conferido contra o texto.
     # Aqui só se decide, em código, qual catálogo abrir e com quais dados; nada é gravado neste nó.
     s, v = servicos(), state['veiculo']
     catalogos = s.reg.resgatar('webcatalogos', {'fabricante': v['fabricante']})
@@ -265,10 +265,12 @@ def raspar(state, config):
         return {'erro': {'origem': 'sem_base', 'mensagem': f"Não há catálogo cadastrado para a montadora {v['fabricante']}."}}
     achado = s.scraper.buscar_candidatas(catalogos[0]['link'], catalogos[0]['regra'],
                                          v['modelo'], v['ano'], v['motorizacao'], state['nome_peca'])
-    fonte = Fonte(tipo='catalogo_web', origem=achado['consulta'], evidencia=f"{len(achado['pecas'])} peça(s) extraída(s)").model_dump()
+    modo = 'em código' if set(achado['modo']) == {'codigo'} else ('pelo modelo' if set(achado['modo']) == {'modelo'} else 'em código e pelo modelo')
+    fonte = Fonte(tipo='catalogo_web', origem=achado['consulta'],
+                  evidencia=f"{len(achado['pecas'])} peça(s) extraída(s) {modo} em {achado['paginas_lidas']} página(s)").model_dump()
     if achado['erro'] and not achado['pecas']:
         return {'erro': {'origem': 'ferramenta', 'mensagem': achado['erro']}, 'passos': ['raspar'], 'evidencias': [fonte]}
-    avisos = [f"A raspagem terminou antes do fim ({achado['erro']})."] if achado['erro'] else []
+    avisos = list(achado['avisos']) + ([f"A raspagem terminou antes do fim ({achado['erro']})."] if achado['erro'] else [])
     candidatas = [Peca(**p).model_dump() for p in achado['pecas']]
     saida = {'candidatas': candidatas, 'passos': ['raspar'], 'evidencias': [fonte], 'avisos': avisos}
     if candidatas:

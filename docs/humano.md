@@ -66,6 +66,8 @@ A gravação usa chave de idempotência derivada do conteúdo (hash dos campos d
 | 1 | `logs/exemplos/pausa_edicao/` | `editar remover 1,2,3,4,5` | 21 nova(s), 0 já existia(m) |
 | 2 | `logs/exemplos/pausa_edicao-2/` | `editar remover 1,2,3,4,5` | **0 nova(s)**, 21 já existia(m) |
 
+**Atualização de 2026-10-18:** o `raspar` agora devolve todas as peças do cartão (198 para a palheta do Onix, sem filtro de relevância), e a pessoa aprova uma lista de 198 linhas, o que torna `editar remover` trabalhoso; a prova acima (21 peças) é de antes da mudança, e `logs/validacao-raspagem/s1` mostra a aprovação da lista grande. O `avisos` do raspar (peças descartadas, teto de páginas ou de tempo) aparece junto da resposta.
+
 A aprovação repetida não criou linha nenhuma. O gerador restaura o banco depois de cada cenário, então não há contagem de linhas da tabela para citar: a prova é o `ja_existia` devolvido pela gravação.
 
 ## 6. A segunda parada: confirmar antes de apagar os dados

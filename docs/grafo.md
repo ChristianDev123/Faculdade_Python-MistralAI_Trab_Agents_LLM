@@ -124,7 +124,7 @@ O desenho e as duas listas coincidem. Se divergirem um dia, vale o código.
 | `confirmar_esquecimento` | **humano** (`interrupt`) | pausa |
 | `esquecer` | código | **apaga** os dados do titular (ver memoria.md) |
 | `consultar_base` | código | leitura (SQLite; para dúvida de manual, a memória episódica) |
-| `raspar` | modelo (extração da página) + web | leitura externa; **não grava** |
+| `raspar` | código (leitor de cartões) + web; modelo só como reserva em página de formato desconhecido | leitura externa; **não grava** |
 | `aprovar_gravacao` | **humano** (`interrupt`) | pausa |
 | `gravar` | código | **escrita**, idempotente |
 | `ler_manual` | busca textual (BM25) por código + modelo (resposta fundamentada nos 6 trechos); o PDF é escolhido por código a partir de modelo e ano | leitura |
@@ -210,7 +210,7 @@ O grafo do sistema é sequencial, então a demonstração roda num grafo mínimo
 |---|---|---|
 | Motivo de término | o nó terminal diz que acabou, não por quê | `MotivoTermino` (contrato.py, 13 linhas) + `emitir` e `_montar_saida` (nos.py, ~75 linhas) |
 | Detector de laço | `recursion_limit` limita, não detecta | o grafo **não tem ciclos**, então não há laço a detectar. A única repetição é entre turnos: `perguntar` desiste na 4ª vez que o mesmo campo faltaria (`desistiu_apos_3_perguntas`), ~4 linhas |
-| Tetos | só o de super-passos (`recursion_limit`) | turnos por conversa (`MAX_TURNOS`), tempo por chamada (`LLM_TIMEOUT`, em `config.py`), prazo da aprovação (`PRAZO_APROVACAO_HORAS`). Teto de tokens por chamada está nas chamadas ao modelo. |
+| Tetos | só o de super-passos (`recursion_limit`) | turnos por conversa (`MAX_TURNOS`), tempo por chamada (`LLM_TIMEOUT`, em `config.py`), páginas e tempo da raspagem (`MAX_PAGINAS = 3`, `MAX_SEGUNDOS = 120`, em `webscrapper.py`), prazo da aprovação (`PRAZO_APROVACAO_HORAS`). Teto de tokens por chamada está nas chamadas ao modelo. |
 | Erro recuperável × fatal | nada | `erro.origem`: `sem_base` (recusa útil), `modelo` (`erro_modelo`) e `ferramenta` (`erro_ferramenta`), mapeados em `_montar_saida` |
 | Checkpoint em disco | `SqliteSaver` cobre inteiro: `src/grafo.py`, `_criar_checkpointer` (3 linhas); não foi preciso escrever persistência | — |
 

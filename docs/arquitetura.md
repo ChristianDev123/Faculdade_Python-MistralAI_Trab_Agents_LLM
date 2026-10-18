@@ -93,7 +93,7 @@ O modelo **não escolhe ferramentas**: nenhuma é exposta a ele como função. C
 | `Registrador.resgatar` | `consultar_base` | consulta com filtros (texto "contém", número "igual") | leitura | n/a | SQLite |
 | `Memoria.buscar_episodio` | `consultar_base` | pergunta parecida já respondida | leitura | n/a | Chroma (vetores) |
 | `LeitorManualPDF.ler` | `ler_manual` | BM25 nos trechos do manual e leitura pelo modelo | leitura | n/a | Chroma (trechos), PDFs |
-| `WebScrapper.buscar_candidatas` | `raspar` | navegador sem tela no catálogo e extração das peças pelo modelo | leitura externa; **não grava** | n/a | sites das montadoras |
+| `WebScrapper.buscar_candidatas` | `raspar` | navegador sem tela no catálogo; os cartões `/peca/<código>/` são lidos em código, e só a página sem esse formato vai ao modelo (em lotes, com o código conferido contra o texto) | leitura externa; **não grava** | n/a | sites das montadoras |
 | `Registrador.inserir` em `pecas_automoveis` | `gravar` | grava peça do catálogo, idempotente | **escrita** | só por `DELETE` manual; **exige aprovação humana** | SQLite |
 | `Registrador.inserir` em `log_interacoes` e `Memoria.registrar_episodio` | `registrar_duvida` | guarda a dúvida respondida e o vetor | **escrita** | sim: `python src/esquecer.py --episodio <id>` | SQLite e Chroma |
 | `Memoria.memorizar_veiculo` | `memorizar` | guarda o veículo; só acrescenta | **escrita** | sim, pela remoção do titular | SQLite |
@@ -105,7 +105,7 @@ Dentro de uma mensagem **não há laço**: o grafo não tem ciclos, e cada mensa
 
 A cada mensagem acontece, nesta ordem: `entrada` (conta o turno, zera o que é por turno e registra o texto), `lembrar` (só na primeira), `extrair`, a rota decidida por código, a consulta ou a pergunta, `emitir` (valida e registra), `memorizar` (só se respondeu).
 
-**Chamadas ao modelo por mensagem (medido, nos 19 cenários):** 1 quando o sistema pergunta, recusa ou acha a peça na base; 2 quando lê o manual ou raspa o catálogo; 0 quando passa do limite de mensagens.
+**Chamadas ao modelo por mensagem (medido, nos 19 cenários):** 1 quando o sistema pergunta, recusa ou acha a peça na base; 2 quando lê o manual; 1 quando raspa o catálogo da Chevrolet (a leitura é em código; o modelo só entra na reserva, e os cenários de `logs/exemplos/` com pausa foram gerados antes dessa mudança, com 2); 0 quando passa do limite de mensagens.
 
 ### 2.3 O estado
 
@@ -120,14 +120,15 @@ O que impede uma execução de não acabar:
 | passos do grafo | `recursion_limit = 25`; o caminho mais longo percorre **9** nós (`entrada`, `lembrar`, `extrair`, `consultar_base`, `raspar`, `aprovar_gravacao`, `gravar`, `emitir`, `memorizar`) | `src/grafo.py` | o cenário `pausa_edicao` percorreu os 9 |
 | mensagens por conversa | `MAX_TURNOS = 15` | `src/nos.py` | cenário `limite_turnos`, com o teto em 1 |
 | tempo por chamada ao modelo | `LLM_TIMEOUT = 90` s, 1 retentativa | `src/config.py` | cenário `erro_modelo`, com o teto em 0,15 s |
-| tokens de saída por chamada | 300 (`extrair`), 600 (`ler_manual`), 4096 (página do catálogo) | `src/nos.py`, `leitor_manual_pdf.py`, `webscrapper.py` | — |
+| tokens de saída por chamada | 300 (`extrair`), 600 (`ler_manual`), 4096 (lote da reserva da raspagem) | `src/nos.py`, `leitor_manual_pdf.py`, `webscrapper.py` | — |
+| páginas e tempo da raspagem | `MAX_PAGINAS = 3`, `MAX_SEGUNDOS = 120`, conferidos entre páginas e entre lotes; o `avisos` diz quando o teto cortou | `src/webscrapper.py` | `avaliar_raspagem.py modelo`: o teto de 120 s cortou a reserva em 91 e 111 peças |
 | contexto enviado | `JANELA_TOKENS = 3000`, últimas 6 mensagens, 6 trechos do manual | `src/util.py`, `memoria.py` | [memoria.md](memoria.md) §1 |
 | mesma pergunta sem resposta | 3 | `src/nos.py` | cenário `desistiu` |
 | prazo da aprovação humana | 24 h (`PRAZO_APROVACAO_HORAS`) | `src/nos.py` | cenário `expirado`, com o prazo em 0,036 s |
 
 **O que o orçamento não cobre:**
-- **Tempo total por execução.** O teto é por chamada. Uma raspagem completa levou de 41 a 45 s nos cenários com pausa; nada impede uma mais longa.
-- **Páginas da raspagem.** O navegador segue enquanto houver o botão "próximo", e o número máximo de páginas (`max_pagina`) é **lido pelo modelo da própria página**. Não há teto em código. É o ponto mais frágil do orçamento.
+- **Tempo total por execução.** Só a raspagem tem teto de tempo total (120 s, conferido entre páginas e lotes); o resto do laço tem teto por chamada (`LLM_TIMEOUT`) e por passo. Uma única navegação ou chamada já lenta passa do teto da raspagem.
+- **Páginas da raspagem.** O limite de 3 páginas é de código (antes era o `max_pagina` que o modelo lia da página). Quando corta, o `avisos` diz que podem faltar peças.
 - **Dinheiro.** Com o modelo local o custo é zero; na Groq só há o teto de tokens por chamada, não por execução.
 
 ### 2.5 O término
@@ -167,7 +168,7 @@ Os doze motivos pelos quais uma execução termina. O motivo é definido **por c
 
 **O nível é roteador.** Um modelo classifica a entrada em texto livre (nó `extrair`) e a rota seguinte é regra em código.
 
-**Onde está a decisão que só o modelo toma** (marcada nos diagramas): `extrair` decide qual é a intenção e quais dados do veículo a pessoa já deu, a partir de uma frase como "me ve a palheta traseria do corsa 2008 motor 1.4". Não há regra em código que faça isso; seria um formulário. `ler_manual` decide se os trechos respondem a dúvida; `raspar` extrai as peças de uma página sem estrutura fixa.
+**Onde está a decisão que só o modelo toma** (marcada nos diagramas): `extrair` decide qual é a intenção e quais dados do veículo a pessoa já deu, a partir de uma frase como "me ve a palheta traseria do corsa 2008 motor 1.4". Não há regra em código que faça isso; seria um formulário. `ler_manual` decide se os trechos respondem a dúvida; `raspar` deixou de ser uma decisão do modelo no catálogo da Chevrolet: os códigos estão no endereço dos links, e ler isso é regra em código ([prompts.md](prompts.md) §5). O modelo só entra como reserva, para página de formato desconhecido.
 
 **Por que o degrau de baixo (um workflow sequencial puro) não servia.** Sem o `extrair`, a entrada teria de ser um formulário, e o enunciado exclui isso: o ponto do sistema é descobrir o que a pessoa quer, perguntar o que falta e decidir quando já sabe o suficiente.
 
@@ -187,8 +188,7 @@ Nenhuma decisão que sobrou exigia escolher uma ferramenta em tempo de execuçã
 ## 4. Riscos e limites desta arquitetura
 
 - **Tudo foi medido com o `qwen2.5:7b` local**, que não é determinístico. Duas perguntas que dependem de exceção falham na leitura do manual ([rag.md](rag.md) §3).
-- **Sem teto de páginas na raspagem** nem de tempo por execução (§2.4).
 - **O perfil que aprova não é o do domínio** (§2.6).
-- **A raspagem não valida o código da peça.** Em três raspagens seguidas, as peças esgotadas (3 de 26) vieram com o aviso do site, "Ooops, o estoque acabou", no campo de código; a aprovação humana as mostrou, e no cenário `pausa_edicao` as três foram gravadas. É a mesma classe do defeito do "N/A" (corrigido), agora na entrada: falta uma regra em código que recuse o que não tem forma de código antes de mostrar à pessoa.
+- **A raspagem validava mal o código da peça** (corrigido em 2026-10-18): o modelo lia 6% a 12% da página e inventava de 57% a 62% dos códigos, e as peças esgotadas vinham com o aviso do site, "Ooops, o estoque acabou", no campo de código. Hoje o código vem do endereço do link e é conferido contra o texto da página ([prompts.md](prompts.md) §5). **O que fica:** a lista apresentada à aprovação passou a ter 198 linhas (não há filtro por relevância) e o leitor em código depende do formato do site da Chevrolet; o da Volkswagen não foi inspecionado.
 - **O mapa de montadoras** (`MODELO_FABRICANTE`, em `src/nos.py`) é uma lista curta escrita pelo grupo de desenvolvimento; modelo fora dela gera a pergunta da montadora.
 - **Manuais por ano exato:** um Fox 2016 a 2019 fica sem manual ([rag.md](rag.md) §2).

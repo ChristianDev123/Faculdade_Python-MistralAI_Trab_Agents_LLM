@@ -6,7 +6,7 @@ O sistema chama o modelo em **três** pontos. O resto (rotas, textos de resposta
 |---|---|---|---|---|---|
 | **`extrair`**: classifica a intenção e preenche a ficha do veículo | `extracao.md` (+ regras de `procedural.md`, seção `extrair`) | **few-shot** (7 exemplos) com saída estruturada | A tarefa é classificar e extrair, e as fronteiras entre as intenções (comprar ≠ achar peça; diagnosticar ≠ manual) são convenções do case que o modelo não conhece: exemplos mostram a fronteira melhor que adjetivos. Cadeia de pensamento não é usada: a saída é uma ficha, não uma explicação, e 300 tokens de saída bastam | JSON Schema (`Extracao`: `intencao` em PECA, MANUAL, FORA_DO_ESCOPO, ESQUECER, INDEFINIDA; `modelo`, `ano`, `motorizacao`, `fabricante`, `nome_peca`, `duvida`), imposto por `response_format` | `avaliar_extracao.py`: 29 casos rotulados, 3 rodadas |
 | **`ler_manual`**: decide se os trechos recuperados respondem à dúvida | `leitor_manual_pdf/tool_call_leitura_pdf.md` (+ `procedural.md`, seção `ler_manual`) | **geração ancorada** nos trechos, com um campo `pensamento` curto (cadeia de pensamento limitada a 2 frases) | O modelo precisa primeiro dizer se algum trecho trata do assunto e só então resumir; sem ancoragem ele completa com conhecimento próprio. O limite de 2 frases evita gastar os 600 tokens de saída raciocinando | JSON Schema (`LeituraManual`: `pensamento`, `trecho_original`, `resumo`, `sanada`) | `avaliar_rag.py manual` e `ablacao_prompts.py leitor`: 18 dúvidas com resposta e 14 sem |
-| **`raspar`**: extrai as peças de uma página do catálogo | `webscrapper/tool_scrapping.md` | **one-shot** (um cartão de exemplo em markdown) com saída estruturada | O modelo precisa reconhecer o cartão de peça num markdown de ~73 mil caracteres; um exemplo do formato real vale mais que a descrição | JSON Schema (lista de `Peca` e `max_pagina`) | `avaliar_raspagem.py`: confere cada peça devolvida contra o texto que o modelo recebeu |
+| **`raspar`**: lê as peças de uma página do catálogo | código (`src/webscrapper.py`); **reserva** com o modelo: `webscrapper/tool_scrapping.md` | cartões `/peca/<código>/<slug>` **lidos em código**; só a página sem esse formato vai ao modelo, em lotes, com **one-shot** (um cartão de exemplo) e saída estruturada | O código da peça está no endereço do link: lê-lo é regra, não julgamento. O modelo local inventava o código quando não o via (§5). Fica como reserva para catálogo de layout desconhecido, e o que ele devolve só vale se o código estiver no texto | JSON Schema da reserva (`dados_peca`: lista de `Peca`); a saída do leitor em código é a mesma ficha | `avaliar_raspagem.py` (modos `auto` e `modelo`): confere cada peça contra o texto da página |
 
 Nenhum modelo decide rota: `extrair` só devolve a ficha, `ler_manual` só devolve `sanada`, e quem decide o próximo nó é função Python. Por isso a avaliação dos prompts é a avaliação desses três contratos.
 
@@ -136,31 +136,53 @@ Limites: o teste é de um manual, 18 + 14 perguntas e um modelo; as 3 perguntas 
 
 ## 5. Raspagem (`raspar`)
 
-`python avaliar_raspagem.py 2`: raspa o catálogo da Chevrolet ao vivo (Onix 2018, "palheta traseira"), sem gravar na base, e confere cada peça devolvida contra o **texto exato** que o modelo recebeu. A página muda, então os números são de **2026-10-18**.
+### 5.1 O defeito medido, e a mudança
+
+`python avaliar_raspagem.py 2` raspa o catálogo da Chevrolet ao vivo (Onix 2018, "palheta traseira"), sem gravar na base, e confere cada peça devolvida contra o **texto exato** da página. A página tinha 73.354 caracteres e 202 cartões. **Antes da mudança** (modelo lendo a página inteira, commit `a7104d3`, árvore limpa, 2026-10-18):
 
 | | Rodada 1 | Rodada 2 |
 |---|---|---|
-| Página enviada | 73.354 caracteres, 202 cartões de peça | idem |
-| Peças devolvidas pelo modelo | 34 | 30 |
+| Peças devolvidas | 34 | 30 |
 | Nome da peça está na página | 34/34 | 30/30 |
-| Carros compatíveis estão na página | 34/34 (todos) | 30/30 (todos) |
 | **Código da peça está na página** | **13/34** | **13/30** |
-| Código é um preço da página reformatado | 0 | 0 |
-| Código com forma de código (3 a 20 caracteres alfanuméricos) | 34/34 | 30/30 |
-| Código repetido entre peças | 0 | 0 |
+| Código é um preço reformatado | 0 | 0 |
 | Tempo | 57 s | 41 s |
 
-Medição feita com a árvore limpa (commit `a7104d3`, `codigo_limpo: true`). Uma rodada anterior no mesmo dia, com a árvore suja pelo script de avaliação (e portanto fora do log), devolveu 54 e 54 peças, também com 13 códigos na página. Em todas as rodadas já feitas **o número de peças muda muito** (24, 54, 54, 34, 30) e o de códigos reais fica em 13.
+Os nomes e as aplicações eram fiéis; os **códigos não**: 57% a 62% não existiam na página. A causa é o desenho: a página tem 34.591 tokens e o servidor entrega ao modelo no máximo 4.098 (§6), o fim da página, sem o prompt de sistema; sem o código à vista, o modelo escrevia um número plausível. Nenhuma frase do prompt conserta isso. Em rodadas anteriores o número de peças já havia sido 24, 54 e 54, e o de códigos reais ficou em 13.
 
-**Leitura.** Os nomes e as aplicações são fiéis ao texto; os **códigos não**: 21 de 34 e 17 de 30 (57% a 62%) não existem na página. O cartão de exemplo do prompt mostra um código de 8 dígitos ("Nº original GM: 98551033"), e o modelo devolve números curtos que parecem código mas que ele **inventou** (nas rodadas de 54 peças, 41 delas). A medição anterior (contexto 4096, não guardada no log) já mostrava o mesmo: 8 de 24 códigos na página e 15 de 24 eram **preços reformatados** ("2.097,65" virando "2097.65"). A checagem `codigo_e_preco_da_pagina` existe por isso e deu 0 desta vez.
+O que a página mostra: **200 dos 202 cartões trazem o código no endereço do link** (`/peca/19376259/palheta-traseira-acdelco`), e em 194 o campo "Nº original GM" é igual a ele (os outros 2 são links de cupom). O código é dado regular; ler isso é regra.
 
-**Por que, e o que isso exige do prompt.** A página tem 34.591 tokens contando o prompt; o servidor entrega ao modelo **no máximo 4.098** (12%; com o padrão 4096, 2.050, ou 6%), **o fim da página**. O modelo vê uma fração dos cartões e, sem o código à vista, preenche o campo com algo plausível. Isso é uma falha do **desenho** (enviar a página inteira a um modelo pequeno e pedir tudo), não de uma frase do prompt: nenhuma ablação de frase a conserta. A correção tem opções que não apliquei (mudam o código, não o prompt):
+**Mudança** (`src/webscrapper.py`):
 
-- extrair os cartões em código (`### [nome](/peca/CODIGO/slug)` e "Nº original GM" são regulares) e usar o modelo só onde há ambiguidade;
-- validar o código devolvido contra o texto da página antes de gravar (a mesma checagem do avaliador);
-- limitar o número de páginas e o tempo total (hoje não há teto).
+1. **Leitor em código** (`ler_cartoes`) para o formato `### [nome](/peca/<código>/<slug>)`: nome, aplicações e código exatos, sem modelo.
+2. **Reserva com o modelo** só para página sem cartões nesse formato (outro catálogo, ou o mesmo com o layout mudado): o texto é partido em **lotes de 5.000 caracteres** (~2.400 tokens), para o servidor nunca cortar o começo, e o modelo propõe as peças.
+3. **Validação nos dois caminhos** (`codigo_esta_no_texto`): o código precisa ter 5 ou mais caracteres, algum dígito, e aparecer no texto como item próprio. Na reserva, peça que não passa é descartada e o `avisos` conta quantas (aparece na tela de aprovação).
+4. **Tetos**: no máximo `MAX_PAGINAS = 3` páginas e `MAX_SEGUNDOS = 120`, conferidos entre páginas e entre lotes; quando o teto corta, o `avisos` diz. O `max_pagina` que o modelo lia da página (chegou a dizer 43) deixou de existir; o prompt da reserva perdeu a parte de paginação.
 
-A gravação do scraper é protegida pela aprovação humana ([humano.md](humano.md)): um código inventado só entra na base se quem aprova não perceber.
+### 5.2 Depois da mudança (commit `b1880be` mais as edições listadas no carimbo; `codigo_limpo: false` até o commit)
+
+| | Leitor em código (`auto`) | Reserva com o modelo (`modelo`) |
+|---|---|---|
+| Rodadas | 2 | 2 |
+| Peças devolvidas | 198, 198 | 91, 111 |
+| **Código da peça está na página** | **198/198, 198/198** | **91/91, 111/111** |
+| Nome e aplicações na página | 198/198 | 91/91 e 111/111 |
+| Código é preço reformatado | 0 | 0 |
+| Códigos repetidos | 0 | 0 |
+| Tempo | 5 s e 4 s | 126 s e 143 s |
+| Avisos | nenhum | "o tempo máximo (120 s) acabou no meio da página 1" |
+
+(Os logs são `logs/avaliacao-raspagem/resultado.json` e `resultado-modelo.json`.) Das 200 peças com endereço `/peca/`, 198 saem porque 2 repetem o código de outra.
+
+**Leitura.** O leitor em código leva ~5 s (antes, 41 a 57 s) e entrega **todas** as peças da página com o código certo; o código inventado deixou de existir. A reserva com o modelo também deixou de inventar (100% dos códigos estão na página, porque o que não estiver é descartado), mas é lenta: 91 a 111 peças em 120 s, e o teto de tempo a corta, com aviso. Ela existe para o dia em que o catálogo mudar, não como caminho principal. Nas duas rodadas da reserva nenhuma peça foi descartada pela validação: com o prompt pedindo para copiar o código, o modelo passou a copiá-lo quando vê o card inteiro no lote.
+
+**Validação ponta a ponta (fluxo real pelo grafo, `logs/validacao-raspagem/s1`):** "Quero o código da palheta traseira do meu Onix 2018 1.0 da Chevrolet." pausou em 8 s com 198 candidatas e `fonte` "198 peça(s) extraída(s) em código em 1 página(s)"; com `aprovar`, o sistema gravou 198 novas e respondeu com a lista. Em uma segunda conversa (`s2`) a mesma pergunta já foi respondida pela base local, sem nova raspagem. O banco foi restaurado depois.
+
+### 5.3 O que a mudança não resolve
+
+- **Relevância.** O catálogo devolve 202 cartões para "palheta traseira" (portas, tampas, painéis), e a pessoa aprova uma lista de 198 linhas, onde só 1 ou 2 são palheta. Antes eram 24 a 54 linhas com os mesmos pontos. Filtrar pelo nome da peça pedida, em código, é o próximo passo e ficou de fora por decisão.
+- **O leitor em código é específico do formato do site.** Se o endereço deixar de ter `/peca/<código>/`, ele devolve 0 peças e o sistema cai na reserva, lenta mas validada. O catálogo da Volkswagen (outro layout) ainda não foi inspecionado.
+- **Só o tempo entre páginas e lotes é conferido**; uma única navegação ou chamada ao modelo já longa passa do teto (`LLM_TIMEOUT` cobre a segunda).
 
 ## 6. O corte silencioso do servidor (achado desta medição)
 
@@ -175,7 +197,7 @@ Quando o prompt **passa do contexto**, o Ollama o **corta para metade do context
 O que isso significa para cada etapa, conferido no log do servidor:
 
 - **`extrair`** (1.087 a 1.131 tokens) e **`ler_manual`** (até 2.307 tokens nas 18 dúvidas): ficam abaixo de 4096, **nunca foram cortados**. Os resultados das §3 e §4 e de [rag.md](rag.md) não dependem do contexto. (Uma leitura minha anterior, de que o leitor passava do limite em 10 de 18 chamadas, estava errada: contei as chamadas com 2.040 tokens ou mais, não as cortadas.)
-- **`raspar`**: a chamada tem 34.591 tokens e **sempre é cortada**, nos dois contextos. O modelo recebe **o fim da página**: 12% com 8192, 6% com 4096, **sem o prompt de sistema** (que fica no começo). É o problema da §5.
+- **`raspar`** (antes da mudança da §5): a chamada tinha 34.591 tokens e **sempre era cortada**, nos dois contextos. O modelo recebia **o fim da página**: 12% com 8192, 6% com 4096, **sem o prompt de sistema** (que fica no começo). Hoje o texto vai ao modelo, na reserva, em lotes de ~2.400 tokens, que nunca passam do limite.
 
 Recomendação: registrar o contexto do Ollama junto de cada medição (`ablacao_prompts.py` já grava `contexto_ollama` a partir da variável `CONTEXTO_OLLAMA`) e tratar o corte como defeito do desenho da raspagem, não do prompt.
 
