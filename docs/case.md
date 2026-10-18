@@ -29,10 +29,6 @@ confirmação do fornecedor.
 - Compatibilidade depende de modelo + versão + motorização, não só modelo e ano
   — é a mesma lógica que o próprio setor usa para prever demanda de peças
   (Sistema de Informações de Frota e Demanda do Sindipeças).
-- Existem três categorias de peça, com implicação direta de confiabilidade: **genuína**
-  (fabricada pela montadora, vendida em concessionária), **original** (fornecedor
-  homologado, marca própria, vendida no varejo) e **paralela/genérica** (terceiros,
-  sem homologação da montadora, mais barata e com variação de qualidade).
 - Desde 2019 as seguradoras não são obrigadas a usar peça original em sinistro
   parcial, o que ampliou o uso de peça paralela no mercado e, com isso, o risco de
   retrabalho quando a compatibilidade é mal verificada.
