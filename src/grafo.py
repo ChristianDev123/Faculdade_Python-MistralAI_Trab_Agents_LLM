@@ -13,7 +13,7 @@ from src.estado import Estado
 from src.memoria import CHECKPOINT_PATH
 
 # Parâmetro que o framework tem com valor padrão (25) e que aqui é declarado: o grafo não tem ciclos, então
-# uma execução usa no máximo 7 super-passos (entrada, extrair, consultar_base, raspar, aprovar_gravacao, gravar, emitir). Se um dia o padrão da biblioteca mudar, este valor continua valendo.
+# uma execução usa no máximo 9 nós (entrada, lembrar, extrair, consultar_base, raspar, aprovar_gravacao, gravar, emitir, memorizar). Se um dia o padrão da biblioteca mudar, este valor continua valendo.
 RECURSION_LIMIT = 25
 
 

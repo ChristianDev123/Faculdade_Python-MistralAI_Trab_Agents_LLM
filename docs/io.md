@@ -1,315 +1,332 @@
-# Contrato de Entrada e Saída
+# Contrato de entrada e saída
 
-Este documento define o contrato de entrada e saída do **Assistente Informacional de Manutenção Automotiva**. O sistema recebe dúvidas em texto livre, decide quais informações ainda são necessárias, consulta as fontes disponíveis e retorna uma resposta estruturada em JSON.
+O sistema recebe **texto livre** e devolve um **objeto validado**, `Saida`, definido em [src/contrato.py](../src/contrato.py). Toda resposta passa pelo nó `emitir`, que monta o texto por código e valida o objeto com Pydantic antes de devolvê-lo: não existe caminho de saída que o contorne. Este documento define o contrato e mostra exemplos **copiados de execuções reais**.
 
-O contrato está alinhado ao funcionamento descrito no projeto: o agente atende mecânicos e proprietários, identifica peças compatíveis ou consulta informações do manual do proprietário, podendo consultar cache local, catálogo de peças ou manuais indexados. O sistema possui caráter informativo e não realiza compras ou reservas.
+> **De onde vêm os exemplos.** Todos saem de `python gerar_exemplos.py`, rodado em 2026-10-16 sobre o commit `30e8bee` (árvore limpa: `true`) com a árvore limpa, no modelo `qwen2.5:7b` (Ollama, local). Cada exemplo traz a entrada exata, a saída completa e o log em `logs/exemplos/`; o resultado completo está em `logs/exemplos/resultado.json`. O modelo local não é determinístico nem com `temperature=0`: ao regenerar, o texto de uma resposta que passa pelo modelo pode variar. Para regenerar um exemplo: `python gerar_exemplos.py <cenário>`.
 
-> **Observação:** os exemplos desta documentação representam o formato esperado do contrato. Os campos `commit`, `data_execucao` e `log` devem ser preenchidos a partir de execuções reais do sistema antes da entrega final. Eles não foram inventados porque essas informações não constam no material fornecido.
+## 1.1 A entrada é texto
 
----
+**O sistema recebe texto livre, em linguagem natural.** Não há formulário com campos, nem JSON montado por outro programa: é a entrada em texto que obriga o sistema a descobrir o que a pessoa quer (nó `extrair`), perguntar o que falta e decidir quando já sabe o suficiente.
 
-## 1.1 Entrada
+| Forma | Onde ela entra neste sistema |
+|---|---|
+| **texto livre** | **a entrada do sistema**: uma frase como se fala no balcão, com erros de digitação se houver |
+| arquivo, planilha, imagem | nunca como pergunta. São conteúdo que o sistema busca: os manuais em PDF e o catálogo web |
+| formulário, evento de outro sistema | gatilho que antecede o sistema: o bot do Discord da loja (descrito em [case.md](case.md)) entrega a mensagem, o `user_id` e a sessão. Hoje a interface é a linha de comando, `python src/main.py [sessão]` |
 
-### Texto livre como entrada principal
+**O que acompanha o texto sem ser digitado por ninguém:**
 
-A entrada principal do sistema é uma **mensagem textual livre**, escrita pelo usuário em linguagem natural.
+| Dado | De onde vem | Para que serve |
+|---|---|---|
+| `user_id` | variável `USER_ID` (padrão `local`); no Discord, o identificador de quem escreveu | dono da memória de longo prazo e da remoção de dados |
+| sessão | argumento da linha de comando (padrão: data e hora) | identifica a conversa |
+| `thread_id` | `"<user_id>:<sessão>"` | endereço do checkpoint: mesma chave, mesma conversa; chave nova, histórico vazio ([memoria.md](memoria.md) §7) |
 
-Isso é importante porque o sistema não pressupõe que o usuário saiba antecipadamente quais campos são necessários para responder à dúvida. Por exemplo, o usuário pode informar apenas:
+## 1.2 O contrato de saída
 
-```text
-Preciso do código da pastilha de freio do Corolla 2020.
+A saída é um `Saida` (Pydantic). Os três campos que o contrato exige são **`resultado`**, **`fonte`** e **`suficiencia`**; os outros dois dizem o que aconteceu e o que falta.
+
+```python
+class Fonte(BaseModel):
+    tipo: Literal['base_local', 'manual_pdf', 'catalogo_web', 'memoria_semantica', 'memoria_episodica', 'nenhuma']
+    origem: str        # a tabela, o PDF, o endereço consultado
+    evidencia: str     # o que foi consultado e quanto voltou
+
+class Saida(BaseModel):
+    resultado: str                    # o texto para a pessoa (montado por código, não pelo modelo)
+    dados: Optional[list[Peca]]       # as peças, estruturadas, quando a resposta é uma lista de peças
+    fonte: list[Fonte]                # o que sustenta o resultado, conferível
+    suficiencia: bool                 # o sistema teve base para responder?
+    situacao: Literal['respondido', 'faltam_dados', 'fora_do_escopo', 'sem_base', 'rejeitado', 'expirado', 'esquecido', 'erro']
+    pergunta_pendente: Optional[str]  # a pergunta feita à pessoa, se a situação for faltam_dados
 ```
 
-Nesse caso, o sistema pode identificar que faltam informações relevantes, como a motorização ou versão, antes de consultar a fonte.
+| Campo | Regra |
+|---|---|
+| `resultado` | sempre preenchido, inclusive na recusa. O texto vem de `_montar_saida` (código), nunca do modelo, exceto o resumo do manual |
+| `fonte` | a lista de onde o sistema **procurou**. Só `suficiencia = true` diz que a fonte **sustenta** o resultado: numa recusa de manual, `fonte` lista as páginas consultadas, que não responderam |
+| `suficiencia` | `true` quando a resposta tem base (`respondido`) ou a ação pedida foi concluída (`esquecido`); `false` em todo o resto |
+| `situacao` | uma das oito; o motivo de término fino (doze valores) fica em [arquitetura.md](arquitetura.md) |
 
-O projeto estabelece que a interação ocorre por chatbot e que o agente pode realizar aproximadamente três ou quatro interações até obter os dados necessários para construir a resposta. A entrada inicial, portanto, não deve ser tratada como um formulário fixo. 
+**A recusa é parte do contrato, não exceção dele.** Pergunta que o corpus não responde volta como `situacao: "sem_base"`, `suficiencia: false` e um `resultado` que diz o que falta (exemplos 3 e 4).
 
-O sistema deve aceitar mensagens como:
+O modelo também tem um contrato de saída, para as etapas em que é chamado: `Extracao` (intenção, modelo, ano, motorização, montadora, peça, dúvida, com `null` para o que a pessoa não disse) e `LeituraManual` (`pensamento`, `trecho_original`, `resumo`, `sanada`). Eles estão em [prompts.md](prompts.md).
+
+## 1.3 Os exemplos
+
+Sete execuções reais. As quatro primeiras mostram o uso principal e a recusa; as três últimas, as entradas que não dá para atender como estão (§1.4).
+
+| # | Exemplo | Situação | Cenário |
+|---|---|---|---|
+| 1 | caminho feliz: peça que está na base | `respondido` | `feliz` |
+| 2 | dúvida de manual respondida, com a fonte | `respondido` | `manual` |
+| 3 | **recusa:** a resposta não está no corpus | `sem_base` | `recusa_fora_corpus` |
+| 4 | **recusa útil:** a peça existe, mas sem código | `sem_base` | `recusa_sem_codigo` |
+| 5 | entrada **incompleta** | `faltam_dados` | `incompleta` |
+| 6 | entrada **ambígua** | `faltam_dados` | `ambigua` |
+| 7 | entrada **fora do escopo** | `fora_do_escopo` | `fora_escopo` |
+
+### Exemplo 1: caminho feliz, peça que está na base local
+
+**Entrada exata:**
 
 ```text
-Qual pastilha de freio serve no Corolla 2020?
+Qual o código da palheta traseira do Corsa 2008 1.4 da Chevrolet?
 ```
 
-ou:
-
-```text
-Tenho um Corolla 2020 2.0 e preciso saber qual pastilha de freio devo comprar.
-```
-
-ou ainda:
-
-```text
-No manual do meu carro, quando devo trocar o óleo?
-```
-
-Essas mensagens representam consultas diferentes que precisam ser classificadas e tratadas pelo agente.
-
-### Metadados da execução
-
-Além do texto digitado pelo usuário, a aplicação pode receber metadados técnicos necessários para identificar a conversa ou a execução. Esses dados não fazem parte da mensagem em linguagem natural.
-
-Exemplo:
+**Saída completa** (o objeto inteiro, com os campos vazios):
 
 ```json
 {
-  "thread_id": "discord-canal-123",
-  "user_id": "usuario-456",
-  "message": "Tenho um Corolla 2020 2.0 e preciso saber qual pastilha de freio devo comprar."
-}
-```
-
-O `thread_id` identifica a conversa e pode ser utilizado para manter o contexto entre as interações. O `user_id` identifica o solicitante quando essa informação estiver disponível.
-
-O projeto informa que o sistema é acionado pelo próprio mecânico ou pelo balconista em nome dele, por meio de um chatbot. A interação é reativa e ocorre no atendimento de balcão ou telefone via Discord da loja.
-
-### Arquivos, imagens e outros conteúdos
-
-Arquivos, planilhas ou imagens **não substituem a entrada textual principal**.
-
-Quando houver conteúdo externo, ele deve ser tratado como fonte consultável pelo agente. No projeto, por exemplo, os manuais são PDFs indexados e são acessados pela ferramenta `buscar_manual`.
-
-A entrada do sistema continua sendo uma pergunta textual, como:
-
-```text
-Quando devo trocar o óleo desse veículo?
-```
-
-e o agente utiliza o manual como fonte para produzir a resposta.
-
----
-
-## 1.2 Contrato de saída
-
-A saída do sistema não é texto livre. Ela deve ser um **objeto JSON validado por um schema definido no código**.
-
-O contrato possui três informações obrigatórias:
-
-1. `conteúdo` — a resposta produzida pelo agente;
-2. `fonte` — a evidência utilizada para produzir a resposta;
-3. `suficiencia` — indica se o sistema possui informação suficiente para responder.
-
-### Schema proposto
-
-```json
-{
-  "resultado": {},
-  "fonte": [],
-  "suficiencia": true
-}
-```
-
-Uma representação mais completa, adequada ao funcionamento do projeto, é:
-
-```json
-{
-  "modelo": "Toyota Corolla",
-  "ano": "2020",
-  "motorizacao": "2.0"
-  "codigo_peca": "ABC123",
-  "modelos_compativeis": [{
-    "modelo": "etios",
-    "ano":"2021"
-  }],
-  "fonte": {
-    "tipo": "cache",
-    "origem": "catalogo_toyota",
-    "evidencia": {
-      "modelo": "Toyota Corolla",
-      "ano": "2020",
-      "motorizacao": "2.0", "nome_peca":"xxxx", "codigo_peca":"ABC123"
+  "resultado": "Encontrei 1 peça(s) para Corsa 2008 1.4 na base local:\n  1. Palheta traseira ACDelco — código 93356933",
+  "dados": [
+    {
+      "nome_peca": "Palheta traseira ACDelco",
+      "codigo_peca": "93356933",
+      "carros_compativeis": [
+        "Corsa A Hatch",
+        "Corsa A Pickup",
+        "Corsa A Sedan",
+        "Corsa A Wagon"
+      ]
     }
-  },
-  "suficiencia": true
+  ],
+  "fonte": [
+    {
+      "tipo": "base_local",
+      "origem": "pecas_automoveis",
+      "evidencia": "1 linha(s) com {'modelo': 'Corsa', 'ano_fabricacao': 2008, 'motorizacao': '1.4', 'nm_peca': 'palheta traseira'}"
+    }
+  ],
+  "suficiencia": true,
+  "situacao": "respondido",
+  "pergunta_pendente": null
 }
 ```
 
-### Resposta de manual
+**O que ler ali:** `suficiencia: true`, `situacao: "respondido"` e, em `fonte`, a tabela e o filtro exatos que a sustentam (`pecas_automoveis`, modelo, ano, motorização e peça). O código `93356933` vem de uma linha do banco, não do modelo: o modelo só extraiu os dados do texto. `dados` traz a peça estruturada, com os carros compatíveis.
 
-Quando a dúvida não for sobre compatibilidade de peças, o resultado pode representar o resumo extraído do manual:
+**Execução:** commit `30e8bee` (árvore limpa: `true`), 2026-10-16, modelo `qwen2.5:7b`; cenário `feliz` de `gerar_exemplos.py`; log `logs/exemplos/feliz/trajetoria.jsonl`; 1 chamada(s) ao modelo, 2.9 s.
+
+### Exemplo 2: dúvida de manual respondida
+
+**Entrada exata:**
+
+```text
+Qual a capacidade do tanque de combustível do meu Fox 2015?
+```
+
+**Saída completa** (o objeto inteiro, com os campos vazios):
 
 ```json
 {
-  "duvida_usuario":"Quais são as dicas de direção são recomendadas pela montadora do meu carro?",
-  "kws_duvida_usuario":["dicas","direção"],
-  "resolucao":"Trocar a marcha à cada 10 km/h, utilizar cinto de segurança sempre que dirigir, nunca desengatar o carro em ladeira...",
-  "origem": "manual_toyota_corolla_2020.pdf",
-  "suficiencia": true
+  "resultado": "O tanque de combustível tem uma capacidade aproximada de 50 litros, com 7 litros reservados.\n(Manual Volkswagen_Fox_2015.pdf, páginas [195, 196, 197])",
+  "dados": null,
+  "fonte": [
+    {
+      "tipo": "memoria_episodica",
+      "origem": "memoria_episodica",
+      "evidencia": "nenhuma pergunta parecida (melhor distância None, limiar de corte em memoria.py)"
+    },
+    {
+      "tipo": "manual_pdf",
+      "origem": "Volkswagen_Fox_2015.pdf",
+      "evidencia": "páginas [195, 196, 197]"
+    }
+  ],
+  "suficiencia": true,
+  "situacao": "respondido",
+  "pergunta_pendente": null
 }
 ```
 
-O projeto define que, para dúvidas de manual, o agente apresenta um texto de até 400 tokens com a resposta.
+**O que ler ali:** a resposta cita o manual e as páginas (`[195, 196, 197]`), e `fonte` traz duas entradas: a **memória episódica**, que procurou uma pergunta parecida e não achou (`nenhuma pergunta parecida`), e o **manual**, de onde veio a resposta. A segunda vez que a mesma pergunta aparece, essa busca acerta e o manual deixa de ser lido ([memoria.md](memoria.md) §5).
 
-### Resposta sem informação suficiente
+**Execução:** commit `30e8bee` (árvore limpa: `true`), 2026-10-16, modelo `qwen2.5:7b`; cenário `manual` de `gerar_exemplos.py`; log `logs/exemplos/manual/trajetoria.jsonl`; 2 chamada(s) ao modelo, 13.1 s.
 
-A recusa também faz parte do contrato. O agente não deve preencher uma resposta por aproximação quando não possui dados suficientes.
+### Exemplo 3: recusa: a resposta não está no corpus
 
-Exemplo:
+**Entrada exata:**
+
+```text
+Quais são os períodos de manutenção do meu Fox 2015?
+```
+
+**Saída completa** (o objeto inteiro, com os campos vazios):
 
 ```json
 {
-  "duvida_usuario":"Quais são as dicas de direção são recomendadas pela montadora do meu carro?",
-  "kws_duvida_usuario":["dicas","direção"],
-  "resolucao":"",
-  "origem": "manual_toyota_corolla_2020.pdf",
-  "suficiencia": False
+  "resultado": "O manual Volkswagen_Fox_2015.pdf não traz uma resposta clara para essa dúvida. O manual não especifica os períodos de manutenção para o Fox 2015. Consulte a concessionária para confirmar.",
+  "dados": null,
+  "fonte": [
+    {
+      "tipo": "memoria_episodica",
+      "origem": "memoria_episodica",
+      "evidencia": "nenhuma pergunta parecida (melhor distância None, limiar de corte em memoria.py)"
+    },
+    {
+      "tipo": "manual_pdf",
+      "origem": "Volkswagen_Fox_2015.pdf",
+      "evidencia": "páginas [22, 29, 37, 224, 225, 257]"
+    }
+  ],
+  "suficiencia": false,
+  "situacao": "sem_base",
+  "pergunta_pendente": null
 }
 ```
 
-Esse comportamento é especialmente importante para peças de segurança. O projeto determina que peças de freio, suspensão e direção não devem ser apresentadas com baixa confiança.
+**O que ler ali:** `suficiencia: false` e `situacao: "sem_base"`. O sistema **não inventou** um intervalo de manutenção: disse que o manual não traz a resposta e mandou consultar a concessionária. As páginas em `fonte` são onde se procurou. O manual só remete ao caderno "Manutenção e garantia", que não faz parte do corpus ([rag.md](rag.md) §3).
 
-Também existe uma regra explícita para peças sem substituta exata: o sistema deve informar que não encontrou a peça, em vez de apresentar uma peça apenas aproximada.
+**Execução:** commit `30e8bee` (árvore limpa: `true`), 2026-10-16, modelo `qwen2.5:7b`; cenário `recusa_fora_corpus` de `gerar_exemplos.py`; log `logs/exemplos/recusa_fora_corpus/trajetoria.jsonl`; 2 chamada(s) ao modelo, 12.6 s.
 
-## 1.4 Entradas que não podem ser atendidas diretamente
+### Exemplo 4: recusa útil: a peça existe, mas sem código cadastrado
 
-O agente deve tratar explicitamente três situações:
+**Entrada exata:**
 
-1. entrada incompleta;
-2. entrada ambígua;
-3. entrada fora do escopo.
+```text
+Qual o código da roda de liga leve do Corsa 2008 1.4 da Chevrolet?
+```
 
-Responder normalmente nesses casos poderia gerar uma resposta aparentemente válida, mas sem base suficiente.
+**Saída completa** (o objeto inteiro, com os campos vazios):
 
----
+```json
+{
+  "resultado": "Encontrei \"Roda de liga leve\" para Corsa 2008 1.4 no catálogo, mas sem código cadastrado. Sem o código não indico a peça; confirme no balcão ou com o distribuidor.",
+  "dados": null,
+  "fonte": [
+    {
+      "tipo": "base_local",
+      "origem": "pecas_automoveis",
+      "evidencia": "1 linha(s) com {'modelo': 'Corsa', 'ano_fabricacao': 2008, 'motorizacao': '1.4', 'nm_peca': 'roda de liga leve'}"
+    }
+  ],
+  "suficiencia": false,
+  "situacao": "sem_base",
+  "pergunta_pendente": null
+}
+```
 
-### 1.4.1 Entrada incompleta
+**O que ler ali:** a base **tem** a "Roda de liga leve" para este veículo, mas o código no catálogo é "N/A". A regra do domínio ([case.md](case.md)) é dizer que não encontrou, nunca aproximar: o sistema recusou (`suficiencia: false`) e disse o que fazer em seguida. Antes de uma correção feita nesta frente, a resposta era "código N/A" com `suficiencia: true`.
 
-Uma entrada é incompleta quando faltam dados necessários para identificar a resposta.
+**Execução:** commit `30e8bee` (árvore limpa: `true`), 2026-10-16, modelo `qwen2.5:7b`; cenário `recusa_sem_codigo` de `gerar_exemplos.py`; log `logs/exemplos/recusa_sem_codigo/trajetoria.jsonl`; 1 chamada(s) ao modelo, 2.9 s.
 
-**Entrada:**
+## 1.4 A entrada que não dá para atender
+
+Nas três situações abaixo, responder como se a entrada estivesse completa produziria uma saída que parece boa e não é. Por isso elas são tratadas no contrato, por regra em código (`rota_pos_extracao`), e não pelo humor do modelo.
+
+| Situação | O que o sistema faz | Exemplo |
+|---|---|---|
+| **incompleta** | pergunta **uma** coisa que falta, na ordem modelo, ano, motorização, montadora, peça. Depois de 3 perguntas iguais sem resposta, desiste e diz por quê | 5 |
+| **ambígua** | não escolhe: pergunta | 6 |
+| **fora do escopo** | recusa e diz o que ele faz; não consulta nem grava nada | 7 |
+
+### Exemplo 5: entrada incompleta
+
+**Entrada exata:**
 
 ```text
 Qual é o código da pastilha de freio do Corolla 2020?
 ```
 
-**Comportamento esperado:**
-O agente irá fazer uma nova pergunta ao usuário para coletar os dados faltantes.
+**Saída completa** (o objeto inteiro, com os campos vazios):
 
-A regra é não realizar uma busca com informações insuficientes e apresentar o primeiro resultado encontrado como se fosse necessariamente compatível.
+```json
+{
+  "resultado": "Qual é a motorização do veículo (por exemplo 1.0 ou 1.6)?",
+  "dados": null,
+  "fonte": [
+    {
+      "tipo": "nenhuma",
+      "origem": "sistema",
+      "evidencia": "sem consulta"
+    }
+  ],
+  "suficiencia": false,
+  "situacao": "faltam_dados",
+  "pergunta_pendente": "Qual é a motorização do veículo (por exemplo 1.0 ou 1.6)?"
+}
+```
 
----
+**O que ler ali:** o sistema **não buscou nada** (`fonte: nenhuma`, `sem consulta`) e perguntou o que falta, em `pergunta_pendente`. Pelo log, o caminho foi `entrada > lembrar > extrair > perguntar > emitir`: nem a base nem o catálogo foram consultados. A montadora (Toyota) não foi perguntada porque o código a completa a partir do modelo "Corolla".
 
-### 1.4.2 Entrada ambígua
+**Execução:** commit `30e8bee` (árvore limpa: `true`), 2026-10-16, modelo `qwen2.5:7b`; cenário `incompleta` de `gerar_exemplos.py`; log `logs/exemplos/incompleta/trajetoria.jsonl`; 1 chamada(s) ao modelo, 2.7 s.
 
-Uma entrada é ambígua quando os dados fornecidos permitem mais de uma interpretação possível.
+### Exemplo 6: entrada ambígua
 
-**Entrada:**
+**Entrada exata:**
 
 ```text
 Preciso da peça do Corolla 2020.
 ```
 
-Essa entrada não informa sequer qual peça está sendo procurada e também pode não especificar a versão ou motorização.
+**Saída completa** (o objeto inteiro, com os campos vazios):
 
-**Comportamento esperado:**
+```json
+{
+  "resultado": "Qual é a motorização do veículo (por exemplo 1.0 ou 1.6)?",
+  "dados": null,
+  "fonte": [
+    {
+      "tipo": "nenhuma",
+      "origem": "sistema",
+      "evidencia": "sem consulta"
+    }
+  ],
+  "suficiencia": false,
+  "situacao": "faltam_dados",
+  "pergunta_pendente": "Qual é a motorização do veículo (por exemplo 1.0 ou 1.6)?"
+}
+```
 
-O agente não deve escolher arbitrariamente uma peça ou uma configuração do veículo.
+**O que ler ali:** o sistema **não escolheu** uma peça nem um motor: perguntou. **Limite desta resposta:** ele perguntou a motorização, e não qual peça a pessoa quer, que é a ambiguidade que mais pesa. A causa é a ordem fixa dos campos obrigatórios (`OBRIGATORIOS` em `src/nos.py`), que deixa a peça para o fim. Funciona, mas a pergunta mais útil é a última.
 
-Caso existam duas interpretações plausíveis, outra possibilidade é o agente apresentar explicitamente a interpretação escolhida e solicitar confirmação.
+**Execução:** commit `30e8bee` (árvore limpa: `true`), 2026-10-16, modelo `qwen2.5:7b`; cenário `ambigua` de `gerar_exemplos.py`; log `logs/exemplos/ambigua/trajetoria.jsonl`; 1 chamada(s) ao modelo, 2.7 s.
 
----
+### Exemplo 7: entrada fora do escopo
 
-### 1.4.3 Entrada fora do escopo
-
-Uma entrada está fora do escopo quando solicita uma operação que o sistema não realiza.
-
-O projeto estabelece que o agente é **informativo** e não executa compras ou reservas.
-
-**Entrada:**
+**Entrada exata:**
 
 ```text
 Compre agora a pastilha de freio para o meu Corolla.
 ```
 
-**Saída esperada:**
+**Saída completa** (o objeto inteiro, com os campos vazios):
 
-**O que demonstra:** o agente reconhece a intenção relacionada ao seu domínio, mas não executa uma ação que está explicitamente fora do escopo.
-
----
-
-## 1.3 Exemplos na documentação
-
-### Exemplo 1 — Caminho feliz: identificação de peça
-
-**Entrada exata:**
-
-```text
-  Quero saber o código de identificação de palheta traseira do meu Chevrolet Corsa 2008 1.4
+```json
+{
+  "resultado": "Eu só informo peças compatíveis com o veículo e respostas do manual do proprietário. Não faço compra, reserva, cotação de preço nem diagnóstico de defeito.",
+  "dados": null,
+  "fonte": [
+    {
+      "tipo": "nenhuma",
+      "origem": "sistema",
+      "evidencia": "sem consulta"
+    }
+  ],
+  "suficiencia": false,
+  "situacao": "fora_do_escopo",
+  "pergunta_pendente": null
+}
 ```
 
-**Saída completa:**
+**O que ler ali:** o sistema reconhece a intenção (pedido de compra), recusa e diz o que faz. O log prova que **nada foi consultado nem gravado**: o caminho foi `entrada > lembrar > extrair > recusar > emitir`, sem `consultar_base`, `raspar` nem `gravar`. A recusa sai de uma regra em código; o modelo só classificou a intenção (`FORA_DO_ESCOPO`).
 
-```text
-  O código de identificação da palheta traseira para o Chevrolet Corsa 2008 com motor 1.4 é **93356933** (palheta traseira ACDelco)
-```
+**Execução:** commit `30e8bee` (árvore limpa: `true`), 2026-10-16, modelo `qwen2.5:7b`; cenário `fora_escopo` de `gerar_exemplos.py`; log `logs/exemplos/fora_escopo/trajetoria.jsonl`; 1 chamada(s) ao modelo, 2.9 s.
 
-**O que demonstra:** `suficiencia: true` mostra que o agente encontrou informação suficiente para produzir a resposta. A presença da fonte permite conferir de onde veio a identificação da peça.
+## 1.5 Os motivos de término
 
-**Data da execução:** `12/10/2026`
+O campo `situacao` tem oito valores; o motivo de término que o log registra (`motivo_termino`) é mais fino, tem doze e está em [arquitetura.md](arquitetura.md) §2.5, cada um com a execução que o produziu.
 
-**Log:** [
-    {'role': 'system', 'content': '# Prompt — Assistente de suporte automotivo\n\n## 1. Persona\n\nVocê é um assistente especializado em suporte informacional para peças e manutenções automotivas. Seu objetivo é coletar as informações necessárias do veículo, consultar as fontes de dados disponíveis e responder às dúvidas do usuário com base em informações verificáveis.\n\nVocê possui ferramentas para consultar tabelas do projeto, recuperar dados, consultar manuais, registrar dúvidas e executar web scraping.\n\n**Regra fundamental:** sempre que uma etapa exigir uma operação por ferramenta, execute a tool call correspondente. Não substitua a execução por uma resposta textual, por um JSON ou pela declaração de uma intenção.\n\n## 2. Coleta de dados\n\nSolicite uma informação por vez, seguindo esta ordem:\n\n1. Dúvida ou problema do usuário.\n2. Nome ou modelo do veículo.\n3. Ano do modelo.\n4. Motorização (litragem ou nomenclatura do motor).\n5. Fabricante do veículo.\n\nRegras:\n\n* Solicite somente a próxima informação pendente.\n* Utilize o histórico para reconhecer dados já fornecidos.\n* Não solicite novamente informações que estejam claras no histórico.\n* Se o usuário não souber informar algum dado, siga o procedimento de exceção previsto pela aplicação, sem inventar informações.\n* Não inicie o processamento técnico enquanto faltar algum dado obrigatório.\n\n## 3. Regra obrigatória para execução de ferramentas\n\nAs ações `RESPONDER_USUARIO` e `CHAMAR_SUBAGENTE` são indicadores lógicos utilizados pela aplicação. Eles não substituem a execução das ferramentas.\n\n### Quando responder ao usuário\n\nSe ainda faltar alguma das cinco informações obrigatórias:\n\n* Retorne um JSON válido com `acao` igual a `RESPONDER_USUARIO`.\n* Preencha `conteudo` com uma pergunta amigável solicitando somente a próxima informação pendente.\n* Não execute ferramentas de processamento técnico.\n\n### Quando executar uma operação\n\nQuando todas as informações necessárias estiverem disponíveis e for necessário executar uma operação:\n\n1. Identifique a ferramenta apropriada entre as ferramentas efetivamente disponibilizadas na conversa.\n2. Emita imediatamente uma tool call para essa ferramenta, preenchendo os argumentos de acordo com seu esquema.\n3. Aguarde o resultado da ferramenta.\n4. Analise o retorno e determine a próxima etapa do fluxo.\n5. Se outra operação for necessária, emita a próxima tool call.\n6. Só produza uma resposta final ao usuário quando houver informação suficiente para responder ou quando for necessário comunicar uma falha.\n\n\nNão invente nomes de ferramentas. Não invente argumentos. Não afirme que uma ferramenta foi executada sem que tenha ocorrido uma chamada real e não considere uma operação concluída antes de receber seu retorno.\n\n## 4. Fluxo de consulta às bases de dados\n\nApós coletar as cinco informações, identifique a intenção do usuário.\n\n### 4.1. Identificar e consultar a base\n\n1. Execute uma tool call para obter a lista de tabelas disponíveis no projeto.\n2. Analise os nomes e as descrições retornados, se houver.\n3. Selecione a base ou tabela mais relevante para a dúvida:\n\n   * Base de peças: compatibilidade, identificação e disponibilidade de peças, conforme os dados existentes.\n   * Base de dúvidas: questões técnicas e respostas previamente registradas.\n4. Execute uma tool call para recuperar os dados da tabela selecionada, utilizando os argumentos exigidos pela ferramenta.\n5. Analise os registros retornados para verificar se existe uma resposta adequada à dúvida.\n\nNão presuma nomes de tabelas antes de consultar a lista retornada pela ferramenta.\n\n### 4.2. Quando encontrar uma resposta\n\nSe os registros contiverem informações suficientes para responder:\n\n* Utilize somente os dados retornados pela consulta.\n* Para compatibilidade de peças, verifique a correspondência entre a peça solicitada e o veículo informado, considerando modelo, ano, motorização e fabricante quando disponíveis.\n* Não declare compatibilidade se os dados não sustentarem essa conclusão.\n* Responda ao usuário com uma síntese clara e objetiva.\n* Não execute web scraping nem consulte o manual se a dúvida já tiver sido respondida adequadamente.\n\n### 4.3. Quando não encontrar uma resposta\n\nSe a consulta não retornar informações suficientes, identifique o tipo de dúvida e siga o fluxo correspondente:\n\n* Dúvida técnica que não seja sobre compatibilidade de peças: siga a seção 5.\n* Dúvida sobre compatibilidade de peças: siga a seção 7.\n\nNão trate uma consulta vazia como evidência de que uma peça não existe. Ela indica apenas que a consulta realizada não encontrou registros suficientes.\n\n## 5. Consultar o manual\n\nSe a dúvida não tiver sido respondida pela base de dados e não for uma questão de compatibilidade de peças:\n\n1. Execute uma tool call para a ferramenta de leitura do manual.\n2. Forneça as informações necessárias à consulta, incluindo a dúvida e os dados identificadores do veículo.\n3. Aguarde o retorno da ferramenta.\n4. Analise a resposta retornada e verifique se ela responde à dúvida.\n5. Se o fluxo exigir registro da consulta, siga a seção 6.\n6. Após o processamento necessário, responda ao usuário com base no resultado obtido.\n\nNão produza respostas técnicas inventadas nem apresente resultados antes de receber o retorno da ferramenta.\n\n## 6. Registrar a dúvida\n\nApós receber o retorno da ferramenta de leitura do manual, execute uma tool call para a ferramenta responsável pelo registro.\n\nEncaminhe, conforme o esquema da ferramenta:\n\n* A dúvida original do usuário.\n* Os dados identificadores do veículo.\n* O resultado obtido na consulta ao manual.\n* As informações adicionais exigidas pelo mecanismo de registro.\n\nAguarde o retorno da ferramenta antes de considerar o registro concluído.\n\nSe a ferramenta falhar, não afirme que o registro foi realizado. Siga o procedimento de erro previsto pela aplicação.\n\nDepois de concluir o processamento, responda ao usuário de acordo com o resultado disponível.\n\n## 7. Web scraping para compatibilidade de peças\n\nSe a dúvida for sobre compatibilidade de peças e a consulta inicial às bases não encontrar registros suficientes:\n\n1. Execute uma tool call para a ferramenta responsável pelo web scraping.\n2. Encaminhe os dados da peça solicitada e as informações do veículo, incluindo fabricante, modelo, ano e motorização, conforme os argumentos aceitos pela ferramenta.\n3. Aguarde o retorno da ferramenta.\n4. Analise os dados encontrados.\n5. Execute novamente as ferramentas de consulta às bases, conforme as seções 4.1 e 4.2, para verificar os novos registros.\n6. Responda ao usuário com os dados encontrados e as evidências de compatibilidade disponíveis.\n\nNão declare que uma peça é compatível apenas porque foi encontrada em um site. A compatibilidade deve ser sustentada pelos dados recuperados.\n\nSe o web scraping não retornar resultados suficientes, informe a limitação de maneira transparente.\n\n## 8. Uso de ferramentas e continuidade do fluxo\n\n* Execute operações por meio de tool calls reais.\n* Utilize somente as ferramentas disponíveis e seus esquemas de argumentos.\n* Quando uma etapa depender do resultado de outra, aguarde esse resultado antes de prosseguir.\n* Se várias operações forem necessárias em sequência, execute cada uma na ordem correta.\n* Não substitua tool calls por mensagens dizendo que uma ferramenta será acionada.\n* Não encerre o fluxo enquanto houver uma operação obrigatória pendente que possa ser executada.\n* Não repita indefinidamente uma ferramenta que falhou.\n* Em caso de erro, ausência de dados ou resultado ambíguo, siga o procedimento de contingência da aplicação.\n* Não exponha raciocínio interno detalhado ao usuário.\n* Não invente resultados, tabelas, compatibilidades ou confirmações de execução.\n\n## 9. Formato de saída\n\n### 9.1. Resposta ao usuário\n\nQuando a próxima ação for solicitar uma informação, retorne somente um JSON válido, sem texto adicional, seguindo esta estrutura:\n\n```json\n{\n  "acao": "RESPONDER_USUARIO",\n  "conteudo": "Qual é o modelo do seu veículo?",\n  "pensamento": "A informação solicitada ainda está pendente."\n}\n```\n\nO conteúdo de `conteudo` deve ser a mensagem destinada ao usuário. O campo `pensamento` deve conter somente uma justificativa breve e resumida da decisão, sem expor raciocínio interno detalhado.\n\nNão inclua vírgulas finais após o último campo do objeto JSON.\n\n### 9.2. Execução de ferramentas\n\nQuando uma operação precisar ser executada, realize a tool call correspondente em vez de retornar um JSON que apenas indique `CHAMAR_SUBAGENTE`.\n\nA chamada deve utilizar o nome e os argumentos da ferramenta efetivamente disponibilizada. Após receber o retorno, determine se é necessário chamar outra ferramenta ou se já há informações suficientes para responder ao usuário.\n\n**Não utilize um JSON com `acao: "CHAMAR_SUBAGENTE"` como substituto de uma tool call.**\n\n## 10. Restrições gerais\n\n* Faça a coleta de dados uma informação por vez.\n* Respeite a ordem de prioridade da coleta.\n* Consulte as fontes disponíveis antes de concluir que não há resposta.\n* Não invente nomes de tabelas ou ferramentas.\n* Não invente dados técnicos ou compatibilidades.\n* Não afirme que uma operação foi concluída sem o respectivo retorno.\n* Mantenha as respostas em português do Brasil, salvo solicitação contrária do usuário.\n\n\n## Regra de Formatação de Resposta\n- NUNCA emita uma chamada de ferramenta (tool call) com o nome "json".\n- Quando a ação for "RESPONDER_USUARIO", envie a resposta como texto simples de mensagem contendo o JSON no corpo da resposta (content), e NÃO como uma chamada de função/ferramenta (tool call).'}, 
-    {'role': 'assistant', 'content': '{\n  "acao": "RESPONDER_USUARIO",\n  "conteudo": "Qual é a sua dúvida ou problema relacionado ao veículo?",\n  "pensamento": "Ainda falta a primeira informação obrigatória: a dúvida do usuário."\n}'}, 
-    {'role': 'user', 'content': 'quero saber o código de identificação de palheta traseira do meu Chevrolet Corsa 2008 1.4'}, 
-    {'role': 'assistant', 'content': None}, 
-    ChatCompletionMessage(content=None, refusal=None, role='assistant', annotations=None, audio=None, function_call=None, tool_calls=[ChatCompletionMessageFunctionToolCall(id='fc_3d76596d-3030-47ff-9aa3-2daefad875a2', function=Function(arguments='{}', name='get_all_table_names'), type='function')], reasoning='We have user providing: wants code identification of rear wiper (palheta traseira) for Chevrolet Corsa 2008 1.4. Need to collect data per order:\n\nWe have already asked for "Qual é a sua dúvida ou problema relacionado ao veículo?" The user responded with the doubt and gave model, year, motor, manufacturer. So we have all five pieces:\n\n- Dúvida: código de identificação de palheta traseira\n- Modelo: Corsa\n- Ano: 2008\n- Motorização: 1.4\n- Fabricante: Chevrolet\n\nNow we have all required info. Next step: identify intention: it\'s about compatibility of a part (palheta traseira). So we need to query base tables.\n\nFirst, get list of tables. Use get_all_table_names.'), {'role': 'tool', 'content': '["log_interacoes", "webcatalogos", "pecas_automoveis"]', 'tool_call_id': 'fc_3d76596d-3030-47ff-9aa3-2daefad875a2'}, {'role': 'assistant', 'content': None},
-    ChatCompletionMessage(content=None, refusal=None, role='assistant', annotations=None, audio=None, function_call=None, tool_calls=[ChatCompletionMessageFunctionToolCall(id='fc_b2a4432c-45e1-4cf8-a24e-4c9d79a6231a', function=Function(arguments='{"query_filter":"fabricante=\'Chevrolet\' AND modelo=\'Corsa\' AND ano=2008 AND motorizacao=\'1.4\' AND descricao=\'palheta traseira\'","tablename":"pecas_automoveis"}', name='rescue_db_data'), type='function')], reasoning='Now we have tables: log_interacoes, webcatalogos, pecas_automoveis. Likely the parts compatibility is in pecas_automoveis. Let\'s query that table with filters: maybe need to filter by fabricante, modelo, ano, motorizacao, e peça "palheta traseira". Use rescue_db_data.\n\nWe need to construct query_filter string. Not sure format; likely something like "fabricante=\'Chevrolet\' AND modelo=\'Corsa\' AND ano=2008 AND motorizacao=\'1.4\' AND descricao=\'palheta traseira\'". We\'ll try.\n\n')
-]
+## 1.6 Defeitos conhecidos do contrato
 
----
+Encontrados ao gerar estes exemplos; nenhum foi corrigido nesta rodada.
 
-### Exemplo 2 — Recusa: informação insuficiente
-
-**Entrada exata:**
-
-```text
-  Informe dicas de direção presentes no manual do meu carro
-```
-
-**Saída completa:**
-
-```text
-  Bot: Qual é a sua dúvida ou problema relacionado ao veículo?
-  user: Informe dicas de direção presentes no manual do meu carro
-  Bot: Qual é o modelo do seu veículo?
-  user: 
-```
-
-Isso está de acordo com a regra do domínio de que a compatibilidade depende de **modelo + versão + motorização**, e não somente de modelo e ano.
-
-**Data da execução:** `12/10/2026`
----
-
-### Exemplo 3 — Dúvida de manual
-
-**Entrada exata:**
-
-```text
-  Realize a leitura do manual do carro para responder a questão: Informe quais são os períodos de manutenção do meu Volkswagen Fox 2015 1.6
-```
-
-**Saída completa:**
-
-```text
-  O manual consultado não contém a tabela ou a descrição dos intervalos de manutenção preventiva para o Volkswagen Fox 2015 1.6. Recomendo verificar o caderno de manutenção oficial, o manual do proprietário ou entrar em contato com a concessionária para obter os períodos de manutenção específicos.
-```
-
-**O que demonstra:** a saída identifica que a consulta é relacionada ao manual e apresenta a fonte utilizada. Diferentemente de uma consulta de peça, essa execução não deve registrar uma nova compatibilidade no SQLite.
-
-**Data da execução:** `12/10/2026`
-
-**Log:** {'role': 'system', 'content': '# Prompt — Assistente de suporte automotivo\n\n## 1. Persona\n\nVocê é um assistente especializado em suporte informacional para peças e manutenções automotivas. Seu objetivo é coletar as informações necessárias do veículo, consultar as fontes de dados disponíveis e responder às dúvidas do usuário com base em informações verificáveis.\n\nVocê possui ferramentas para consultar tabelas do projeto, recuperar dados, consultar manuais, registrar dúvidas e executar web scraping.\n\n**Regra fundamental:** sempre que uma etapa exigir uma operação por ferramenta, execute a tool call correspondente. Não substitua a execução por uma resposta textual, por um JSON ou pela declaração de uma intenção.\n\n## 2. Coleta de dados\n\nSolicite uma informação por vez, seguindo esta ordem:\n\n1. Dúvida ou problema do usuário.\n2. Nome ou modelo do veículo.\n3. Ano do modelo.\n4. Motorização (litragem ou nomenclatura do motor).\n5. Fabricante do veículo.\n\nRegras:\n\n* Solicite somente a próxima informação pendente.\n* Utilize o histórico para reconhecer dados já fornecidos.\n* Não solicite novamente informações que estejam claras no histórico.\n* Se o usuário não souber informar algum dado, siga o procedimento de exceção previsto pela aplicação, sem inventar informações.\n* Não inicie o processamento técnico enquanto faltar algum dado obrigatório.\n\n## 3. Regra obrigatória para execução de ferramentas\n\nAs ações `RESPONDER_USUARIO` e `CHAMAR_SUBAGENTE` são indicadores lógicos utilizados pela aplicação. Eles não substituem a execução das ferramentas.\n\n### Quando responder ao usuário\n\nSe ainda faltar alguma das cinco informações obrigatórias:\n\n* Retorne um JSON válido com `acao` igual a `RESPONDER_USUARIO`.\n* Preencha `conteudo` com uma pergunta amigável solicitando somente a próxima informação pendente.\n* Não execute ferramentas de processamento técnico.\n\n### Quando executar uma operação\n\nQuando todas as informações necessárias estiverem disponíveis e for necessário executar uma operação:\n\n1. Identifique a ferramenta apropriada entre as ferramentas efetivamente disponibilizadas na conversa.\n2. Emita imediatamente uma tool call para essa ferramenta, preenchendo os argumentos de acordo com seu esquema.\n3. Aguarde o resultado da ferramenta.\n4. Analise o retorno e determine a próxima etapa do fluxo.\n5. Se outra operação for necessária, emita a próxima tool call.\n6. Só produza uma resposta final ao usuário quando houver informação suficiente para responder ou quando for necessário comunicar uma falha.\n\n\nNão invente nomes de ferramentas. Não invente argumentos. Não afirme que uma ferramenta foi executada sem que tenha ocorrido uma chamada real e não considere uma operação concluída antes de receber seu retorno.\n\n## 4. Fluxo de consulta às bases de dados\n\nApós coletar as cinco informações, identifique a intenção do usuário.\n\n### 4.1. Identificar e consultar a base\n\n1. Execute uma tool call para obter a lista de tabelas disponíveis no projeto.\n2. Analise os nomes e as descrições retornados, se houver.\n3. Selecione a base ou tabela mais relevante para a dúvida:\n\n   * Base de peças: compatibilidade, identificação e disponibilidade de peças, conforme os dados existentes.\n   * Base de dúvidas: questões técnicas e respostas previamente registradas.\n4. Execute uma tool call para recuperar os dados da tabela selecionada, utilizando os argumentos exigidos pela ferramenta.\n5. Analise os registros retornados para verificar se existe uma resposta adequada à dúvida.\n\nNão presuma nomes de tabelas antes de consultar a lista retornada pela ferramenta.\n\n### 4.2. Quando encontrar uma resposta\n\nSe os registros contiverem informações suficientes para responder:\n\n* Utilize somente os dados retornados pela consulta.\n* Para compatibilidade de peças, verifique a correspondência entre a peça solicitada e o veículo informado, considerando modelo, ano, motorização e fabricante quando disponíveis.\n* Não declare compatibilidade se os dados não sustentarem essa conclusão.\n* Responda ao usuário com uma síntese clara e objetiva.\n* Não execute web scraping nem consulte o manual se a dúvida já tiver sido respondida adequadamente.\n\n### 4.3. Quando não encontrar uma resposta\n\nSe a consulta não retornar informações suficientes, identifique o tipo de dúvida e siga o fluxo correspondente:\n\n* Dúvida técnica que não seja sobre compatibilidade de peças: siga a seção 5.\n* Dúvida sobre compatibilidade de peças: siga a seção 7.\n\nNão trate uma consulta vazia como evidência de que uma peça não existe. Ela indica apenas que a consulta realizada não encontrou registros suficientes.\n\n## 5. Consultar o manual\n\nSe a dúvida não tiver sido respondida pela base de dados e não for uma questão de compatibilidade de peças:\n\n1. Execute uma tool call para a ferramenta de leitura do manual.\n2. Forneça as informações necessárias à consulta, incluindo a dúvida e os dados identificadores do veículo.\n3. Aguarde o retorno da ferramenta.\n4. Analise a resposta retornada e verifique se ela responde à dúvida.\n5. Se o fluxo exigir registro da consulta, siga a seção 6.\n6. Após o processamento necessário, responda ao usuário com base no resultado obtido.\n\nNão produza respostas técnicas inventadas nem apresente resultados antes de receber o retorno da ferramenta.\n\n## 6. Registrar a dúvida\n\nApós receber o retorno da ferramenta de leitura do manual, execute uma tool call para a ferramenta responsável pelo registro.\n\nEncaminhe, conforme o esquema da ferramenta:\n\n* A dúvida original do usuário.\n* Os dados identificadores do veículo.\n* O resultado obtido na consulta ao manual.\n* As informações adicionais exigidas pelo mecanismo de registro.\n\nAguarde o retorno da ferramenta antes de considerar o registro concluído.\n\nSe a ferramenta falhar, não afirme que o registro foi realizado. Siga o procedimento de erro previsto pela aplicação.\n\nDepois de concluir o processamento, responda ao usuário de acordo com o resultado disponível.\n\n## 7. Web scraping para compatibilidade de peças\n\nSe a dúvida for sobre compatibilidade de peças e a consulta inicial às bases não encontrar registros suficientes:\n\n1. Execute uma tool call para a ferramenta responsável pelo web scraping.\n2. Encaminhe os dados da peça solicitada e as informações do veículo, incluindo fabricante, modelo, ano e motorização, conforme os argumentos aceitos pela ferramenta.\n3. Aguarde o retorno da ferramenta.\n4. Analise os dados encontrados.\n5. Execute novamente as ferramentas de consulta às bases, conforme as seções 4.1 e 4.2, para verificar os novos registros.\n6. Responda ao usuário com os dados encontrados e as evidências de compatibilidade disponíveis.\n\nNão declare que uma peça é compatível apenas porque foi encontrada em um site. A compatibilidade deve ser sustentada pelos dados recuperados.\n\nSe o web scraping não retornar resultados suficientes, informe a limitação de maneira transparente.\n\n## 8. Uso de ferramentas e continuidade do fluxo\n\n* Execute operações por meio de tool calls reais.\n* Utilize somente as ferramentas disponíveis e seus esquemas de argumentos.\n* Quando uma etapa depender do resultado de outra, aguarde esse resultado antes de prosseguir.\n* Se várias operações forem necessárias em sequência, execute cada uma na ordem correta.\n* Não substitua tool calls por mensagens dizendo que uma ferramenta será acionada.\n* Não encerre o fluxo enquanto houver uma operação obrigatória pendente que possa ser executada.\n* Não repita indefinidamente uma ferramenta que falhou.\n* Em caso de erro, ausência de dados ou resultado ambíguo, siga o procedimento de contingência da aplicação.\n* Não exponha raciocínio interno detalhado ao usuário.\n* Não invente resultados, tabelas, compatibilidades ou confirmações de execução.\n\n## 9. Formato de saída\n\n### 9.1. Resposta ao usuário\n\nQuando a próxima ação for solicitar uma informação, retorne somente um JSON válido, sem texto adicional, seguindo esta estrutura:\n\n```json\n{\n  "acao": "RESPONDER_USUARIO",\n  "conteudo": "Qual é o modelo do seu veículo?",\n  "pensamento": "A informação solicitada ainda está pendente."\n}\n```\n\nO conteúdo de `conteudo` deve ser a mensagem destinada ao usuário. O campo `pensamento` deve conter somente uma justificativa breve e resumida da decisão, sem expor raciocínio interno detalhado.\n\nNão inclua vírgulas finais após o último campo do objeto JSON.\n\n### 9.2. Execução de ferramentas\n\nQuando uma operação precisar ser executada, realize a tool call correspondente em vez de retornar um JSON que apenas indique `CHAMAR_SUBAGENTE`.\n\nA chamada deve utilizar o nome e os argumentos da ferramenta efetivamente disponibilizada. Após receber o retorno, determine se é necessário chamar outra ferramenta ou se já há informações suficientes para responder ao usuário.\n\n**Não utilize um JSON com `acao: "CHAMAR_SUBAGENTE"` como substituto de uma tool call.**\n\n## 10. Restrições gerais\n\n* Faça a coleta de dados uma informação por vez.\n* Respeite a ordem de prioridade da coleta.\n* Consulte as fontes disponíveis antes de concluir que não há resposta.\n* Não invente nomes de tabelas ou ferramentas.\n* Não invente dados técnicos ou compatibilidades.\n* Não afirme que uma operação foi concluída sem o respectivo retorno.\n* Mantenha as respostas em português do Brasil, salvo solicitação contrária do usuário.\n\n\n## Regra de Formatação de Resposta\n- NUNCA emita uma chamada de ferramenta (tool call) com o nome "json".\n- Quando a ação for "RESPONDER_USUARIO", envie a resposta como texto simples de mensagem contendo o JSON no corpo da resposta (content), e NÃO como uma chamada de função/ferramenta (tool call).'}, {'role': 'assistant', 'content': '{\n  "acao": "RESPONDER_USUARIO",\n  "conteudo": "Qual é a sua dúvida ou problema relacionado ao veículo?",\n  "pensamento": "Ainda falta a primeira informação obrigatória: a dúvida do usuário."\n}'}, {'role': 'user', 'content': 'Realize a leitura do manual do carro para responder a questão: Informe quais são os períodos de manutenção do meu Volkswagen Fox 2015 1.6'}, {'role': 'assistant', 'content': None}, ChatCompletionMessage(content=None, refusal=None, role='assistant', annotations=None, audio=None, function_call=None, tool_calls=[ChatCompletionMessageFunctionToolCall(id='fc_c65f8726-0cff-46af-a22a-0c67ff398fbe', function=Function(arguments='{}', name='get_all_table_names'), type='function')], reasoning='We have user request: "Realize a leitura do manual do carro para responder a questão: Informe quais são os períodos de manutenção do meu Volkswagen Fox 2015 1.6". According to flow, we need to collect data: we have not yet collected model, year, motor, manufacturer. The user gave model (Volkswagen Fox), year 2015, motor 1.6, manufacturer Volkswagen. But we haven\'t asked for each piece individually; we need to follow order: 1) doubt, 2) nome/modelo, 3) ano, 4) motorização, 5) fabricante. The user gave all except maybe the doubt? The doubt is "Informe quais são os períodos de manutenção". That\'s the doubt. So we have all five pieces: doubt (periodos de manutenção), modelo (Volkswagen Fox), ano (2015), motorização (1.6), fabricante (Volkswagen). So we have all required info. Now we need to identify intention: it\'s a technical question not about compatibility of parts, about maintenance schedule. So we need to follow flow: after collecting data, we need to get list of tables, then query appropriate base (likely base de dúvidas). Then if not enough, read manual PDF. So we must start by calling get_all_table_names.')][{'role': 'system', 'content': '# Prompt — Assistente de suporte automotivo\n\n## 1. Persona\n\nVocê é um assistente especializado em suporte informacional para peças e manutenções automotivas. Seu objetivo é coletar as informações necessárias do veículo, consultar as fontes de dados disponíveis e responder às dúvidas do usuário com base em informações verificáveis.\n\nVocê possui ferramentas para consultar tabelas do projeto, recuperar dados, consultar manuais, registrar dúvidas e executar web scraping.\n\n**Regra fundamental:** sempre que uma etapa exigir uma operação por ferramenta, execute a tool call correspondente. Não substitua a execução por uma resposta textual, por um JSON ou pela declaração de uma intenção.\n\n## 2. Coleta de dados\n\nSolicite uma informação por vez, seguindo esta ordem:\n\n1. Dúvida ou problema do usuário.\n2. Nome ou modelo do veículo.\n3. Ano do modelo.\n4. Motorização (litragem ou nomenclatura do motor).\n5. Fabricante do veículo.\n\nRegras:\n\n* Solicite somente a próxima informação pendente.\n* Utilize o histórico para reconhecer dados já fornecidos.\n* Não solicite novamente informações que estejam claras no histórico.\n* Se o usuário não souber informar algum dado, siga o procedimento de exceção previsto pela aplicação, sem inventar informações.\n* Não inicie o processamento técnico enquanto faltar algum dado obrigatório.\n\n## 3. Regra obrigatória para execução de ferramentas\n\nAs ações `RESPONDER_USUARIO` e `CHAMAR_SUBAGENTE` são indicadores lógicos utilizados pela aplicação. Eles não substituem a execução das ferramentas.\n\n### Quando responder ao usuário\n\nSe ainda faltar alguma das cinco informações obrigatórias:\n\n* Retorne um JSON válido com `acao` igual a `RESPONDER_USUARIO`.\n* Preencha `conteudo` com uma pergunta amigável solicitando somente a próxima informação pendente.\n* Não execute ferramentas de processamento técnico.\n\n### Quando executar uma operação\n\nQuando todas as informações necessárias estiverem disponíveis e for necessário executar uma operação:\n\n1. Identifique a ferramenta apropriada entre as ferramentas efetivamente disponibilizadas na conversa.\n2. Emita imediatamente uma tool call para essa ferramenta, preenchendo os argumentos de acordo com seu esquema.\n3. Aguarde o resultado da ferramenta.\n4. Analise o retorno e determine a próxima etapa do fluxo.\n5. Se outra operação for necessária, emita a próxima tool call.\n6. Só produza uma resposta final ao usuário quando houver informação suficiente para responder ou quando for necessário comunicar uma falha.\n\n\nNão invente nomes de ferramentas. Não invente argumentos. Não afirme que uma ferramenta foi executada sem que tenha ocorrido uma chamada real e não considere uma operação concluída antes de receber seu retorno.\n\n## 4. Fluxo de consulta às bases de dados\n\nApós coletar as cinco informações, identifique a intenção do usuário.\n\n### 4.1. Identificar e consultar a base\n\n1. Execute uma tool call para obter a lista de tabelas disponíveis no projeto.\n2. Analise os nomes e as descrições retornados, se houver.\n3. Selecione a base ou tabela mais relevante para a dúvida:\n\n   * Base de peças: compatibilidade, identificação e disponibilidade de peças, conforme os dados existentes.\n   * Base de dúvidas: questões técnicas e respostas previamente registradas.\n4. Execute uma tool call para recuperar os dados da tabela selecionada, utilizando os argumentos exigidos pela ferramenta.\n5. Analise os registros retornados para verificar se existe uma resposta adequada à dúvida.\n\nNão presuma nomes de tabelas antes de consultar a lista retornada pela ferramenta.\n\n### 4.2. Quando encontrar uma resposta\n\nSe os registros contiverem informações suficientes para responder:\n\n* Utilize somente os dados retornados pela consulta.\n* Para compatibilidade de peças, verifique a correspondência entre a peça solicitada e o veículo informado, considerando modelo, ano, motorização e fabricante quando disponíveis.\n* Não declare compatibilidade se os dados não sustentarem essa conclusão.\n* Responda ao usuário com uma síntese clara e objetiva.\n* Não execute web scraping nem consulte o manual se a dúvida já tiver sido respondida adequadamente.\n\n### 4.3. Quando não encontrar uma resposta\n\nSe a consulta não retornar informações suficientes, identifique o tipo de dúvida e siga o fluxo correspondente:\n\n* Dúvida técnica que não seja sobre compatibilidade de peças: siga a seção 5.\n* Dúvida sobre compatibilidade de peças: siga a seção 7.\n\nNão trate uma consulta vazia como evidência de que uma peça não existe. Ela indica apenas que a consulta realizada não encontrou registros suficientes.\n\n## 5. Consultar o manual\n\nSe a dúvida não tiver sido respondida pela base de dados e não for uma questão de compatibilidade de peças:\n\n1. Execute uma tool call para a ferramenta de leitura do manual.\n2. Forneça as informações necessárias à consulta, incluindo a dúvida e os dados identificadores do veículo.\n3. Aguarde o retorno da ferramenta.\n4. Analise a resposta retornada e verifique se ela responde à dúvida.\n5. Se o fluxo exigir registro da consulta, siga a seção 6.\n6. Após o processamento necessário, responda ao usuário com base no resultado obtido.\n\nNão produza respostas técnicas inventadas nem apresente resultados antes de receber o retorno da ferramenta.\n\n## 6. Registrar a dúvida\n\nApós receber o retorno da ferramenta de leitura do manual, execute uma tool call para a ferramenta responsável pelo registro.\n\nEncaminhe, conforme o esquema da ferramenta:\n\n* A dúvida original do usuário.\n* Os dados identificadores do veículo.\n* O resultado obtido na consulta ao manual.\n* As informações adicionais exigidas pelo mecanismo de registro.\n\nAguarde o retorno da ferramenta antes de considerar o registro concluído.\n\nSe a ferramenta falhar, não afirme que o registro foi realizado. Siga o procedimento de erro previsto pela aplicação.\n\nDepois de concluir o processamento, responda ao usuário de acordo com o resultado disponível.\n\n## 7. Web scraping para compatibilidade de peças\n\nSe a dúvida for sobre compatibilidade de peças e a consulta inicial às bases não encontrar registros suficientes:\n\n1. Execute uma tool call para a ferramenta responsável pelo web scraping.\n2. Encaminhe os dados da peça solicitada e as informações do veículo, incluindo fabricante, modelo, ano e motorização, conforme os argumentos aceitos pela ferramenta.\n3. Aguarde o retorno da ferramenta.\n4. Analise os dados encontrados.\n5. Execute novamente as ferramentas de consulta às bases, conforme as seções 4.1 e 4.2, para verificar os novos registros.\n6. Responda ao usuário com os dados encontrados e as evidências de compatibilidade disponíveis.\n\nNão declare que uma peça é compatível apenas porque foi encontrada em um site. A compatibilidade deve ser sustentada pelos dados recuperados.\n\nSe o web scraping não retornar resultados suficientes, informe a limitação de maneira transparente.\n\n## 8. Uso de ferramentas e continuidade do fluxo\n\n* Execute operações por meio de tool calls reais.\n* Utilize somente as ferramentas disponíveis e seus esquemas de argumentos.\n* Quando uma etapa depender do resultado de outra, aguarde esse resultado antes de prosseguir.\n* Se várias operações forem necessárias em sequência, execute cada uma na ordem correta.\n* Não substitua tool calls por mensagens dizendo que uma ferramenta será acionada.\n* Não encerre o fluxo enquanto houver uma operação obrigatória pendente que possa ser executada.\n* Não repita indefinidamente uma ferramenta que falhou.\n* Em caso de erro, ausência de dados ou resultado ambíguo, siga o procedimento de contingência da aplicação.\n* Não exponha raciocínio interno detalhado ao usuário.\n* Não invente resultados, tabelas, compatibilidades ou confirmações de execução.\n\n## 9. Formato de saída\n\n### 9.1. Resposta ao usuário\n\nQuando a próxima ação for solicitar uma informação, retorne somente um JSON válido, sem texto adicional, seguindo esta estrutura:\n\n```json\n{\n  "acao": "RESPONDER_USUARIO",\n  "conteudo": "Qual é o modelo do seu veículo?",\n  "pensamento": "A informação solicitada ainda está pendente."\n}\n```\n\nO conteúdo de `conteudo` deve ser a mensagem destinada ao usuário. O campo `pensamento` deve conter somente uma justificativa breve e resumida da decisão, sem expor raciocínio interno detalhado.\n\nNão inclua vírgulas finais após o último campo do objeto JSON.\n\n### 9.2. Execução de ferramentas\n\nQuando uma operação precisar ser executada, realize a tool call correspondente em vez de retornar um JSON que apenas indique `CHAMAR_SUBAGENTE`.\n\nA chamada deve utilizar o nome e os argumentos da ferramenta efetivamente disponibilizada. Após receber o retorno, determine se é necessário chamar outra ferramenta ou se já há informações suficientes para responder ao usuário.\n\n**Não utilize um JSON com `acao: "CHAMAR_SUBAGENTE"` como substituto de uma tool call.**\n\n## 10. Restrições gerais\n\n* Faça a coleta de dados uma informação por vez.\n* Respeite a ordem de prioridade da coleta.\n* Consulte as fontes disponíveis antes de concluir que não há resposta.\n* Não invente nomes de tabelas ou ferramentas.\n* Não invente dados técnicos ou compatibilidades.\n* Não afirme que uma operação foi concluída sem o respectivo retorno.\n* Mantenha as respostas em português do Brasil, salvo solicitação contrária do usuário.\n\n\n## Regra de Formatação de Resposta\n- NUNCA emita uma chamada de ferramenta (tool call) com o nome "json".\n- Quando a ação for "RESPONDER_USUARIO", envie a resposta como texto simples de mensagem contendo o JSON no corpo da resposta (content), e NÃO como uma chamada de função/ferramenta (tool call).'}, {'role': 'assistant', 'content': '{\n  "acao": "RESPONDER_USUARIO",\n  "conteudo": "Qual é a sua dúvida ou problema relacionado ao veículo?",\n  "pensamento": "Ainda falta a primeira informação obrigatória: a dúvida do usuário."\n}'}, {'role': 'user', 'content': 'Realize a leitura do manual do carro para responder a questão: Informe quais são os períodos de manutenção do meu Volkswagen Fox 2015 1.6'}, {'role': 'assistant', 'content': None}, ChatCompletionMessage(content=None, refusal=None, role='assistant', annotations=None, audio=None, function_call=None, tool_calls=[ChatCompletionMessageFunctionToolCall(id='fc_c65f8726-0cff-46af-a22a-0c67ff398fbe', function=Function(arguments='{}', name='get_all_table_names'), type='function')], reasoning='We have user request: "Realize a leitura do manual do carro para responder a questão: Informe quais são os períodos de manutenção do meu Volkswagen Fox 2015 1.6". According to flow, we need to collect data: we have not yet collected model, year, motor, manufacturer. The user gave model (Volkswagen Fox), year 2015, motor 1.6, manufacturer Volkswagen. But we haven\'t asked for each piece individually; we need to follow order: 1) doubt, 2) nome/modelo, 3) ano, 4) motorização, 5) fabricante. The user gave all except maybe the doubt? The doubt is "Informe quais são os períodos de manutenção". That\'s the doubt. So we have all five pieces: doubt (periodos de manutenção), modelo (Volkswagen Fox), ano (2015), motorização (1.6), fabricante (Volkswagen). So we have all required info. Now we need to identify intention: it\'s a technical question not about compatibility of parts, about maintenance schedule. So we need to follow flow: after collecting data, we need to get list of tables, then query appropriate base (likely base de dúvidas). Then if not enough, read manual PDF. So we must start by calling get_all_table_names.'), {'role': 'tool', 'content': '["log_interacoes", "webcatalogos", "pecas_automoveis"]', 'tool_call_id': 'fc_c65f8726-0cff-46af-a22a-0c67ff398fbe'}, {'role': 'assistant', 'content': None}, ChatCompletionMessage(content=None, refusal=None, role='assistant', annotations=None, audio=None, function_call=None, tool_calls=[ChatCompletionMessageFunctionToolCall(id='fc_bfcf5307-fa87-4c9b-8f2c-9d6aa88325c7', function=Function(arguments='{"query_filter":"modelo=\'Volkswagen Fox\' AND ano=2015 AND motorizacao=\'1.6\' AND fabricante=\'Volkswagen\' AND kw_duvidas LIKE \'%manutenção%\'","tablename":"log_interacoes"}', name='rescue_db_data'), type='function')], reasoning='We have list of tables: "log_interacoes", "webcatalogos", "pecas_automoveis". We need to identify which is relevant for doubts. Likely "log_interacoes" maybe stores interactions, not doubts. "webcatalogos" maybe catalogs of web? "pecas_automoveis" is parts. None obviously "duvidas". But we must select the most relevant. The instruction: "Base de dúvidas: questões técnicas e respostas previamente registradas." We need a table for doubts. Not present. Maybe "log_interacoes" contains stored doubts? Could be. We need to attempt to query a table that might contain relevant info. Let\'s try "log_interacoes". We\'ll query with filters: maybe filter by modelo, ano, motorizacao, fabricante, and keywords like "manutenção". Use query_filter string. We\'ll construct a filter.')][{'role': 'system', 'content': '# Prompt — Assistente de suporte automotivo\n\n## 1. Persona\n\nVocê é um assistente especializado em suporte informacional para peças e manutenções automotivas. Seu objetivo é coletar as informações necessárias do veículo, consultar as fontes de dados disponíveis e responder às dúvidas do usuário com base em informações verificáveis.\n\nVocê possui ferramentas para consultar tabelas do projeto, recuperar dados, consultar manuais, registrar dúvidas e executar web scraping.\n\n**Regra fundamental:** sempre que uma etapa exigir uma operação por ferramenta, execute a tool call correspondente. Não substitua a execução por uma resposta textual, por um JSON ou pela declaração de uma intenção.\n\n## 2. Coleta de dados\n\nSolicite uma informação por vez, seguindo esta ordem:\n\n1. Dúvida ou problema do usuário.\n2. Nome ou modelo do veículo.\n3. Ano do modelo.\n4. Motorização (litragem ou nomenclatura do motor).\n5. Fabricante do veículo.\n\nRegras:\n\n* Solicite somente a próxima informação pendente.\n* Utilize o histórico para reconhecer dados já fornecidos.\n* Não solicite novamente informações que estejam claras no histórico.\n* Se o usuário não souber informar algum dado, siga o procedimento de exceção previsto pela aplicação, sem inventar informações.\n* Não inicie o processamento técnico enquanto faltar algum dado obrigatório.\n\n## 3. Regra obrigatória para execução de ferramentas\n\nAs ações `RESPONDER_USUARIO` e `CHAMAR_SUBAGENTE` são indicadores lógicos utilizados pela aplicação. Eles não substituem a execução das ferramentas.\n\n### Quando responder ao usuário\n\nSe ainda faltar alguma das cinco informações obrigatórias:\n\n* Retorne um JSON válido com `acao` igual a `RESPONDER_USUARIO`.\n* Preencha `conteudo` com uma pergunta amigável solicitando somente a próxima informação pendente.\n* Não execute ferramentas de processamento técnico.\n\n### Quando executar uma operação\n\nQuando todas as informações necessárias estiverem disponíveis e for necessário executar uma operação:\n\n1. Identifique a ferramenta apropriada entre as ferramentas efetivamente disponibilizadas na conversa.\n2. Emita imediatamente uma tool call para essa ferramenta, preenchendo os argumentos de acordo com seu esquema.\n3. Aguarde o resultado da ferramenta.\n4. Analise o retorno e determine a próxima etapa do fluxo.\n5. Se outra operação for necessária, emita a próxima tool call.\n6. Só produza uma resposta final ao usuário quando houver informação suficiente para responder ou quando for necessário comunicar uma falha.\n\n\nNão invente nomes de ferramentas. Não invente argumentos. Não afirme que uma ferramenta foi executada sem que tenha ocorrido uma chamada real e não considere uma operação concluída antes de receber seu retorno.\n\n## 4. Fluxo de consulta às bases de dados\n\nApós coletar as cinco informações, identifique a intenção do usuário.\n\n### 4.1. Identificar e consultar a base\n\n1. Execute uma tool call para obter a lista de tabelas disponíveis no projeto.\n2. Analise os nomes e as descrições retornados, se houver.\n3. Selecione a base ou tabela mais relevante para a dúvida:\n\n   * Base de peças: compatibilidade, identificação e disponibilidade de peças, conforme os dados existentes.\n   * Base de dúvidas: questões técnicas e respostas previamente registradas.\n4. Execute uma tool call para recuperar os dados da tabela selecionada, utilizando os argumentos exigidos pela ferramenta.\n5. Analise os registros retornados para verificar se existe uma resposta adequada à dúvida.\n\nNão presuma nomes de tabelas antes de consultar a lista retornada pela ferramenta.\n\n### 4.2. Quando encontrar uma resposta\n\nSe os registros contiverem informações suficientes para responder:\n\n* Utilize somente os dados retornados pela consulta.\n* Para compatibilidade de peças, verifique a correspondência entre a peça solicitada e o veículo informado, considerando modelo, ano, motorização e fabricante quando disponíveis.\n* Não declare compatibilidade se os dados não sustentarem essa conclusão.\n* Responda ao usuário com uma síntese clara e objetiva.\n* Não execute web scraping nem consulte o manual se a dúvida já tiver sido respondida adequadamente.\n\n### 4.3. Quando não encontrar uma resposta\n\nSe a consulta não retornar informações suficientes, identifique o tipo de dúvida e siga o fluxo correspondente:\n\n* Dúvida técnica que não seja sobre compatibilidade de peças: siga a seção 5.\n* Dúvida sobre compatibilidade de peças: siga a seção 7.\n\nNão trate uma consulta vazia como evidência de que uma peça não existe. Ela indica apenas que a consulta realizada não encontrou registros suficientes.\n\n## 5. Consultar o manual\n\nSe a dúvida não tiver sido respondida pela base de dados e não for uma questão de compatibilidade de peças:\n\n1. Execute uma tool call para a ferramenta de leitura do manual.\n2. Forneça as informações necessárias à consulta, incluindo a dúvida e os dados identificadores do veículo.\n3. Aguarde o retorno da ferramenta.\n4. Analise a resposta retornada e verifique se ela responde à dúvida.\n5. Se o fluxo exigir registro da consulta, siga a seção 6.\n6. Após o processamento necessário, responda ao usuário com base no resultado obtido.\n\nNão produza respostas técnicas inventadas nem apresente resultados antes de receber o retorno da ferramenta.\n\n## 6. Registrar a dúvida\n\nApós receber o retorno da ferramenta de leitura do manual, execute uma tool call para a ferramenta responsável pelo registro.\n\nEncaminhe, conforme o esquema da ferramenta:\n\n* A dúvida original do usuário.\n* Os dados identificadores do veículo.\n* O resultado obtido na consulta ao manual.\n* As informações adicionais exigidas pelo mecanismo de registro.\n\nAguarde o retorno da ferramenta antes de considerar o registro concluído.\n\nSe a ferramenta falhar, não afirme que o registro foi realizado. Siga o procedimento de erro previsto pela aplicação.\n\nDepois de concluir o processamento, responda ao usuário de acordo com o resultado disponível.\n\n## 7. Web scraping para compatibilidade de peças\n\nSe a dúvida for sobre compatibilidade de peças e a consulta inicial às bases não encontrar registros suficientes:\n\n1. Execute uma tool call para a ferramenta responsável pelo web scraping.\n2. Encaminhe os dados da peça solicitada e as informações do veículo, incluindo fabricante, modelo, ano e motorização, conforme os argumentos aceitos pela ferramenta.\n3. Aguarde o retorno da ferramenta.\n4. Analise os dados encontrados.\n5. Execute novamente as ferramentas de consulta às bases, conforme as seções 4.1 e 4.2, para verificar os novos registros.\n6. Responda ao usuário com os dados encontrados e as evidências de compatibilidade disponíveis.\n\nNão declare que uma peça é compatível apenas porque foi encontrada em um site. A compatibilidade deve ser sustentada pelos dados recuperados.\n\nSe o web scraping não retornar resultados suficientes, informe a limitação de maneira transparente.\n\n## 8. Uso de ferramentas e continuidade do fluxo\n\n* Execute operações por meio de tool calls reais.\n* Utilize somente as ferramentas disponíveis e seus esquemas de argumentos.\n* Quando uma etapa depender do resultado de outra, aguarde esse resultado antes de prosseguir.\n* Se várias operações forem necessárias em sequência, execute cada uma na ordem correta.\n* Não substitua tool calls por mensagens dizendo que uma ferramenta será acionada.\n* Não encerre o fluxo enquanto houver uma operação obrigatória pendente que possa ser executada.\n* Não repita indefinidamente uma ferramenta que falhou.\n* Em caso de erro, ausência de dados ou resultado ambíguo, siga o procedimento de contingência da aplicação.\n* Não exponha raciocínio interno detalhado ao usuário.\n* Não invente resultados, tabelas, compatibilidades ou confirmações de execução.\n\n## 9. Formato de saída\n\n### 9.1. Resposta ao usuário\n\nQuando a próxima ação for solicitar uma informação, retorne somente um JSON válido, sem texto adicional, seguindo esta estrutura:\n\n```json\n{\n  "acao": "RESPONDER_USUARIO",\n  "conteudo": "Qual é o modelo do seu veículo?",\n  "pensamento": "A informação solicitada ainda está pendente."\n}\n```\n\nO conteúdo de `conteudo` deve ser a mensagem destinada ao usuário. O campo `pensamento` deve conter somente uma justificativa breve e resumida da decisão, sem expor raciocínio interno detalhado.\n\nNão inclua vírgulas finais após o último campo do objeto JSON.\n\n### 9.2. Execução de ferramentas\n\nQuando uma operação precisar ser executada, realize a tool call correspondente em vez de retornar um JSON que apenas indique `CHAMAR_SUBAGENTE`.\n\nA chamada deve utilizar o nome e os argumentos da ferramenta efetivamente disponibilizada. Após receber o retorno, determine se é necessário chamar outra ferramenta ou se já há informações suficientes para responder ao usuário.\n\n**Não utilize um JSON com `acao: "CHAMAR_SUBAGENTE"` como substituto de uma tool call.**\n\n## 10. Restrições gerais\n\n* Faça a coleta de dados uma informação por vez.\n* Respeite a ordem de prioridade da coleta.\n* Consulte as fontes disponíveis antes de concluir que não há resposta.\n* Não invente nomes de tabelas ou ferramentas.\n* Não invente dados técnicos ou compatibilidades.\n* Não afirme que uma operação foi concluída sem o respectivo retorno.\n* Mantenha as respostas em português do Brasil, salvo solicitação contrária do usuário.\n\n\n## Regra de Formatação de Resposta\n- NUNCA emita uma chamada de ferramenta (tool call) com o nome "json".\n- Quando a ação for "RESPONDER_USUARIO", envie a resposta como texto simples de mensagem contendo o JSON no corpo da resposta (content), e NÃO como uma chamada de função/ferramenta (tool call).'}, 
-            {'role': 'assistant', 'content': '{\n  "acao": "RESPONDER_USUARIO",\n  "conteudo": "Qual é a sua dúvida ou problema relacionado ao veículo?",\n  "pensamento": "Ainda falta a primeira informação obrigatória: a dúvida do usuário."\n}'}, 
-            {'role': 'user', 'content': 'Realize a leitura do manual do carro para responder a questão: Informe quais são os períodos de manutenção do meu Volkswagen Fox 2015 1.6'}, 
-            {'role': 'assistant', 'content': None}, ChatCompletionMessage(content=None, refusal=None, role='assistant', annotations=None, audio=None, function_call=None, tool_calls=[ChatCompletionMessageFunctionToolCall(id='fc_c65f8726-0cff-46af-a22a-0c67ff398fbe', function=Function(arguments='{}', name='get_all_table_names'), type='function')], reasoning='We have user request: "Realize a leitura do manual do carro para responder a questão: Informe quais são os períodos de manutenção do meu Volkswagen Fox 2015 1.6". According to flow, we need to collect data: we have not yet collected model, year, motor, manufacturer. The user gave model (Volkswagen Fox), year 2015, motor 1.6, manufacturer Volkswagen. But we haven\'t asked for each piece individually; we need to follow order: 1) doubt, 2) nome/modelo, 3) ano, 4) motorização, 5) fabricante. The user gave all except maybe the doubt? The doubt is "Informe quais são os períodos de manutenção". That\'s the doubt. So we have all five pieces: doubt (periodos de manutenção), modelo (Volkswagen Fox), ano (2015), motorização (1.6), fabricante (Volkswagen). So we have all required info. Now we need to identify intention: it\'s a technical question not about compatibility of parts, about maintenance schedule. So we need to follow flow: after collecting data, we need to get list of tables, then query appropriate base (likely base de dúvidas). Then if not enough, read manual PDF. So we must start by calling get_all_table_names.'), {'role': 'tool', 'content': '["log_interacoes", "webcatalogos", "pecas_automoveis"]', 'tool_call_id': 'fc_c65f8726-0cff-46af-a22a-0c67ff398fbe'}, 
-            {'role': 'assistant', 'content': None}, ChatCompletionMessage(content=None, refusal=None, role='assistant', annotations=None, audio=None, function_call=None, tool_calls=[ChatCompletionMessageFunctionToolCall(id='fc_bfcf5307-fa87-4c9b-8f2c-9d6aa88325c7', function=Function(arguments='{"query_filter":"modelo=\'Volkswagen Fox\' AND ano=2015 AND motorizacao=\'1.6\' AND fabricante=\'Volkswagen\' AND kw_duvidas LIKE \'%manutenção%\'","tablename":"log_interacoes"}', name='rescue_db_data'), type='function')], reasoning='We have list of tables: "log_interacoes", "webcatalogos", "pecas_automoveis". We need to identify which is relevant for doubts. Likely "log_interacoes" maybe stores interactions, not doubts. "webcatalogos" maybe catalogs of web? "pecas_automoveis" is parts. None obviously "duvidas". But we must select the most relevant. The instruction: "Base de dúvidas: questões técnicas e respostas previamente registradas." We need a table for doubts. Not present. Maybe "log_interacoes" contains stored doubts? Could be. We need to attempt to query a table that might contain relevant info. Let\'s try "log_interacoes". We\'ll query with filters: maybe filter by modelo, ano, motorizacao, fabricante, and keywords like "manutenção". Use query_filter string. We\'ll construct a filter.'), {'role': 'tool', 'content': '[]', 'tool_call_id': 'fc_bfcf5307-fa87-4c9b-8f2c-9d6aa88325c7'}, 
-            {'role': 'assistant', 'content': None}, ChatCompletionMessage(content=None, refusal=None, role='assistant', annotations=None, audio=None, function_call=None, tool_calls=[ChatCompletionMessageFunctionToolCall(id='fc_61d0470f-132d-47a7-9482-9601bd52c88c', function=Function(arguments='{}', name='read_manual_pdf'), type='function')], reasoning='No records. So need to read manual. Use read_manual_pdf tool. The tool schema has no arguments. Probably it reads manual based on context? Might need to pass something? The schema says no arguments. So just call it.'), {'role': 'user', 'content': 'Estruture os dados do veículo e dúvida que você recebeu do usuário em JSON'}, 
-            {'role': 'assistant', 'content': '{\n  "duvida_usuario": "Informe quais são os períodos de manutenção do meu Volkswagen Fox 2015 1.6",\n  "modelo": "Volkswagen Fox",\n  "ano": 2015,\n  "motorizacao": "1.6"\n}'}][{'role': 'system', 'content': '# Prompt — Assistente de suporte automotivo\n\n## 1. Persona\n\nVocê é um assistente especializado em suporte informacional para peças e manutenções automotivas. Seu objetivo é coletar as informações necessárias do veículo, consultar as fontes de dados disponíveis e responder às dúvidas do usuário com base em informações verificáveis.\n\nVocê possui ferramentas para consultar tabelas do projeto, recuperar dados, consultar manuais, registrar dúvidas e executar web scraping.\n\n**Regra fundamental:** sempre que uma etapa exigir uma operação por ferramenta, execute a tool call correspondente. Não substitua a execução por uma resposta textual, por um JSON ou pela declaração de uma intenção.\n\n## 2. Coleta de dados\n\nSolicite uma informação por vez, seguindo esta ordem:\n\n1. Dúvida ou problema do usuário.\n2. Nome ou modelo do veículo.\n3. Ano do modelo.\n4. Motorização (litragem ou nomenclatura do motor).\n5. Fabricante do veículo.\n\nRegras:\n\n* Solicite somente a próxima informação pendente.\n* Utilize o histórico para reconhecer dados já fornecidos.\n* Não solicite novamente informações que estejam claras no histórico.\n* Se o usuário não souber informar algum dado, siga o procedimento de exceção previsto pela aplicação, sem inventar informações.\n* Não inicie o processamento técnico enquanto faltar algum dado obrigatório.\n\n## 3. Regra obrigatória para execução de ferramentas\n\nAs ações `RESPONDER_USUARIO` e `CHAMAR_SUBAGENTE` são indicadores lógicos utilizados pela aplicação. Eles não substituem a execução das ferramentas.\n\n### Quando responder ao usuário\n\nSe ainda faltar alguma das cinco informações obrigatórias:\n\n* Retorne um JSON válido com `acao` igual a `RESPONDER_USUARIO`.\n* Preencha `conteudo` com uma pergunta amigável solicitando somente a próxima informação pendente.\n* Não execute ferramentas de processamento técnico.\n\n### Quando executar uma operação\n\nQuando todas as informações necessárias estiverem disponíveis e for necessário executar uma operação:\n\n1. Identifique a ferramenta apropriada entre as ferramentas efetivamente disponibilizadas na conversa.\n2. Emita imediatamente uma tool call para essa ferramenta, preenchendo os argumentos de acordo com seu esquema.\n3. Aguarde o resultado da ferramenta.\n4. Analise o retorno e determine a próxima etapa do fluxo.\n5. Se outra operação for necessária, emita a próxima tool call.\n6. Só produza uma resposta final ao usuário quando houver informação suficiente para responder ou quando for necessário comunicar uma falha.\n\n\nNão invente nomes de ferramentas. Não invente argumentos. Não afirme que uma ferramenta foi executada sem que tenha ocorrido uma chamada real e não considere uma operação concluída antes de receber seu retorno.\n\n## 4. Fluxo de consulta às bases de dados\n\nApós coletar as cinco informações, identifique a intenção do usuário.\n\n### 4.1. Identificar e consultar a base\n\n1. Execute uma tool call para obter a lista de tabelas disponíveis no projeto.\n2. Analise os nomes e as descrições retornados, se houver.\n3. Selecione a base ou tabela mais relevante para a dúvida:\n\n   * Base de peças: compatibilidade, identificação e disponibilidade de peças, conforme os dados existentes.\n   * Base de dúvidas: questões técnicas e respostas previamente registradas.\n4. Execute uma tool call para recuperar os dados da tabela selecionada, utilizando os argumentos exigidos pela ferramenta.\n5. Analise os registros retornados para verificar se existe uma resposta adequada à dúvida.\n\nNão presuma nomes de tabelas antes de consultar a lista retornada pela ferramenta.\n\n### 4.2. Quando encontrar uma resposta\n\nSe os registros contiverem informações suficientes para responder:\n\n* Utilize somente os dados retornados pela consulta.\n* Para compatibilidade de peças, verifique a correspondência entre a peça solicitada e o veículo informado, considerando modelo, ano, motorização e fabricante quando disponíveis.\n* Não declare compatibilidade se os dados não sustentarem essa conclusão.\n* Responda ao usuário com uma síntese clara e objetiva.\n* Não execute web scraping nem consulte o manual se a dúvida já tiver sido respondida adequadamente.\n\n### 4.3. Quando não encontrar uma resposta\n\nSe a consulta não retornar informações suficientes, identifique o tipo de dúvida e siga o fluxo correspondente:\n\n* Dúvida técnica que não seja sobre compatibilidade de peças: siga a seção 5.\n* Dúvida sobre compatibilidade de peças: siga a seção 7.\n\nNão trate uma consulta vazia como evidência de que uma peça não existe. Ela indica apenas que a consulta realizada não encontrou registros suficientes.\n\n## 5. Consultar o manual\n\nSe a dúvida não tiver sido respondida pela base de dados e não for uma questão de compatibilidade de peças:\n\n1. Execute uma tool call para a ferramenta de leitura do manual.\n2. Forneça as informações necessárias à consulta, incluindo a dúvida e os dados identificadores do veículo.\n3. Aguarde o retorno da ferramenta.\n4. Analise a resposta retornada e verifique se ela responde à dúvida.\n5. Se o fluxo exigir registro da consulta, siga a seção 6.\n6. Após o processamento necessário, responda ao usuário com base no resultado obtido.\n\nNão produza respostas técnicas inventadas nem apresente resultados antes de receber o retorno da ferramenta.\n\n## 6. Registrar a dúvida\n\nApós receber o retorno da ferramenta de leitura do manual, execute uma tool call para a ferramenta responsável pelo registro.\n\nEncaminhe, conforme o esquema da ferramenta:\n\n* A dúvida original do usuário.\n* Os dados identificadores do veículo.\n* O resultado obtido na consulta ao manual.\n* As informações adicionais exigidas pelo mecanismo de registro.\n\nAguarde o retorno da ferramenta antes de considerar o registro concluído.\n\nSe a ferramenta falhar, não afirme que o registro foi realizado. Siga o procedimento de erro previsto pela aplicação.\n\nDepois de concluir o processamento, responda ao usuário de acordo com o resultado disponível.\n\n## 7. Web scraping para compatibilidade de peças\n\nSe a dúvida for sobre compatibilidade de peças e a consulta inicial às bases não encontrar registros suficientes:\n\n1. Execute uma tool call para a ferramenta responsável pelo web scraping.\n2. Encaminhe os dados da peça solicitada e as informações do veículo, incluindo fabricante, modelo, ano e motorização, conforme os argumentos aceitos pela ferramenta.\n3. Aguarde o retorno da ferramenta.\n4. Analise os dados encontrados.\n5. Execute novamente as ferramentas de consulta às bases, conforme as seções 4.1 e 4.2, para verificar os novos registros.\n6. Responda ao usuário com os dados encontrados e as evidências de compatibilidade disponíveis.\n\nNão declare que uma peça é compatível apenas porque foi encontrada em um site. A compatibilidade deve ser sustentada pelos dados recuperados.\n\nSe o web scraping não retornar resultados suficientes, informe a limitação de maneira transparente.\n\n## 8. Uso de ferramentas e continuidade do fluxo\n\n* Execute operações por meio de tool calls reais.\n* Utilize somente as ferramentas disponíveis e seus esquemas de argumentos.\n* Quando uma etapa depender do resultado de outra, aguarde esse resultado antes de prosseguir.\n* Se várias operações forem necessárias em sequência, execute cada uma na ordem correta.\n* Não substitua tool calls por mensagens dizendo que uma ferramenta será acionada.\n* Não encerre o fluxo enquanto houver uma operação obrigatória pendente que possa ser executada.\n* Não repita indefinidamente uma ferramenta que falhou.\n* Em caso de erro, ausência de dados ou resultado ambíguo, siga o procedimento de contingência da aplicação.\n* Não exponha raciocínio interno detalhado ao usuário.\n* Não invente resultados, tabelas, compatibilidades ou confirmações de execução.\n\n## 9. Formato de saída\n\n### 9.1. Resposta ao usuário\n\nQuando a próxima ação for solicitar uma informação, retorne somente um JSON válido, sem texto adicional, seguindo esta estrutura:\n\n```json\n{\n  "acao": "RESPONDER_USUARIO",\n  "conteudo": "Qual é o modelo do seu veículo?",\n  "pensamento": "A informação solicitada ainda está pendente."\n}\n```\n\nO conteúdo de `conteudo` deve ser a mensagem destinada ao usuário. O campo `pensamento` deve conter somente uma justificativa breve e resumida da decisão, sem expor raciocínio interno detalhado.\n\nNão inclua vírgulas finais após o último campo do objeto JSON.\n\n### 9.2. Execução de ferramentas\n\nQuando uma operação precisar ser executada, realize a tool call correspondente em vez de retornar um JSON que apenas indique `CHAMAR_SUBAGENTE`.\n\nA chamada deve utilizar o nome e os argumentos da ferramenta efetivamente disponibilizada. Após receber o retorno, determine se é necessário chamar outra ferramenta ou se já há informações suficientes para responder ao usuário.\n\n**Não utilize um JSON com `acao: "CHAMAR_SUBAGENTE"` como substituto de uma tool call.**\n\n## 10. Restrições gerais\n\n* Faça a coleta de dados uma informação por vez.\n* Respeite a ordem de prioridade da coleta.\n* Consulte as fontes disponíveis antes de concluir que não há resposta.\n* Não invente nomes de tabelas ou ferramentas.\n* Não invente dados técnicos ou compatibilidades.\n* Não afirme que uma operação foi concluída sem o respectivo retorno.\n* Mantenha as respostas em português do Brasil, salvo solicitação contrária do usuário.\n\n\n## Regra de Formatação de Resposta\n- NUNCA emita uma chamada de ferramenta (tool call) com o nome "json".\n- Quando a ação for "RESPONDER_USUARIO", envie a resposta como texto simples de mensagem contendo o JSON no corpo da resposta (content), e NÃO como uma chamada de função/ferramenta (tool call).'}, 
-            {'role': 'assistant', 'content': '{\n  "acao": "RESPONDER_USUARIO",\n  "conteudo": "Qual é a sua dúvida ou problema relacionado ao veículo?",\n  "pensamento": "Ainda falta a primeira informação obrigatória: a dúvida do usuário."\n}'}, 
-            {'role': 'user', 'content': 'Realize a leitura do manual do carro para responder a questão: Informe quais são os períodos de manutenção do meu Volkswagen Fox 2015 1.6'}, 
-            {'role': 'assistant', 'content': None}, ChatCompletionMessage(content=None, refusal=None, role='assistant', annotations=None, audio=None, function_call=None, tool_calls=[ChatCompletionMessageFunctionToolCall(id='fc_c65f8726-0cff-46af-a22a-0c67ff398fbe', function=Function(arguments='{}', name='get_all_table_names'), type='function')], reasoning='We have user request: "Realize a leitura do manual do carro para responder a questão: Informe quais são os períodos de manutenção do meu Volkswagen Fox 2015 1.6". According to flow, we need to collect data: we have not yet collected model, year, motor, manufacturer. The user gave model (Volkswagen Fox), year 2015, motor 1.6, manufacturer Volkswagen. But we haven\'t asked for each piece individually; we need to follow order: 1) doubt, 2) nome/modelo, 3) ano, 4) motorização, 5) fabricante. The user gave all except maybe the doubt? The doubt is "Informe quais são os períodos de manutenção". That\'s the doubt. So we have all five pieces: doubt (periodos de manutenção), modelo (Volkswagen Fox), ano (2015), motorização (1.6), fabricante (Volkswagen). So we have all required info. Now we need to identify intention: it\'s a technical question not about compatibility of parts, about maintenance schedule. So we need to follow flow: after collecting data, we need to get list of tables, then query appropriate base (likely base de dúvidas). Then if not enough, read manual PDF. So we must start by calling get_all_table_names.'), {'role': 'tool', 'content': '["log_interacoes", "webcatalogos", "pecas_automoveis"]', 'tool_call_id': 'fc_c65f8726-0cff-46af-a22a-0c67ff398fbe'}, 
-            {'role': 'assistant', 'content': None}, ChatCompletionMessage(content=None, refusal=None, role='assistant', annotations=None, audio=None, function_call=None, tool_calls=[ChatCompletionMessageFunctionToolCall(id='fc_bfcf5307-fa87-4c9b-8f2c-9d6aa88325c7', function=Function(arguments='{"query_filter":"modelo=\'Volkswagen Fox\' AND ano=2015 AND motorizacao=\'1.6\' AND fabricante=\'Volkswagen\' AND kw_duvidas LIKE \'%manutenção%\'","tablename":"log_interacoes"}', name='rescue_db_data'), type='function')], reasoning='We have list of tables: "log_interacoes", "webcatalogos", "pecas_automoveis". We need to identify which is relevant for doubts. Likely "log_interacoes" maybe stores interactions, not doubts. "webcatalogos" maybe catalogs of web? "pecas_automoveis" is parts. None obviously "duvidas". But we must select the most relevant. The instruction: "Base de dúvidas: questões técnicas e respostas previamente registradas." We need a table for doubts. Not present. Maybe "log_interacoes" contains stored doubts? Could be. We need to attempt to query a table that might contain relevant info. Let\'s try "log_interacoes". We\'ll query with filters: maybe filter by modelo, ano, motorizacao, fabricante, and keywords like "manutenção". Use query_filter string. We\'ll construct a filter.'), {'role': 'tool', 'content': '[]', 'tool_call_id': 'fc_bfcf5307-fa87-4c9b-8f2c-9d6aa88325c7'}, 
-            {'role': 'assistant', 'content': None}, ChatCompletionMessage(content=None, refusal=None, role='assistant', annotations=None, audio=None, function_call=None, tool_calls=[ChatCompletionMessageFunctionToolCall(id='fc_61d0470f-132d-47a7-9482-9601bd52c88c', function=Function(arguments='{}', name='read_manual_pdf'), type='function')], reasoning='No records. So need to read manual. Use read_manual_pdf tool. The tool schema has no arguments. Probably it reads manual based on context? Might need to pass something? The schema says no arguments. So just call it.'), {'role': 'user', 'content': 'Estruture os dados do veículo e dúvida que você recebeu do usuário em JSON'}, 
-            {'role': 'assistant', 'content': '{\n  "duvida_usuario": "Informe quais são os períodos de manutenção do meu Volkswagen Fox 2015 1.6",\n  "modelo": "Volkswagen Fox",\n  "ano": 2015,\n  "motorizacao": "1.6"\n}'}, 
-            {'role': 'tool', 'content': '{\n  "duvida_usuario": "Informe quais são os períodos de manutenção do meu Volkswagen Fox 2015 1.6",\n  "kws_duvida_usuario": [\n    "períodos",\n    "manutenção",\n    "Volkswagen Fox",\n    "2015",\n    "1.6"\n  ],\n  "resolucao": "O manual \\"Volkswagen_Fox_2015.pdf\\" consultado não contém a tabela ou a descrição dos intervalos de manutenção preventiva (quilometragem ou tempo) para o modelo Fox 2015 1.6. O documento apresenta apenas referências genéricas a \\"Conservação, limpeza, manutenção\\" e instruções sobre o alerta de manutenção configurável, mas não traz o cronograma oficial (ex.: 10.000 km/12 meses, 20.000 km/24 meses, etc.) que normalmente consta no caderno de manutenção do veículo. Recomenda‑se consultar o caderno de manutenção oficial, o manual do proprietário ou a concessionária para obter os períodos de manutenção específicos para este modelo."\n}', 'tool_call_id': 'fc_61d0470f-132d-47a7-9482-9601bd52c88c'}, 
-            {'role': 'assistant', 'content': None}, ChatCompletionMessage(content=None, refusal=None, role='assistant', annotations=None, audio=None, function_call=None, tool_calls=[ChatCompletionMessageFunctionToolCall(id='fc_d81a8a60-1d73-4d98-8c35-12f07695a420', function=Function(arguments='{"ano":2015,"duvida":"Informe quais são os períodos de manutenção do meu Volkswagen Fox 2015 1.6","kw_duvidas":["períodos","manutenção","Volkswagen Fox","2015","1.6"],"modelo":"Volkswagen Fox","motorizacao":"1.6","resolucao":"O manual \\"Volkswagen_Fox_2015.pdf\\" consultado não contém a tabela ou a descrição dos intervalos de manutenção preventiva (quilometragem ou tempo) para o modelo Fox 2015 1.6. O documento apresenta apenas referências genéricas a \\"Conservação, limpeza, manutenção\\" e instruções sobre o alerta de manutenção configurável, mas não traz o cronograma oficial (ex.: 10.000 km/12 meses, 20.000 km/24 meses, etc.) que normalmente consta no caderno de manutenção do veículo. Recomenda‑se consultar o caderno de manutenção oficial, o manual do proprietário ou a concessionária para obter os períodos de manutenção específicos para este modelo."}', name='insert_db_question'), type='function')], reasoning="Now we have manual result indicating not found. According to flow, after reading manual, we need to register the doubt using insert_db_question. Provide fields: ano, duvida, kw_duvidas (array of keywords), modelo, motorizacao, resolucao. Let's extract keywords: maybe from kw_duvida_usuario. Use that.")]
-
+| Defeito | Onde aparece |
+|---|---|
+| a mensagem de limite diz "limite de **1 mensagens**" (plural fixo) | cenário `limite_turnos` |
+| a mensagem de desistência mostra o nome **interno** do campo: `Perguntei 3 vezes sobre "intencao"` | cenário `desistiu` |
+| na entrada ambígua, a pergunta mais útil (qual peça) vem por último | exemplo 6 |
+| `suficiencia: true` na situação `esquecido` significa "ação concluída", não "resposta com fonte" | cenário `esquecer_confirmar` |
+| a `fonte` de uma recusa de manual lista páginas que **não** sustentam nada | exemplo 3 |
+| **peça esgotada no catálogo volta com o aviso do site como código** ("Ooops, o estoque acabou") e a gravação o aceita; a consulta posterior a responderia como se fosse código, com `suficiencia: true` | cenário `pausa_edicao`: itens 24 a 26 da lista mostrada para aprovação; os três foram gravados |

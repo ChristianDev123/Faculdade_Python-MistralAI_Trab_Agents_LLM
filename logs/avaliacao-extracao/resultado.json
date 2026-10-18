@@ -1,0 +1,778 @@
+{
+  "commit": "30e8bee",
+  "codigo_limpo": false,
+  "arquivos_alterados": [
+    "src/grafo.py",
+    "avaliar_extracao.py",
+    "dados/casos_extracao.json"
+  ],
+  "data": "2026-10-16",
+  "modelo": "qwen2.5:7b",
+  "resumo": {
+    "casos": 29,
+    "vazados": [
+      1,
+      9,
+      11,
+      12,
+      17,
+      18,
+      23,
+      26
+    ],
+    "casos_heldout": 21,
+    "heldout_por_rodada": [
+      {
+        "intencao": 20,
+        "ficha": 20
+      },
+      {
+        "intencao": 20,
+        "ficha": 20
+      },
+      {
+        "intencao": 20,
+        "ficha": 20
+      }
+    ],
+    "heldout_media_ficha": 20.0,
+    "heldout_media_intencao": 20.0,
+    "heldout_min_ficha": 20,
+    "heldout_max_ficha": 20,
+    "por_rodada": [
+      {
+        "intencao": 28,
+        "ficha": 28
+      },
+      {
+        "intencao": 28,
+        "ficha": 28
+      },
+      {
+        "intencao": 28,
+        "ficha": 28
+      }
+    ],
+    "media_intencao": 28.0,
+    "media_ficha": 28.0,
+    "min_ficha": 28,
+    "max_ficha": 28,
+    "casos_instaveis": [],
+    "casos_que_sempre_erram": [
+      21
+    ],
+    "ficha_por_grupo": {
+      "peça completa": "18/18",
+      "peça incompleta": "6/6",
+      "várias mensagens": "6/6",
+      "manual": "21/21",
+      "fora do escopo": "12/15",
+      "esquecer": "9/9",
+      "indefinida": "12/12"
+    }
+  },
+  "rodadas": [
+    [
+      {
+        "id": 1,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 2,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 3,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 4,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 5,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 6,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 7,
+        "grupo": "peça incompleta",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 8,
+        "grupo": "peça incompleta",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 9,
+        "grupo": "várias mensagens",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 10,
+        "grupo": "várias mensagens",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 11,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 12,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 13,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 14,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 15,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 16,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 17,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 18,
+        "grupo": "fora do escopo",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "FORA_DO_ESCOPO",
+        "divergencias": {}
+      },
+      {
+        "id": 19,
+        "grupo": "fora do escopo",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "FORA_DO_ESCOPO",
+        "divergencias": {}
+      },
+      {
+        "id": 20,
+        "grupo": "fora do escopo",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "FORA_DO_ESCOPO",
+        "divergencias": {}
+      },
+      {
+        "id": 21,
+        "grupo": "fora do escopo",
+        "intencao_ok": false,
+        "ficha_ok": false,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 22,
+        "grupo": "fora do escopo",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "FORA_DO_ESCOPO",
+        "divergencias": {}
+      },
+      {
+        "id": 23,
+        "grupo": "esquecer",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "ESQUECER",
+        "divergencias": {}
+      },
+      {
+        "id": 24,
+        "grupo": "esquecer",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "ESQUECER",
+        "divergencias": {}
+      },
+      {
+        "id": 25,
+        "grupo": "esquecer",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "ESQUECER",
+        "divergencias": {}
+      },
+      {
+        "id": 26,
+        "grupo": "indefinida",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "INDEFINIDA",
+        "divergencias": {}
+      },
+      {
+        "id": 27,
+        "grupo": "indefinida",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "INDEFINIDA",
+        "divergencias": {}
+      },
+      {
+        "id": 28,
+        "grupo": "indefinida",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "INDEFINIDA",
+        "divergencias": {}
+      },
+      {
+        "id": 29,
+        "grupo": "indefinida",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "INDEFINIDA",
+        "divergencias": {}
+      }
+    ],
+    [
+      {
+        "id": 1,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 2,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 3,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 4,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 5,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 6,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 7,
+        "grupo": "peça incompleta",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 8,
+        "grupo": "peça incompleta",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 9,
+        "grupo": "várias mensagens",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 10,
+        "grupo": "várias mensagens",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 11,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 12,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 13,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 14,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 15,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 16,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 17,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 18,
+        "grupo": "fora do escopo",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "FORA_DO_ESCOPO",
+        "divergencias": {}
+      },
+      {
+        "id": 19,
+        "grupo": "fora do escopo",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "FORA_DO_ESCOPO",
+        "divergencias": {}
+      },
+      {
+        "id": 20,
+        "grupo": "fora do escopo",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "FORA_DO_ESCOPO",
+        "divergencias": {}
+      },
+      {
+        "id": 21,
+        "grupo": "fora do escopo",
+        "intencao_ok": false,
+        "ficha_ok": false,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 22,
+        "grupo": "fora do escopo",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "FORA_DO_ESCOPO",
+        "divergencias": {}
+      },
+      {
+        "id": 23,
+        "grupo": "esquecer",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "ESQUECER",
+        "divergencias": {}
+      },
+      {
+        "id": 24,
+        "grupo": "esquecer",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "ESQUECER",
+        "divergencias": {}
+      },
+      {
+        "id": 25,
+        "grupo": "esquecer",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "ESQUECER",
+        "divergencias": {}
+      },
+      {
+        "id": 26,
+        "grupo": "indefinida",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "INDEFINIDA",
+        "divergencias": {}
+      },
+      {
+        "id": 27,
+        "grupo": "indefinida",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "INDEFINIDA",
+        "divergencias": {}
+      },
+      {
+        "id": 28,
+        "grupo": "indefinida",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "INDEFINIDA",
+        "divergencias": {}
+      },
+      {
+        "id": 29,
+        "grupo": "indefinida",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "INDEFINIDA",
+        "divergencias": {}
+      }
+    ],
+    [
+      {
+        "id": 1,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 2,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 3,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 4,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 5,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 6,
+        "grupo": "peça completa",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 7,
+        "grupo": "peça incompleta",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 8,
+        "grupo": "peça incompleta",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 9,
+        "grupo": "várias mensagens",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 10,
+        "grupo": "várias mensagens",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "PECA",
+        "divergencias": {}
+      },
+      {
+        "id": 11,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 12,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 13,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 14,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 15,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 16,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 17,
+        "grupo": "manual",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 18,
+        "grupo": "fora do escopo",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "FORA_DO_ESCOPO",
+        "divergencias": {}
+      },
+      {
+        "id": 19,
+        "grupo": "fora do escopo",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "FORA_DO_ESCOPO",
+        "divergencias": {}
+      },
+      {
+        "id": 20,
+        "grupo": "fora do escopo",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "FORA_DO_ESCOPO",
+        "divergencias": {}
+      },
+      {
+        "id": 21,
+        "grupo": "fora do escopo",
+        "intencao_ok": false,
+        "ficha_ok": false,
+        "intencao_obtida": "MANUAL",
+        "divergencias": {}
+      },
+      {
+        "id": 22,
+        "grupo": "fora do escopo",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "FORA_DO_ESCOPO",
+        "divergencias": {}
+      },
+      {
+        "id": 23,
+        "grupo": "esquecer",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "ESQUECER",
+        "divergencias": {}
+      },
+      {
+        "id": 24,
+        "grupo": "esquecer",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "ESQUECER",
+        "divergencias": {}
+      },
+      {
+        "id": 25,
+        "grupo": "esquecer",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "ESQUECER",
+        "divergencias": {}
+      },
+      {
+        "id": 26,
+        "grupo": "indefinida",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "INDEFINIDA",
+        "divergencias": {}
+      },
+      {
+        "id": 27,
+        "grupo": "indefinida",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "INDEFINIDA",
+        "divergencias": {}
+      },
+      {
+        "id": 28,
+        "grupo": "indefinida",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "INDEFINIDA",
+        "divergencias": {}
+      },
+      {
+        "id": 29,
+        "grupo": "indefinida",
+        "intencao_ok": true,
+        "ficha_ok": true,
+        "intencao_obtida": "INDEFINIDA",
+        "divergencias": {}
+      }
+    ]
+  ]
+}

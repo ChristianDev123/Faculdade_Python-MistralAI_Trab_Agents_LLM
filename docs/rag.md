@@ -160,9 +160,10 @@ O prompt aceita passos, listas e advertências como resposta, e isso poderia lev
 
 ## 7. O que ficou de fora, e os limites
 
-- **Uma única fonte de medição:** 18 + 14 perguntas, um manual, o modelo `qwen2.5:7b`. Não foram medidos o `gpt-oss-120b` nem o manual de 2020 em volume.
+- **Uma única fonte de medição:** 18 + 14 perguntas, um manual, o modelo `qwen2.5:7b`. Não foram medidos o `gpt-oss-120b` nem o manual de 2020 em volume. **Um indício de que o de 2020 é mais difícil:** no cenário `divergencia` ([io.md](io.md)) a capacidade do tanque do Fox 2020, que está numa tabela de "Capacidades" (p. 277, "aproximadamente 50 litros"), **não foi trazida** e o sistema recusou. É uma recusa honesta, mas a resposta existe.
 - **Embedding multilíngue não foi testado.** Foi descartado por custo (471 MB de download por modelo, ~2 min para reindexar por manual) antes de medir. Como o mesmo modelo sustenta a memória episódica, trocá-lo exigiria remedir o corte de 0,12.
 - **A busca textual falha com sinônimos** ("revisão" contra "manutenção") e o gabarito quase não testa isso.
 - **Extração do PDF em duas colunas:** a leitura intercala linhas de colunas diferentes, o que atrapalha o modelo (pergunta 5). Extrair por layout exigiria reindexar.
+- **O scraper aceita qualquer texto como código de peça.** As peças esgotadas do catálogo da Chevrolet vêm com o aviso "Ooops, o estoque acabou" no lugar do código (3 de 26 candidatas, nas três raspagens da rodada de 2026-10-16) e seguem para a aprovação e, aprovadas, para a base. Falta validar a forma do código antes de mostrar a lista; ver [arquitetura.md](arquitetura.md) §4.
 - **Perguntas 8 e 9** não têm rota no grafo; uma consulta estruturada por código de peça e uma agregação sobre `log_interacoes` resolveriam, e ficam como próximos passos.
 - **Anos cobertos por cada manual** (seção 2): decisão de domínio pendente.

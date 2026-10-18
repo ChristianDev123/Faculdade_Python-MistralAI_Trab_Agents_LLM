@@ -33,13 +33,13 @@ Verificações úteis: `python src/verificar_local.py` (o modelo aceita saída e
 
 **O que o sistema faz:** descobre se é pedido de peça ou dúvida de manual, pergunta o que faltar (uma coisa por vez), consulta a base local e, se não achar, o catálogo web (peça) ou o manual em PDF (dúvida). Antes de **gravar** peças do catálogo na base, ele **para e pede aprovação**.
 
-**Exemplo real** (execução `logs/local/exemplo-peca`, modelo `qwen2.5:7b`):
+**Exemplo real** (cenário `feliz`, log `logs/exemplos/feliz/trajetoria.jsonl`, commit `30e8bee` (árvore limpa), 2026-10-16, modelo `qwen2.5:7b`):
 
 ```
-user: Qual o código de identificação da palheta traseira do meu Chevrolet Corsa 2008 1.4?
+user: Qual o código da palheta traseira do Corsa 2008 1.4 da Chevrolet?
 Bot: Encontrei 1 peça(s) para Corsa 2008 1.4 na base local:
   1. Palheta traseira ACDelco — código 93356933
-[respondido | suficiencia=True | fonte: base_local]
+[respondido | suficiencia=true | fonte: base_local]
 ```
 
 Saída completa (objeto `Saida`, validado em [src/contrato.py](src/contrato.py)):
@@ -47,10 +47,25 @@ Saída completa (objeto `Saida`, validado em [src/contrato.py](src/contrato.py))
 ```json
 {
   "resultado": "Encontrei 1 peça(s) para Corsa 2008 1.4 na base local:\n  1. Palheta traseira ACDelco — código 93356933",
-  "dados": [{"nome_peca": "Palheta traseira ACDelco", "codigo_peca": "93356933",
-             "carros_compativeis": ["Corsa A Hatch", "Corsa A Pickup", "Corsa A Sedan", "Corsa A Wagon"]}],
-  "fonte": [{"tipo": "base_local", "origem": "pecas_automoveis",
-             "evidencia": "1 linha(s) com {'modelo': 'Corsa', 'ano_fabricacao': 2008, 'motorizacao': '1.4', 'nm_peca': 'palheta traseira'}"}],
+  "dados": [
+    {
+      "nome_peca": "Palheta traseira ACDelco",
+      "codigo_peca": "93356933",
+      "carros_compativeis": [
+        "Corsa A Hatch",
+        "Corsa A Pickup",
+        "Corsa A Sedan",
+        "Corsa A Wagon"
+      ]
+    }
+  ],
+  "fonte": [
+    {
+      "tipo": "base_local",
+      "origem": "pecas_automoveis",
+      "evidencia": "1 linha(s) com {'modelo': 'Corsa', 'ano_fabricacao': 2008, 'motorizacao': '1.4', 'nm_peca': 'palheta traseira'}"
+    }
+  ],
   "suficiencia": true,
   "situacao": "respondido",
   "pergunta_pendente": null

@@ -1,194 +1,194 @@
 # Arquitetura do agente
 
-## 3.1 Diagrama de execução
+Este documento descreve o sistema **como ele está hoje**, nas seis perguntas que a arquitetura precisa responder. O grafo em detalhe, os padrões e o estado estão em [grafo.md](grafo.md); as paradas humanas em [humano.md](humano.md); a memória em [memoria.md](memoria.md); a recuperação em [rag.md](rag.md); o contrato em [io.md](io.md) e os prompts em [prompts.md](prompts.md).
 
-```text
-                         ┌──────────────────────────────┐
-                         │ Pessoa usuária               │
-                         │ pergunta em texto livre      │
-                         └──────────────┬───────────────┘
-                                        │
-                                        v
-                         ┌──────────────────────────────┐
-                         │ Orquestrador                 │
-                         │ mantém lista de mensagens    │
-                         │ limite externo: 10 iterações │
-                         └──────────────┬───────────────┘
-                                        │
-                                        v
-                         ┌──────────────────────────────┐
-                         │ Modelo                        │
-                         │ decide: responder, pedir dado │
-                         │ ou emitir tool_call           │
-                         └──────────────┬───────────────┘
-                                        │
-                   ┌────────────────────┴─────────────────────┐
-                   │                                          │
-          resposta sem ferramenta                     response.tool_calls
-                   │                                          │
-                   v                                          v
-       ┌────────────────────────┐                ┌──────────────────────────┐
-       │ Interpretar JSON       │                │ Código despacha a chamada│
-       │ e campo `acao`         │                │ por tool_calls_func_link │
-       └───────────┬────────────┘                └────────────┬─────────────┘
-                   │                                          │
-          ┌────────┴─────────┐                                v
-          │                  │                   ┌──────────────────────────┐
-          v                  v                   │ Ferramentas               │
- `RESPONDER_USUARIO`   outra ação/JSON            │                          │
-          │            sem tool_call              │ get_all_table_names      │
-          v                  │                   │ rescue_db_data            │
-  ┌────────────────┐         │                   │ insert_db_question        │
-  │ Exibir resposta│         │                   │ read_manual_pdf           │
-  │ e aguardar     │         │                   │ execute_scrapping         │
-  │ próximo input  │         │                   └────────────┬─────────────┘
-  └────────────────┘         │                                │
-                             │                                v
-                             │                   ┌──────────────────────────┐
-                             │                   │ Resultado da ferramenta  │
-                             │                   │ é anexado como mensagem  │
-                             │                   │ `role=tool`               │
-                             │                   └────────────┬─────────────┘
-                             │                                │
-                             └──────────────┬─────────────────┘
-                                            │
-                                            v
-                              ┌──────────────────────────────┐
-                              │ Próxima chamada ao modelo    │
-                              │ se houver iteração disponível│
-                              └──────────────┬───────────────┘
-                                             │
-                           ┌─────────────────┴────────────────┐
-                           │                                  │
-                           v                                  v
-                limite/condição de parada              novo ciclo do modelo
-                           │
-                           v
-                ┌─────────────────────────────┐
-                │ Encerrar ou retornar estado │
-                │ final ao chamador           │
-                └─────────────────────────────┘
+> **Proveniência.** Os números e as execuções citados vêm de `python gerar_exemplos.py`, rodado em 2026-10-16 sobre o commit `30e8bee` com a árvore limpa, no modelo `qwen2.5:7b` (local). Os logs estão em `logs/exemplos/`.
 
+## 1. O desenho
 
- Subfluxo da ferramenta read_manual_pdf:
+### 1.1 Os componentes
 
-       pergunta técnica
-              │
-              v
-    ┌───────────────────────────┐
-    │ LeitorManualPDF           │
-    │ get_pdf_filename          │
-    │ read_pdf_pages             │
-    └─────────────┬─────────────┘
-                  │
-                  v
-    ┌───────────────────────────┐       ┌───────────────────────────┐
-    │ PDF / PyPDFLoader         │──────>│ Divisão em chunks de 800  │
-    └───────────────────────────┘       └─────────────┬─────────────┘
-                                                      │
-                                                      v
-                                         ┌───────────────────────────┐
-                                         │ ChromaDB persistente      │
-                                         │ databases/chroma_db       │
-                                         │ coleção por manual        │
-                                         │ upsert + busca semântica  │
-                                         │ top-5 resultados          │
-                                         └───────────────────────────┘
+```
+ pessoa ── texto livre ──► src/main.py ──► grafo.invoke(thread_id = "<usuário>:<sessão>")
+ (balcão/Discord)  + user_id     (CLI)             │
+ ◄── Saida validada ◄───────────────────────────── │
+                                                    ▼
+   ┌───────────────────────────── LangGraph  (src/grafo.py, 15 nós) ───────────────────────────────┐
+   │  ★ MODELO decide:  extrair (intenção e dados do veículo)                                     │
+   │                     ler_manual (a dúvida foi respondida pelos trechos?)                      │
+   │                     raspar (extrai as peças da página do catálogo)                           │
+   │  CÓDIGO decide:    as 8 funções de rota (22 arestas), os portões, as perguntas, a recusa,    │
+   │                     a consulta, a gravação, o texto da resposta e o motivo de término        │
+   │  ⏸ HUMANO decide:  aprovar_gravacao (gravar peças do catálogo)                               │
+   │                     confirmar_esquecimento (apagar os dados do titular)                      │
+   └──────┬───────────────┬──────────────────┬────────────────────┬─────────────────┬────────────┘
+          ▼               ▼                  ▼                    ▼                 ▼
+  databases/db.sqlite  databases/chroma_db  databases/manuais/  databases/         logs/<usuário>/
+  pecas_automoveis     trechos dos manuais  PDFs               checkpoints.sqlite  <sessão>/
+  webcatalogos         (lidos por BM25) e                      (estado de cada     trajetoria.jsonl
+  log_interacoes       memoria_episodica                       conversa)           (um evento por passo)
+  memoria_semantica    (vetores)                                                   src/prompts/ (versão
+                                                                                   carimbada no log)
 ```
 
-## 3.2 As Seis Perguntas
+Sites externos: apenas o catálogo web da montadora, consultado pelo nó `raspar` (leitura). O modelo roda no Ollama (`MODE=local`) ou na Groq (`MODE=remote`).
 
-### 3.2.1 Ferramentas: função, efeito e reversibilidade
+### 1.2 O grafo, com quem decide cada passo
 
-A tabela descreve o contrato aparente a partir dos nomes e do fluxo conhecido. O efeito real deve ser confirmado nas implementações.
+Este é o mesmo desenho de [grafo.md](grafo.md) §2 (a fonte única). `[MODELO]` marca o que só o modelo decide; `[código]` o que é regra; `⏸ INTERRUPT` onde o sistema para e espera uma pessoa. As condições de parada são os destinos em `emitir` e `END`; a lista completa está na §2.5.
 
-| Ferramenta | Responsabilidade | Leitura/escrita | Reversibilidade |
+```
+START
+  │
+  ▼
+entrada ─┬─ turno 1 ──► lembrar [código: lê a memória semântica] ──┐
+ [código]│                                                         ▼
+         ├─ turno > 1 ──────────────────────────────────────────► extrair            1 chamada ao modelo
+         │                                                      [MODELO] Extracao{intencao, veiculo, ...}
+         └─ passou do limite de turnos ─► emitir                    │
+                                                                    ▼  rota_pos_extracao  [CÓDIGO]
+        ┌───────────────┬──────────────┬──────────────┬────────────┘
+   ESQUECER      fora do escopo   faltam dados /     completo
+        │              │          3ª repetição           │
+        ▼              ▼              ▼                  ▼
+ confirmar_esquecimento recusar    perguntar        consultar_base [código]
+ ⏸ INTERRUPT [humano]  [código]    [código]        MANUAL: busca episódica por similaridade
+        │                 │           │                  │ rota_pos_base [CÓDIGO]
+   confirmou/cancelou     │           │       ┌──────────┼───────────────┐
+        │                 │           │     achou    PECA sem base   MANUAL sem base
+        ▼                 │           │       │           ▼                ▼
+    esquecer              │           │       │        raspar          ler_manual
+    [código: apaga]       │           │       │      [MODELO]     [busca textual + MODELO]
+        │                 │           │       │     NÃO grava        RAG → {trecho, sanada}
+        │                 │           │       │           │                │
+        │                 │           │       │   rota_pos_raspagem  rota_pos_manual
+        │                 │           │       │           │                │
+        │                 │           │       │    erro/vazio│candidatas  sanada│não sanada/erro
+        │                 │           │       │           ▼                ▼
+        │                 │           │       │   aprovar_gravacao   registrar_duvida
+        │                 │           │       │    ⏸ INTERRUPT       [código, grava a
+        │                 │           │       │           │           memória episódica]
+        │                 │           │       │   rota_pos_aprovacao        │
+        │                 │           │       │     aprovou/editou          │
+        │                 │           │       │           ▼                 │
+        │                 │           │       │        gravar               │
+        ▼                 ▼           ▼       ▼           ▼                 ▼
+       ═══════════════════════════════ emitir ═════════════════════════════════
+                  [código] valida Saida (Pydantic), grava log e motivo_termino
+                                       │ rota_pos_emissao [CÓDIGO]
+                              respondido│            │ qualquer outro motivo
+                                        ▼            ▼
+                                   memorizar        END
+                      [código: grava a memória semântica] ──► END
+```
+
+## 2. As seis perguntas
+
+### 2.1 As ferramentas
+
+O modelo **não escolhe ferramentas**: nenhuma é exposta a ele como função. Cada capacidade abaixo é chamada por um nó, e a escolha do nó é uma aresta decidida por código.
+
+| Capacidade | Nó | O que faz | Leitura ou escrita | Reversível? | Conversa com |
+|---|---|---|---|---|---|
+| `Registrador.resgatar` | `consultar_base` | consulta com filtros (texto "contém", número "igual") | leitura | n/a | SQLite |
+| `Memoria.buscar_episodio` | `consultar_base` | pergunta parecida já respondida | leitura | n/a | Chroma (vetores) |
+| `LeitorManualPDF.ler` | `ler_manual` | BM25 nos trechos do manual e leitura pelo modelo | leitura | n/a | Chroma (trechos), PDFs |
+| `WebScrapper.buscar_candidatas` | `raspar` | navegador sem tela no catálogo e extração das peças pelo modelo | leitura externa; **não grava** | n/a | sites das montadoras |
+| `Registrador.inserir` em `pecas_automoveis` | `gravar` | grava peça do catálogo, idempotente | **escrita** | só por `DELETE` manual; **exige aprovação humana** | SQLite |
+| `Registrador.inserir` em `log_interacoes` e `Memoria.registrar_episodio` | `registrar_duvida` | guarda a dúvida respondida e o vetor | **escrita** | sim: `python src/esquecer.py --episodio <id>` | SQLite e Chroma |
+| `Memoria.memorizar_veiculo` | `memorizar` | guarda o veículo; só acrescenta | **escrita** | sim, pela remoção do titular | SQLite |
+| `Memoria.esquecer_usuario` | `esquecer` | apaga os dados do titular | **escrita destrutiva** | **não**; exige confirmação humana | todas as estruturas |
+
+### 2.2 O laço
+
+Dentro de uma mensagem **não há laço**: o grafo não tem ciclos, e cada mensagem percorre um caminho de 2 a 9 nós até o `emitir` (nas 28 mensagens dos cenários: de 2, no limite de mensagens, a 9, na gravação do catálogo). O que faz a volta seguinte existir é a **próxima mensagem da pessoa**: a CLI lê outra linha e chama o grafo de novo com o mesmo `thread_id`, e o checkpoint devolve o estado.
+
+A cada mensagem acontece, nesta ordem: `entrada` (conta o turno, zera o que é por turno e registra o texto), `lembrar` (só na primeira), `extrair`, a rota decidida por código, a consulta ou a pergunta, `emitir` (valida e registra), `memorizar` (só se respondeu).
+
+**Chamadas ao modelo por mensagem (medido, nos 19 cenários):** 1 quando o sistema pergunta, recusa ou acha a peça na base; 2 quando lê o manual ou raspa o catálogo; 0 quando passa do limite de mensagens.
+
+### 2.3 O estado
+
+O que é objeto explícito e o que ficou na lista de mensagens está em [grafo.md](grafo.md) §6. Em resumo: a lista de mensagens guarda **só o texto da conversa**; intenção, veículo, peça, dúvida, candidatas, aprovação, contadores e motivo de término são campos próprios, cada um com o reducer que diz o que acontece quando dois nós escrevem. O estado inteiro é gravado no checkpoint a cada nó, o que permite retomar uma pausa depois de o processo terminar.
+
+### 2.4 O orçamento
+
+O que impede uma execução de não acabar:
+
+| Teto | Valor | Onde | Observado |
 |---|---|---|---|
-| `get_all_table_names` | Listar as tabelas/bases disponíveis para orientar a consulta | Leitura | Reversível/não mutável |
-| `rescue_db_data` | Recuperar registros da base de dados para responder à dúvida | Leitura | Reversível/não mutável |
-| `insert_db_question` | Registrar uma pergunta ou retorno associado à consulta técnica | Escrita | Não confirmado; pode exigir exclusão/compensação |
-| `read_manual_pdf` | Acionar a leitura/recuperação de informação de manual PDF | Leitura do conteúdo; pode envolver escrita no índice | Leitura é não mutável; indexação altera o índice |
-| `execute_scrapping` | Obter informações externas de peças e compatibilidade | Leitura externa; efeitos colaterais do site não confirmados | Não mutável ao usuário/agente, mas reversível |
-| `get_pdf_filename` | Localizar/selecionar o nome do PDF a consultar | Leitura | Reversível/não mutável |
-| `read_pdf_pages` | Ler páginas/trechos do manual e apoiar a recuperação semântica | Leitura e, se indexar conteúdo, escrita no ChromaDB | Leitura não mutável; `upsert` é uma escrita repetível, mas altera o índice |
+| passos do grafo | `recursion_limit = 25`; o caminho mais longo percorre **9** nós (`entrada`, `lembrar`, `extrair`, `consultar_base`, `raspar`, `aprovar_gravacao`, `gravar`, `emitir`, `memorizar`) | `src/grafo.py` | o cenário `pausa_edicao` percorreu os 9 |
+| mensagens por conversa | `MAX_TURNOS = 15` | `src/nos.py` | cenário `limite_turnos`, com o teto em 1 |
+| tempo por chamada ao modelo | `LLM_TIMEOUT = 90` s, 1 retentativa | `src/config.py` | cenário `erro_modelo`, com o teto em 0,15 s |
+| tokens de saída por chamada | 300 (`extrair`), 600 (`ler_manual`), 4096 (página do catálogo) | `src/nos.py`, `leitor_manual_pdf.py`, `webscrapper.py` | — |
+| contexto enviado | `JANELA_TOKENS = 3000`, últimas 6 mensagens, 6 trechos do manual | `src/util.py`, `memoria.py` | [memoria.md](memoria.md) §1 |
+| mesma pergunta sem resposta | 3 | `src/nos.py` | cenário `desistiu` |
+| prazo da aprovação humana | 24 h (`PRAZO_APROVACAO_HORAS`) | `src/nos.py` | cenário `expirado`, com o prazo em 0,036 s |
 
-### 3.2.2 O laço
+**O que o orçamento não cobre:**
+- **Tempo total por execução.** O teto é por chamada. Uma raspagem completa levou de 41 a 45 s nos cenários com pausa; nada impede uma mais longa.
+- **Páginas da raspagem.** O navegador segue enquanto houver o botão "próximo", e o número máximo de páginas (`max_pagina`) é **lido pelo modelo da própria página**. Não há teto em código. É o ponto mais frágil do orçamento.
+- **Dinheiro.** Com o modelo local o custo é zero; na Groq só há o teto de tokens por chamada, não por execução.
 
-O orquestrador executa um laço limitado por `range(10)`. Em cada volta, a sequência conhecida é:
+### 2.5 O término
 
-1. Chamar o modelo com a lista atual de mensagens, o formato JSON esperado e as ferramentas disponíveis.
-2. Se a resposta contiver `response.tool_calls`, iterar pelas chamadas solicitadas pelo modelo.
-3. Para cada chamada, localizar a função em `tool_calls_func_link`, decodificar os argumentos JSON e invocar a função conforme sua assinatura.
-4. Anexar o resultado ao histórico como mensagem com papel `tool`.
-5. Fazer outra chamada ao modelo, desde que ainda haja uma iteração disponível e o fluxo não tenha encerrado.
-6. Se não houver chamada de ferramenta, interpretar o JSON de resposta. A resposta ao usuário só é considerada final quando o código reconhece a ação de resposta, conhecida como `RESPONDER_USUARIO`.
+Os doze motivos pelos quais uma execução termina. O motivo é definido **por código** em `emitir`, nunca pelo modelo.
 
-**O que faz a volta seguinte existir:** uma chamada de ferramenta foi solicitada e processada, e o orquestrador continua o ciclo para que o modelo possa interpretar o resultado. A simples presença de um campo textual como `CHAMAR_SUBAGENTE` não executa uma ferramenta por si só. Para ativar um subagente, o modelo precisa emitir um `tool_call` que o código reconheça e despache.
+| Motivo de término | `situacao` | Execução que o produziu | Log | Chamadas ao modelo | Duração da mensagem |
+|---|---|---|---|---|---|
+| `respondido` | `respondido` | `feliz` | `logs/exemplos/feliz/` | 1 | 2.9 s |
+| `sem_base` | `sem_base` | `recusa_fora_corpus` | `logs/exemplos/recusa_fora_corpus/` | 2 | 12.6 s |
+| `faltam_dados` | `faltam_dados` | `incompleta` | `logs/exemplos/incompleta/` | 1 | 2.7 s |
+| `fora_do_escopo` | `fora_do_escopo` | `fora_escopo` | `logs/exemplos/fora_escopo/` | 1 | 2.9 s |
+| `rejeitado_pelo_humano` | `rejeitado` | `rejeitado` | `logs/exemplos/rejeitado/` | 2 | 42.6 s |
+| `aprovacao_expirada` | `expirado` | `expirado` | `logs/exemplos/expirado/` | 2 | 41.4 s |
+| `desistiu_apos_3_perguntas` | `faltam_dados` | `desistiu` | `logs/exemplos/desistiu/` | 1 | 0.9 s |
+| `erro_modelo` | `erro` | `erro_modelo` | `logs/exemplos/erro_modelo/` | 1 | 2.5 s |
+| `limite_turnos` | `erro` | `limite_turnos` | `logs/exemplos/limite_turnos/` | 0 | 0.1 s |
+| `esquecimento_recusado` | `rejeitado` | `esquecer_cancelar` | `logs/exemplo-titular-a/esquecer_cancelar-2/` | 1 | 8.5 s |
+| `esquecido` | `esquecido` | `esquecer_confirmar` | (apagado pela própria remoção; ver abaixo) | 1 | 2.0 s |
+| `erro_ferramenta` | `erro` | **não observado** | — | — | — |
 
-### 3.2.3 Estado: objetos explícitos e lista de mensagens
+**11 dos 12 motivos foram produzidos por execuções reais.** `erro_ferramenta` (a consulta ao banco, a leitura do manual ou o navegador levantam um erro) está implementado em `_montar_saida`, mas não consegui provocá-lo sem simular a falha; fica declarado como previsto e não observado.
 
-#### 3.2.3.1 Estado explícito conhecido
+**O `esquecido` não deixa log por desenho:** a remoção apaga `logs/<usuário>/`. A prova dele está em outro lugar: o `resultado.json` guarda a transcrição, a varredura independente logo após apagar deu **0 ocorrências** e a linha de auditoria da remoção (só com o hash do identificador) está em `cenarios.esquecer_confirmar.auditoria_da_remocao`. A conversa seguinte voltou a perguntar o modelo do veículo.
 
-- Configuração do orquestrador: formato JSON esperado, ferramentas e mapeamento `tool_calls_func_link`.
-- Contador do laço externo: limitado por `range(10)`.
-- Componentes do leitor de PDF: coleção ChromaDB associada ao manual e diretório persistente `databases/chroma_db`.
-- Dados e resultados retornados pelas funções, incluindo resultados das consultas a banco, manual e scraping.
+### 2.6 O humano
 
-#### 3.2.3.2 Estado mantido na lista de mensagens
-
-A lista `messages` representa o histórico de interação enviado ao modelo. Ela pode conter:
-
-- mensagens de sistema/instruções;
-- mensagens da pessoa usuária;
-- mensagens do assistente;
-- chamadas de ferramenta emitidas pelo assistente;
-- resultados das ferramentas, anexados com `role="tool"`.
-
-O histórico é parte do estado operacional da conversa, mas não substitui variáveis explícitas de controle. Informações como número de passos restantes, prazo máximo, ferramenta já tentada, estado de aprovação e motivo final deveriam ser registradas explicitamente se o sistema precisar garantir esses comportamentos.
-
-### 3.2.4 Orçamento e garantias de término
-
-| Limite | Situação Atual | Consequência |
+| Onde ele entra | Quem é chamado | Se ele não responder |
 |---|---|---|
-| Iterações do orquestrador | `range(10)` | Limita o número de voltas do laço externo, conforme a unidade efetiva do código |
-| Iterações do leitor de PDF | 10 páginas extraídas via Chroma | Limita quantidade de páginas extraídas do pdf com o objetivo de determinar uma resposta suscinta ao usuário |
-| Tamanho do histórico/tokens | Métricas de tokens já foram usadas no projeto, tendo como teto ~800 tokens por execução de agentes e subagente e uma média de 150 tokens por saída, tendo saída limitada no máximo em 400 tokens | O custo e o tamanho do contexto podem crescer sem política de corte |
+| `aprovar_gravacao`: gravar peças do catálogo na base | a pessoa que está na conversa | nada é gravado. O prazo de 24 h é conferido **quando alguém retoma** (não há temporizador); vencido, o motivo é `aprovacao_expirada` |
+| `confirmar_esquecimento`: apagar os dados do titular | o próprio titular | nada é apagado; a pendência fica no checkpoint |
+| fim de cada mensagem | a pessoa | a conversa só continua quando ela escreve de novo |
 
-### 3.2.5 Término: taxonomia dos motivos
+**O perfil não é distinguido.** Pelo [case.md](case.md), quem deveria aprovar gravação de peça no cache é o mecânico ou o balconista, que conhecem o domínio; o proprietário "descreve e consulta". Hoje **quem conversa aprova**, e o sistema não tem papel por usuário. Uma gravação aprovada pelo proprietário passaria sem o crivo de quem conhece a peça. Decisão pendente para o grupo; os detalhes das pausas estão em [humano.md](humano.md).
 
-A taxonomia abaixo é a recomendada para tornar os encerramentos observáveis. Nem todos os motivos estão comprovados como estados implementados hoje.
+## 3. A defesa do nível de autonomia
 
-| Motivo | Classificação | Situação |
-|---|---|---|
-| `RESPONDER_USUARIO` | Encerramento normal: resposta entregue | Ação conhecida no fluxo |
-| `LIMITE_ITERACOES` | Encerramento por orçamento de passos | Há limite externo de dez iterações; confirmar se ele retorna esse motivo explicitamente |
-| `ERRO_SISTEMICO` | Erro em qualquer uma das ferramentas disponíveis ao orquestrador | O tratamento específico precisa ser conferido |
+**O nível é roteador.** Um modelo classifica a entrada em texto livre (nó `extrair`) e a rota seguinte é regra em código.
 
-### 3.2.6 O humano: entrada, perfil, espera e silêncio
+**Onde está a decisão que só o modelo toma** (marcada nos diagramas): `extrair` decide qual é a intenção e quais dados do veículo a pessoa já deu, a partir de uma frase como "me ve a palheta traseria do corsa 2008 motor 1.4". Não há regra em código que faça isso; seria um formulário. `ler_manual` decide se os trechos respondem a dúvida; `raspar` extrai as peças de uma página sem estrutura fixa.
 
-#### 3.2.6.1 Onde a pessoa entra hoje
+**Por que o degrau de baixo (um workflow sequencial puro) não servia.** Sem o `extrair`, a entrada teria de ser um formulário, e o enunciado exclui isso: o ponto do sistema é descobrir o que a pessoa quer, perguntar o que falta e decidir quando já sabe o suficiente.
 
-1. Envia a dúvida inicial em texto livre.
-2. Responde às perguntas de coleta de dados do veículo, uma informação por vez.
-3. Recebe a resposta final do assistente e pode enviar outra mensagem. Há referência a um `input()` após a resposta.
+**Por que o degrau de cima (agente com laço livre) foi abandonado.** A primeira versão deixava o modelo escolher ferramenta a cada volta. Nas 22 execuções com log dessa versão (`logs/local/`, commits `a112ee2` e `d44a907`):
 
-O perfil chamado é a própria pessoa usuária, que conhece a dúvida e os dados do veículo. Não há evidência conhecida de uma etapa distinta que solicite aprovação de especialista, mecânico ou administrador antes de uma ação.
+| Falha do laço livre | Ocorrências |
+|---|---|
+| o modelo escreveu o nome da ferramenta no campo `acao` em vez de chamá-la | 29 |
+| chamadas de ferramenta que voltaram com erro | 17 de 60 |
+| respostas ao usuário barradas por não ter consultado nenhuma fonte | 10 |
+| execuções com pelo menos uma das duas primeiras falhas (ação inválida ou resposta barrada) | 12 de 22 |
 
-#### 3.2.6.2 Aprovação humana
+Nenhuma decisão que sobrou exigia escolher uma ferramenta em tempo de execução: com a intenção conhecida, a fonte a consultar é determinada. **Ressalva:** essas 22 execuções são do `qwen2.5:7b`; o `gpt-oss-120b`, modelo escolhido em [modelos.md](modelos.md), não foi usado nelas nem nas medições do grafo. Com um modelo mais forte o laço livre poderia se comportar melhor, e o grafo continuaria sendo a opção mais barata e auditável.
 
-Nenhuma das decisões que o sistema toma até o momento necessita de uma aprovação humana para prosseguimento da ação.
+**O que faria reconsiderar:** uma pergunta que exigisse consultas em sequência cuja segunda dependesse do resultado da primeira (por exemplo, buscar uma peça e, conforme o que voltasse, cruzar com outra fonte). Hoje cada intenção tem uma sequência fixa.
 
-## 3.3 Defesa do nível de autonomia
+## 4. Riscos e limites desta arquitetura
 
-### 3.3.1 Classificação atual: roteador com uso de ferramentas, condicionado à validação em execução
-A classificação atual do projeto é um roteador.
-
-Depois de receber a pergunta e os dados recuperados do banco, o modelo decide se já consegue responder, se precisa consultar o manual PDF ou se precisa executar scraping para identificar/validar uma peça.
-
-As ações de decisão do modelo podem ser vistas no workflow do projeto nos pontos de escolhas entre resgatar informações em banco de dados, realizar leitura de pdf, realizar extração via webscrapping e armazenar dados em banco de dados em uma tabela específica, não pré-determinada. 
-
-
-### 3.3.2 Por que um workflow de nível inferior pode não bastar
-
-Um workflow fixo seria suficiente se as etapas e os caminhos fossem predeterminados por regras de código, por exemplo: consultar sempre a base, depois sempre o manual e por fim sempre o scraping. O roteador só se justifica se a seleção entre essas ferramentas depender do conteúdo da pergunta, dos dados já coletados e dos resultados retornados — situações em que o modelo escolhe dinamicamente o próximo passo.
-
+- **Tudo foi medido com o `qwen2.5:7b` local**, que não é determinístico. Duas perguntas que dependem de exceção falham na leitura do manual ([rag.md](rag.md) §3).
+- **Sem teto de páginas na raspagem** nem de tempo por execução (§2.4).
+- **O perfil que aprova não é o do domínio** (§2.6).
+- **A raspagem não valida o código da peça.** Em três raspagens seguidas, as peças esgotadas (3 de 26) vieram com o aviso do site, "Ooops, o estoque acabou", no campo de código; a aprovação humana as mostrou, e no cenário `pausa_edicao` as três foram gravadas. É a mesma classe do defeito do "N/A" (corrigido), agora na entrada: falta uma regra em código que recuse o que não tem forma de código antes de mostrar à pessoa.
+- **O mapa de montadoras** (`MODELO_FABRICANTE`, em `src/nos.py`) é uma lista curta escrita pelo grupo de desenvolvimento; modelo fora dela gera a pergunta da montadora.
+- **Manuais por ano exato:** um Fox 2016 a 2019 fica sem manual ([rag.md](rag.md) §2).

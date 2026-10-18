@@ -216,7 +216,7 @@ O grafo do sistema é sequencial, então a demonstração roda num grafo mínimo
 
 ## 9. A decisão que virou parâmetro
 
-`recursion_limit`: o framework tem o padrão 25 e ele limita o dano, não o previne. O grafo não tem ciclos e uma execução usa no máximo 7 super-passos (entrada, extrair, consultar_base, raspar, aprovar_gravacao, gravar, emitir). Antes (laço livre), o teto de passos era uma decisão de projeto explícita (10 voltas); no framework ela vira um parâmetro com valor padrão que ninguém lê. Se o padrão da biblioteca mudasse numa atualização, o sistema não notaria: execuções presas gastariam o novo teto inteiro. Por isso o valor está declarado em `src/grafo.py` (`RECURSION_LIMIT = 25`) e passado em toda chamada de `src/main.py`, mesmo coincidindo com o padrão.
+`recursion_limit`: o framework tem o padrão 25 e ele limita o dano, não o previne. O grafo não tem ciclos e uma execução usa no máximo 9 nós (entrada, lembrar, extrair, consultar_base, raspar, aprovar_gravacao, gravar, emitir, memorizar; confirmado no cenário `pausa_edicao`). Antes (laço livre), o teto de passos era uma decisão de projeto explícita (10 voltas); no framework ela vira um parâmetro com valor padrão que ninguém lê. Se o padrão da biblioteca mudasse numa atualização, o sistema não notaria: execuções presas gastariam o novo teto inteiro. Por isso o valor está declarado em `src/grafo.py` (`RECURSION_LIMIT = 25`) e passado em toda chamada de `src/main.py`, mesmo coincidindo com o padrão.
 
 ## 10. Desvios em relação ao desenho aprovado
 

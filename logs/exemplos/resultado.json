@@ -1,0 +1,1770 @@
+{
+  "commit": "30e8bee",
+  "codigo_limpo": true,
+  "arquivos_alterados": [],
+  "data": "2026-10-16",
+  "modelo": "qwen2.5:7b",
+  "cenarios": {
+    "feliz": {
+      "titulo": "Caminho feliz: peça que está na base local",
+      "enunciado": "io.md 1.3 (caminho feliz); caso 1",
+      "usuario": "exemplos",
+      "env": {},
+      "esperado": {
+        "motivo": "respondido",
+        "contem": "93356933"
+      },
+      "ok": true,
+      "segundos": 4.8,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "feliz",
+          "usuario": "exemplos",
+          "entrada": "Qual o código da palheta traseira do Corsa 2008 1.4 da Chevrolet?",
+          "pausas": [],
+          "segundos": 2.9,
+          "motivo": "respondido",
+          "situacao": "respondido",
+          "suficiencia": true,
+          "fonte": [
+            "base_local"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Encontrei 1 peça(s) para Corsa 2008 1.4 na base local:\n  1. Palheta traseira ACDelco — código 93356933",
+          "saida": {
+            "resultado": "Encontrei 1 peça(s) para Corsa 2008 1.4 na base local:\n  1. Palheta traseira ACDelco — código 93356933",
+            "dados": [
+              {
+                "nome_peca": "Palheta traseira ACDelco",
+                "codigo_peca": "93356933",
+                "carros_compativeis": [
+                  "Corsa A Hatch",
+                  "Corsa A Pickup",
+                  "Corsa A Sedan",
+                  "Corsa A Wagon"
+                ]
+              }
+            ],
+            "fonte": [
+              {
+                "tipo": "base_local",
+                "origem": "pecas_automoveis",
+                "evidencia": "1 linha(s) com {'modelo': 'Corsa', 'ano_fabricacao': 2008, 'motorizacao': '1.4', 'nm_peca': 'palheta traseira'}"
+              }
+            ],
+            "suficiencia": true,
+            "situacao": "respondido",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "manual": {
+      "titulo": "Dúvida de manual respondida, com a fonte",
+      "enunciado": "io.md 1.3 (manual)",
+      "usuario": "exemplos",
+      "env": {},
+      "esperado": {
+        "motivo": "respondido",
+        "contem": "50 litros"
+      },
+      "ok": true,
+      "segundos": 16.0,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "manual",
+          "usuario": "exemplos",
+          "entrada": "Qual a capacidade do tanque de combustível do meu Fox 2015?",
+          "pausas": [],
+          "segundos": 13.1,
+          "motivo": "respondido",
+          "situacao": "respondido",
+          "suficiencia": true,
+          "fonte": [
+            "memoria_episodica",
+            "manual_pdf"
+          ],
+          "chamadas_ao_modelo": 2,
+          "resultado": "O tanque de combustível tem uma capacidade aproximada de 50 litros, com 7 litros reservados.\n(Manual Volkswagen_Fox_2015.pdf, páginas [195, 196, 197])",
+          "saida": {
+            "resultado": "O tanque de combustível tem uma capacidade aproximada de 50 litros, com 7 litros reservados.\n(Manual Volkswagen_Fox_2015.pdf, páginas [195, 196, 197])",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "memoria_episodica",
+                "origem": "memoria_episodica",
+                "evidencia": "nenhuma pergunta parecida (melhor distância None, limiar de corte em memoria.py)"
+              },
+              {
+                "tipo": "manual_pdf",
+                "origem": "Volkswagen_Fox_2015.pdf",
+                "evidencia": "páginas [195, 196, 197]"
+              }
+            ],
+            "suficiencia": true,
+            "situacao": "respondido",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "recusa_fora_corpus": {
+      "titulo": "Recusa: a resposta não está no corpus",
+      "enunciado": "io.md 1.3 (recusa); caso 5",
+      "usuario": "exemplos",
+      "env": {},
+      "esperado": {
+        "motivo": "sem_base",
+        "contem": "não traz uma resposta clara"
+      },
+      "ok": true,
+      "segundos": 15.5,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "recusa_fora_corpus",
+          "usuario": "exemplos",
+          "entrada": "Quais são os períodos de manutenção do meu Fox 2015?",
+          "pausas": [],
+          "segundos": 12.6,
+          "motivo": "sem_base",
+          "situacao": "sem_base",
+          "suficiencia": false,
+          "fonte": [
+            "memoria_episodica",
+            "manual_pdf"
+          ],
+          "chamadas_ao_modelo": 2,
+          "resultado": "O manual Volkswagen_Fox_2015.pdf não traz uma resposta clara para essa dúvida. O manual não especifica os períodos de manutenção para o Fox 2015. Consulte a concessionária para confirmar.",
+          "saida": {
+            "resultado": "O manual Volkswagen_Fox_2015.pdf não traz uma resposta clara para essa dúvida. O manual não especifica os períodos de manutenção para o Fox 2015. Consulte a concessionária para confirmar.",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "memoria_episodica",
+                "origem": "memoria_episodica",
+                "evidencia": "nenhuma pergunta parecida (melhor distância None, limiar de corte em memoria.py)"
+              },
+              {
+                "tipo": "manual_pdf",
+                "origem": "Volkswagen_Fox_2015.pdf",
+                "evidencia": "páginas [22, 29, 37, 224, 225, 257]"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "sem_base",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "recusa_sem_codigo": {
+      "titulo": "Recusa útil: a peça existe, mas sem código no catálogo",
+      "enunciado": "io.md 1.3 (recusa)",
+      "usuario": "exemplos",
+      "env": {},
+      "esperado": {
+        "motivo": "sem_base",
+        "contem": "sem código"
+      },
+      "ok": true,
+      "segundos": 4.8,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "recusa_sem_codigo",
+          "usuario": "exemplos",
+          "entrada": "Qual o código da roda de liga leve do Corsa 2008 1.4 da Chevrolet?",
+          "pausas": [],
+          "segundos": 2.9,
+          "motivo": "sem_base",
+          "situacao": "sem_base",
+          "suficiencia": false,
+          "fonte": [
+            "base_local"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Encontrei \"Roda de liga leve\" para Corsa 2008 1.4 no catálogo, mas sem código cadastrado. Sem o código não indico a peça; confirme no balcão ou com o distribuidor.",
+          "saida": {
+            "resultado": "Encontrei \"Roda de liga leve\" para Corsa 2008 1.4 no catálogo, mas sem código cadastrado. Sem o código não indico a peça; confirme no balcão ou com o distribuidor.",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "base_local",
+                "origem": "pecas_automoveis",
+                "evidencia": "1 linha(s) com {'modelo': 'Corsa', 'ano_fabricacao': 2008, 'motorizacao': '1.4', 'nm_peca': 'roda de liga leve'}"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "sem_base",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "incompleta": {
+      "titulo": "Entrada incompleta: pergunta o que falta",
+      "enunciado": "io.md 1.4 (incompleta)",
+      "usuario": "exemplos",
+      "env": {},
+      "esperado": {
+        "motivo": "faltam_dados",
+        "contem": "motoriza"
+      },
+      "ok": true,
+      "segundos": 4.7,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "incompleta",
+          "usuario": "exemplos",
+          "entrada": "Qual é o código da pastilha de freio do Corolla 2020?",
+          "pausas": [],
+          "segundos": 2.7,
+          "motivo": "faltam_dados",
+          "situacao": "faltam_dados",
+          "suficiencia": false,
+          "fonte": [
+            "nenhuma"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Qual é a motorização do veículo (por exemplo 1.0 ou 1.6)?",
+          "saida": {
+            "resultado": "Qual é a motorização do veículo (por exemplo 1.0 ou 1.6)?",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "nenhuma",
+                "origem": "sistema",
+                "evidencia": "sem consulta"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "faltam_dados",
+            "pergunta_pendente": "Qual é a motorização do veículo (por exemplo 1.0 ou 1.6)?"
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "ambigua": {
+      "titulo": "Entrada ambígua: não escolhe, pergunta",
+      "enunciado": "io.md 1.4 (ambígua)",
+      "usuario": "exemplos",
+      "env": {},
+      "esperado": {
+        "motivo": "faltam_dados",
+        "contem": "?"
+      },
+      "ok": true,
+      "segundos": 4.6,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "ambigua",
+          "usuario": "exemplos",
+          "entrada": "Preciso da peça do Corolla 2020.",
+          "pausas": [],
+          "segundos": 2.7,
+          "motivo": "faltam_dados",
+          "situacao": "faltam_dados",
+          "suficiencia": false,
+          "fonte": [
+            "nenhuma"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Qual é a motorização do veículo (por exemplo 1.0 ou 1.6)?",
+          "saida": {
+            "resultado": "Qual é a motorização do veículo (por exemplo 1.0 ou 1.6)?",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "nenhuma",
+                "origem": "sistema",
+                "evidencia": "sem consulta"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "faltam_dados",
+            "pergunta_pendente": "Qual é a motorização do veículo (por exemplo 1.0 ou 1.6)?"
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "fora_escopo": {
+      "titulo": "Fora do escopo: pedido de compra; não consulta nem grava",
+      "enunciado": "io.md 1.4 (fora do escopo); caso 4",
+      "usuario": "exemplos",
+      "env": {},
+      "esperado": {
+        "motivo": "fora_do_escopo",
+        "contem": "não faço compra"
+      },
+      "ok": true,
+      "segundos": 4.9,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "fora_escopo",
+          "usuario": "exemplos",
+          "entrada": "Compre agora a pastilha de freio para o meu Corolla.",
+          "pausas": [],
+          "segundos": 2.9,
+          "motivo": "fora_do_escopo",
+          "situacao": "fora_do_escopo",
+          "suficiencia": false,
+          "fonte": [
+            "nenhuma"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Eu só informo peças compatíveis com o veículo e respostas do manual do proprietário. Não faço compra, reserva, cotação de preço nem diagnóstico de defeito.",
+          "saida": {
+            "resultado": "Eu só informo peças compatíveis com o veículo e respostas do manual do proprietário. Não faço compra, reserva, cotação de preço nem diagnóstico de defeito.",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "nenhuma",
+                "origem": "sistema",
+                "evidencia": "sem consulta"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "fora_do_escopo",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "divergencia": {
+      "titulo": "Divergência: o sistema lembra Fox 2015, a pessoa diz Fox 2020",
+      "enunciado": "caso 2",
+      "usuario": "exemplos",
+      "env": {},
+      "esperado": {
+        "contem": "antes: 2015"
+      },
+      "ok": true,
+      "segundos": 80.7,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "divergencia",
+          "usuario": "exemplos",
+          "entrada": "Qual a capacidade do tanque de combustível do meu Fox 2015?",
+          "pausas": [],
+          "segundos": 13.2,
+          "motivo": "respondido",
+          "situacao": "respondido",
+          "suficiencia": true,
+          "fonte": [
+            "memoria_episodica",
+            "manual_pdf"
+          ],
+          "chamadas_ao_modelo": 2,
+          "resultado": "O tanque de combustível tem uma capacidade aproximada de 50 litros, com 7 litros reservados.\n(Manual Volkswagen_Fox_2015.pdf, páginas [195, 196, 197])",
+          "saida": {
+            "resultado": "O tanque de combustível tem uma capacidade aproximada de 50 litros, com 7 litros reservados.\n(Manual Volkswagen_Fox_2015.pdf, páginas [195, 196, 197])",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "memoria_episodica",
+                "origem": "memoria_episodica",
+                "evidencia": "nenhuma pergunta parecida (melhor distância None, limiar de corte em memoria.py)"
+              },
+              {
+                "tipo": "manual_pdf",
+                "origem": "Volkswagen_Fox_2015.pdf",
+                "evidencia": "páginas [195, 196, 197]"
+              }
+            ],
+            "suficiencia": true,
+            "situacao": "respondido",
+            "pergunta_pendente": null
+          }
+        },
+        {
+          "conversa": 2,
+          "sessao": "divergencia-2",
+          "usuario": "exemplos",
+          "entrada": "Qual a capacidade do tanque de combustível do meu Fox 2020?",
+          "pausas": [],
+          "segundos": 64.6,
+          "motivo": "sem_base",
+          "situacao": "sem_base",
+          "suficiencia": false,
+          "fonte": [
+            "memoria_semantica",
+            "memoria_episodica",
+            "manual_pdf"
+          ],
+          "chamadas_ao_modelo": 2,
+          "resultado": "O manual Volkswagen_Fox_2020.pdf não traz uma resposta clara para essa dúvida. A capacidade do tanque de combustível não foi especificada nos trechos fornecidos. Consulte a concessionária para confirmar.\nObs.: Considerei ano = 2020 (antes: 2015).",
+          "saida": {
+            "resultado": "O manual Volkswagen_Fox_2020.pdf não traz uma resposta clara para essa dúvida. A capacidade do tanque de combustível não foi especificada nos trechos fornecidos. Consulte a concessionária para confirmar.\nObs.: Considerei ano = 2020 (antes: 2015).",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "memoria_semantica",
+                "origem": "memoria_semantica",
+                "evidencia": "veículo declarado em 2026-10-16 (1 declaração(ões))"
+              },
+              {
+                "tipo": "memoria_episodica",
+                "origem": "memoria_episodica",
+                "evidencia": "nenhuma pergunta parecida (melhor distância None, limiar de corte em memoria.py)"
+              },
+              {
+                "tipo": "manual_pdf",
+                "origem": "Volkswagen_Fox_2020.pdf",
+                "evidencia": "páginas [181, 182, 183, 184]"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "sem_base",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "registro_inexistente": {
+      "titulo": "Registro inexistente: montadora sem catálogo cadastrado",
+      "enunciado": "caso 3",
+      "usuario": "exemplos",
+      "env": {},
+      "esperado": {
+        "motivo": "sem_base",
+        "contem": "catálogo"
+      },
+      "ok": true,
+      "segundos": 4.8,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "registro_inexistente",
+          "usuario": "exemplos",
+          "entrada": "Qual o código da palheta traseira do Palio 1999 1.0 da Fiat?",
+          "pausas": [],
+          "segundos": 2.9,
+          "motivo": "sem_base",
+          "situacao": "sem_base",
+          "suficiencia": false,
+          "fonte": [
+            "base_local"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Não há catálogo cadastrado para a montadora Fiat.",
+          "saida": {
+            "resultado": "Não há catálogo cadastrado para a montadora Fiat.",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "base_local",
+                "origem": "pecas_automoveis",
+                "evidencia": "0 linha(s) com {'modelo': 'Palio', 'ano_fabricacao': 1999, 'motorizacao': '1.0', 'nm_peca': 'palheta traseira'}"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "sem_base",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "pausa_edicao": {
+      "titulo": "Pausa para aprovar editando; segunda aprovação da mesma lista não duplica",
+      "enunciado": "caso 6; humano.md 8.2 e 8.5",
+      "usuario": "exemplos",
+      "env": {},
+      "esperado": {
+        "motivo": "respondido",
+        "contem": "0 nova(s)"
+      },
+      "ok": true,
+      "segundos": 87.9,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "pausa_edicao",
+          "usuario": "exemplos",
+          "entrada": "Quero o código da palheta traseira do meu Onix 2018 1.0 da Chevrolet.",
+          "pausas": [
+            {
+              "acao": "gravar_pecas",
+              "texto_mostrado": "Vou GRAVAR 26 peça(s) na base local (tabela pecas_automoveis) para Onix 2018 1.0, vindas do catálogo da Chevrolet:\n  1. Moldura da guarnição do estribo da porta traseira — código 52056749\n  2. Bujão do orifício do atuador da tampa traseira — código 52056750\n  3. Forro do painel da caixa de roda traseira — código 52038406\n  4. Forro do painel da caixa de roda traseira — código 52096890\n  5. Placa do nome do veículo na tampa traseira — código 52117031\n  6. Suporte do apoio de braço da porta traseira — código 52154567\n  7. Haste do atuador de trava da tampa traseira — código 94750396\n  8. Haste do cilindro de trava da tampa traseira — código 94760239\n  9. Tampa traseira — código 94747682\n  10. Tampa traseira — código 52176445\n  11. Porta traseira — código 2097.65\n  12. Porta traseira — código 1981.19\n  13. Compartimento da lanterna traseira lateral — código 397.91\n  14. Tampa traseira do eixo comando de válvulas — código 64.77\n  15. Regulador do vidro da porta traseira e dianteira — código 1182.23\n  16. Chicote da lanterna traseira — código 81.30\n  17. Soquete da lanterna traseira — código 36.64\n  18. Lanterna de freio traseira — código 238.23\n  19. Batente inferior da tampa traseira — código 20.64\n  20. Regulador do vidro da porta traseira — código 785.05\n  21. Painel da caixa de roda traseira — código 2077.14\n  22. Painel de acabamento da porta traseira — código 304.79\n  23. Defletor de água da porta traseira — código 129.41\n  24. Mola traseira — código Ooops, o estoque acabou\n  25. Suspensão traseira — código Ooops, o estoque acabou\n  26. Porta traseira — código Ooops, o estoque acabou\nConsequência: respostas futuras sobre este veículo passam a usar estes dados, sem nova consulta ao catálogo. Para desfazer, é preciso apagar as linhas da base.\nPrazo: 24 h; depois disso nada é gravado.\nResponda: aprovar | rejeitar | editar remover 3,5 | editar codigo 2 ABC123",
+              "resposta_digitada": "editar remover 1,2,3,4,5"
+            }
+          ],
+          "segundos": 45.0,
+          "motivo": "respondido",
+          "situacao": "respondido",
+          "suficiencia": true,
+          "fonte": [
+            "base_local",
+            "catalogo_web",
+            "base_local"
+          ],
+          "chamadas_ao_modelo": 2,
+          "resultado": "Encontrei 21 peça(s) para Onix 2018 1.0 no catálogo da Chevrolet e gravei na base (21 nova(s), 0 já existia(m)):\n  1. Suporte do apoio de braço da porta traseira — código 52154567\n  2. Haste do atuador de trava da tampa traseira — código 94750396\n  3. Haste do cilindro de trava da tampa traseira — código 94760239\n  4. Tampa traseira — código 94747682\n  5. Tampa traseira — código 52176445\n  6. Porta traseira — código 2097.65\n  7. Porta traseira — código 1981.19\n  8. Compartimento da lanterna traseira lateral — código 397.91\n  9. Tampa traseira do eixo comando de válvulas — código 64.77\n  10. Regulador do vidro da porta traseira e dianteira — código 1182.23\n  11. Chicote da lanterna traseira — código 81.30\n  12. Soquete da lanterna traseira — código 36.64\n  13. Lanterna de freio traseira — código 238.23\n  14. Batente inferior da tampa traseira — código 20.64\n  15. Regulador do vidro da porta traseira — código 785.05\n  ... e mais 6",
+          "saida": {
+            "resultado": "Encontrei 21 peça(s) para Onix 2018 1.0 no catálogo da Chevrolet e gravei na base (21 nova(s), 0 já existia(m)):\n  1. Suporte do apoio de braço da porta traseira — código 52154567\n  2. Haste do atuador de trava da tampa traseira — código 94750396\n  3. Haste do cilindro de trava da tampa traseira — código 94760239\n  4. Tampa traseira — código 94747682\n  5. Tampa traseira — código 52176445\n  6. Porta traseira — código 2097.65\n  7. Porta traseira — código 1981.19\n  8. Compartimento da lanterna traseira lateral — código 397.91\n  9. Tampa traseira do eixo comando de válvulas — código 64.77\n  10. Regulador do vidro da porta traseira e dianteira — código 1182.23\n  11. Chicote da lanterna traseira — código 81.30\n  12. Soquete da lanterna traseira — código 36.64\n  13. Lanterna de freio traseira — código 238.23\n  14. Batente inferior da tampa traseira — código 20.64\n  15. Regulador do vidro da porta traseira — código 785.05\n  ... e mais 6",
+            "dados": [
+              {
+                "nome_peca": "Suporte do apoio de braço da porta traseira",
+                "codigo_peca": "52154567",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Haste do atuador de trava da tampa traseira",
+                "codigo_peca": "94750396",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Haste do cilindro de trava da tampa traseira",
+                "codigo_peca": "94760239",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Tampa traseira",
+                "codigo_peca": "94747682",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Tampa traseira",
+                "codigo_peca": "52176445",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Porta traseira",
+                "codigo_peca": "2097.65",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Porta traseira",
+                "codigo_peca": "1981.19",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Compartimento da lanterna traseira lateral",
+                "codigo_peca": "397.91",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Tampa traseira do eixo comando de válvulas",
+                "codigo_peca": "64.77",
+                "carros_compativeis": [
+                  "Cobalt",
+                  "Onix A Hatch",
+                  "Prisma B",
+                  "Spin"
+                ]
+              },
+              {
+                "nome_peca": "Regulador do vidro da porta traseira e dianteira",
+                "codigo_peca": "1182.23",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Chicote da lanterna traseira",
+                "codigo_peca": "81.30",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Soquete da lanterna traseira",
+                "codigo_peca": "36.64",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Lanterna de freio traseira",
+                "codigo_peca": "238.23",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Batente inferior da tampa traseira",
+                "codigo_peca": "20.64",
+                "carros_compativeis": [
+                  "Corsa B Hatch",
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Regulador do vidro da porta traseira",
+                "codigo_peca": "785.05",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Painel da caixa de roda traseira",
+                "codigo_peca": "2077.14",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Painel de acabamento da porta traseira",
+                "codigo_peca": "304.79",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Defletor de água da porta traseira",
+                "codigo_peca": "129.41",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Mola traseira",
+                "codigo_peca": "Ooops, o estoque acabou",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Suspensão traseira",
+                "codigo_peca": "Ooops, o estoque acabou",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Porta traseira",
+                "codigo_peca": "Ooops, o estoque acabou",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              }
+            ],
+            "fonte": [
+              {
+                "tipo": "base_local",
+                "origem": "pecas_automoveis",
+                "evidencia": "0 linha(s) com {'modelo': 'Onix', 'ano_fabricacao': 2018, 'motorizacao': '1.0', 'nm_peca': 'palheta traseira'}"
+              },
+              {
+                "tipo": "catalogo_web",
+                "origem": "https://www.pecachevrolet.com.br/pesquisa?nomepeca=palheta+traseira&nomeveiculo=Onix&ano=2018",
+                "evidencia": "26 peça(s) extraída(s)"
+              },
+              {
+                "tipo": "base_local",
+                "origem": "pecas_automoveis",
+                "evidencia": "21 nova(s), 0 já existia(m)"
+              }
+            ],
+            "suficiencia": true,
+            "situacao": "respondido",
+            "pergunta_pendente": null
+          }
+        },
+        {
+          "conversa": 2,
+          "sessao": "pausa_edicao-2",
+          "usuario": "exemplos",
+          "entrada": "Quero o código da palheta traseira do meu Onix 2018 1.0 da Chevrolet.",
+          "pausas": [
+            {
+              "acao": "gravar_pecas",
+              "texto_mostrado": "Vou GRAVAR 26 peça(s) na base local (tabela pecas_automoveis) para Onix 2018 1.0, vindas do catálogo da Chevrolet:\n  1. Moldura da guarnição do estribo da porta traseira — código 52056749\n  2. Bujão do orifício do atuador da tampa traseira — código 52056750\n  3. Forro do painel da caixa de roda traseira — código 52038406\n  4. Forro do painel da caixa de roda traseira — código 52096890\n  5. Placa do nome do veículo na tampa traseira — código 52117031\n  6. Suporte do apoio de braço da porta traseira — código 52154567\n  7. Haste do atuador de trava da tampa traseira — código 94750396\n  8. Haste do cilindro de trava da tampa traseira — código 94760239\n  9. Tampa traseira — código 94747682\n  10. Tampa traseira — código 52176445\n  11. Porta traseira — código 2097.65\n  12. Porta traseira — código 1981.19\n  13. Compartimento da lanterna traseira lateral — código 397.91\n  14. Tampa traseira do eixo comando de válvulas — código 64.77\n  15. Regulador do vidro da porta traseira e dianteira — código 1182.23\n  16. Chicote da lanterna traseira — código 81.30\n  17. Soquete da lanterna traseira — código 36.64\n  18. Lanterna de freio traseira — código 238.23\n  19. Batente inferior da tampa traseira — código 20.64\n  20. Regulador do vidro da porta traseira — código 785.05\n  21. Painel da caixa de roda traseira — código 2077.14\n  22. Painel de acabamento da porta traseira — código 304.79\n  23. Defletor de água da porta traseira — código 129.41\n  24. Mola traseira — código Ooops, o estoque acabou\n  25. Suspensão traseira — código Ooops, o estoque acabou\n  26. Porta traseira — código Ooops, o estoque acabou\nConsequência: respostas futuras sobre este veículo passam a usar estes dados, sem nova consulta ao catálogo. Para desfazer, é preciso apagar as linhas da base.\nPrazo: 24 h; depois disso nada é gravado.\nResponda: aprovar | rejeitar | editar remover 3,5 | editar codigo 2 ABC123",
+              "resposta_digitada": "editar remover 1,2,3,4,5"
+            }
+          ],
+          "segundos": 41.0,
+          "motivo": "respondido",
+          "situacao": "respondido",
+          "suficiencia": true,
+          "fonte": [
+            "memoria_semantica",
+            "base_local",
+            "catalogo_web",
+            "base_local"
+          ],
+          "chamadas_ao_modelo": 2,
+          "resultado": "Encontrei 21 peça(s) para Onix 2018 1.0 no catálogo da Chevrolet e gravei na base (0 nova(s), 21 já existia(m)):\n  1. Suporte do apoio de braço da porta traseira — código 52154567\n  2. Haste do atuador de trava da tampa traseira — código 94750396\n  3. Haste do cilindro de trava da tampa traseira — código 94760239\n  4. Tampa traseira — código 94747682\n  5. Tampa traseira — código 52176445\n  6. Porta traseira — código 2097.65\n  7. Porta traseira — código 1981.19\n  8. Compartimento da lanterna traseira lateral — código 397.91\n  9. Tampa traseira do eixo comando de válvulas — código 64.77\n  10. Regulador do vidro da porta traseira e dianteira — código 1182.23\n  11. Chicote da lanterna traseira — código 81.30\n  12. Soquete da lanterna traseira — código 36.64\n  13. Lanterna de freio traseira — código 238.23\n  14. Batente inferior da tampa traseira — código 20.64\n  15. Regulador do vidro da porta traseira — código 785.05\n  ... e mais 6",
+          "saida": {
+            "resultado": "Encontrei 21 peça(s) para Onix 2018 1.0 no catálogo da Chevrolet e gravei na base (0 nova(s), 21 já existia(m)):\n  1. Suporte do apoio de braço da porta traseira — código 52154567\n  2. Haste do atuador de trava da tampa traseira — código 94750396\n  3. Haste do cilindro de trava da tampa traseira — código 94760239\n  4. Tampa traseira — código 94747682\n  5. Tampa traseira — código 52176445\n  6. Porta traseira — código 2097.65\n  7. Porta traseira — código 1981.19\n  8. Compartimento da lanterna traseira lateral — código 397.91\n  9. Tampa traseira do eixo comando de válvulas — código 64.77\n  10. Regulador do vidro da porta traseira e dianteira — código 1182.23\n  11. Chicote da lanterna traseira — código 81.30\n  12. Soquete da lanterna traseira — código 36.64\n  13. Lanterna de freio traseira — código 238.23\n  14. Batente inferior da tampa traseira — código 20.64\n  15. Regulador do vidro da porta traseira — código 785.05\n  ... e mais 6",
+            "dados": [
+              {
+                "nome_peca": "Suporte do apoio de braço da porta traseira",
+                "codigo_peca": "52154567",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Haste do atuador de trava da tampa traseira",
+                "codigo_peca": "94750396",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Haste do cilindro de trava da tampa traseira",
+                "codigo_peca": "94760239",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Tampa traseira",
+                "codigo_peca": "94747682",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Tampa traseira",
+                "codigo_peca": "52176445",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Porta traseira",
+                "codigo_peca": "2097.65",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Porta traseira",
+                "codigo_peca": "1981.19",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Compartimento da lanterna traseira lateral",
+                "codigo_peca": "397.91",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Tampa traseira do eixo comando de válvulas",
+                "codigo_peca": "64.77",
+                "carros_compativeis": [
+                  "Cobalt",
+                  "Onix A Hatch",
+                  "Prisma B",
+                  "Spin"
+                ]
+              },
+              {
+                "nome_peca": "Regulador do vidro da porta traseira e dianteira",
+                "codigo_peca": "1182.23",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Chicote da lanterna traseira",
+                "codigo_peca": "81.30",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Soquete da lanterna traseira",
+                "codigo_peca": "36.64",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Lanterna de freio traseira",
+                "codigo_peca": "238.23",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Batente inferior da tampa traseira",
+                "codigo_peca": "20.64",
+                "carros_compativeis": [
+                  "Corsa B Hatch",
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Regulador do vidro da porta traseira",
+                "codigo_peca": "785.05",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Painel da caixa de roda traseira",
+                "codigo_peca": "2077.14",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Painel de acabamento da porta traseira",
+                "codigo_peca": "304.79",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Defletor de água da porta traseira",
+                "codigo_peca": "129.41",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Mola traseira",
+                "codigo_peca": "Ooops, o estoque acabou",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              },
+              {
+                "nome_peca": "Suspensão traseira",
+                "codigo_peca": "Ooops, o estoque acabou",
+                "carros_compativeis": [
+                  "Onix A Hatch",
+                  "Prisma B"
+                ]
+              },
+              {
+                "nome_peca": "Porta traseira",
+                "codigo_peca": "Ooops, o estoque acabou",
+                "carros_compativeis": [
+                  "Onix A Hatch"
+                ]
+              }
+            ],
+            "fonte": [
+              {
+                "tipo": "memoria_semantica",
+                "origem": "memoria_semantica",
+                "evidencia": "veículo declarado em 2026-10-16 (1 declaração(ões))"
+              },
+              {
+                "tipo": "base_local",
+                "origem": "pecas_automoveis",
+                "evidencia": "0 linha(s) com {'modelo': 'Onix', 'ano_fabricacao': 2018, 'motorizacao': '1.0', 'nm_peca': 'palheta traseira'}"
+              },
+              {
+                "tipo": "catalogo_web",
+                "origem": "https://www.pecachevrolet.com.br/pesquisa?nomepeca=palheta+traseira&nomeveiculo=Onix&ano=2018",
+                "evidencia": "26 peça(s) extraída(s)"
+              },
+              {
+                "tipo": "base_local",
+                "origem": "pecas_automoveis",
+                "evidencia": "0 nova(s), 21 já existia(m)"
+              }
+            ],
+            "suficiencia": true,
+            "situacao": "respondido",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "rejeitado": {
+      "titulo": "Pausa e rejeição: nada é gravado",
+      "enunciado": "humano.md 8.2",
+      "usuario": "exemplos",
+      "env": {},
+      "esperado": {
+        "motivo": "rejeitado_pelo_humano",
+        "contem": "Nada foi alterado"
+      },
+      "ok": true,
+      "segundos": 44.5,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "rejeitado",
+          "usuario": "exemplos",
+          "entrada": "Quero o código da palheta traseira do meu Onix 2018 1.0 da Chevrolet.",
+          "pausas": [
+            {
+              "acao": "gravar_pecas",
+              "texto_mostrado": "Vou GRAVAR 26 peça(s) na base local (tabela pecas_automoveis) para Onix 2018 1.0, vindas do catálogo da Chevrolet:\n  1. Moldura da guarnição do estribo da porta traseira — código 52056749\n  2. Bujão do orifício do atuador da tampa traseira — código 52056750\n  3. Forro do painel da caixa de roda traseira — código 52038406\n  4. Forro do painel da caixa de roda traseira — código 52096890\n  5. Placa do nome do veículo na tampa traseira — código 52117031\n  6. Suporte do apoio de braço da porta traseira — código 52154567\n  7. Haste do atuador de trava da tampa traseira — código 94750396\n  8. Haste do cilindro de trava da tampa traseira — código 94760239\n  9. Tampa traseira — código 94747682\n  10. Tampa traseira — código 52176445\n  11. Porta traseira — código 2097.65\n  12. Porta traseira — código 1981.19\n  13. Compartimento da lanterna traseira lateral — código 397.91\n  14. Tampa traseira do eixo comando de válvulas — código 64.77\n  15. Regulador do vidro da porta traseira e dianteira — código 1182.23\n  16. Chicote da lanterna traseira — código 81.30\n  17. Soquete da lanterna traseira — código 36.64\n  18. Lanterna de freio traseira — código 238.23\n  19. Batente inferior da tampa traseira — código 20.64\n  20. Regulador do vidro da porta traseira — código 785.05\n  21. Painel da caixa de roda traseira — código 2077.14\n  22. Painel de acabamento da porta traseira — código 304.79\n  23. Defletor de água da porta traseira — código 129.41\n  24. Mola traseira — código Ooops, o estoque acabou\n  25. Suspensão traseira — código Ooops, o estoque acabou\n  26. Porta traseira — código Ooops, o estoque acabou\nConsequência: respostas futuras sobre este veículo passam a usar estes dados, sem nova consulta ao catálogo. Para desfazer, é preciso apagar as linhas da base.\nPrazo: 24 h; depois disso nada é gravado.\nResponda: aprovar | rejeitar | editar remover 3,5 | editar codigo 2 ABC123",
+              "resposta_digitada": "rejeitar"
+            }
+          ],
+          "segundos": 42.6,
+          "motivo": "rejeitado_pelo_humano",
+          "situacao": "rejeitado",
+          "suficiencia": false,
+          "fonte": [
+            "base_local",
+            "catalogo_web"
+          ],
+          "chamadas_ao_modelo": 2,
+          "resultado": "Não gravei as peças encontradas (rejeitado pela pessoa). Nada foi alterado na base.",
+          "saida": {
+            "resultado": "Não gravei as peças encontradas (rejeitado pela pessoa). Nada foi alterado na base.",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "base_local",
+                "origem": "pecas_automoveis",
+                "evidencia": "0 linha(s) com {'modelo': 'Onix', 'ano_fabricacao': 2018, 'motorizacao': '1.0', 'nm_peca': 'palheta traseira'}"
+              },
+              {
+                "tipo": "catalogo_web",
+                "origem": "https://www.pecachevrolet.com.br/pesquisa?nomepeca=palheta+traseira&nomeveiculo=Onix&ano=2018",
+                "evidencia": "26 peça(s) extraída(s)"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "rejeitado",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "expirado": {
+      "titulo": "Pausa e prazo vencido: o silêncio nunca grava",
+      "enunciado": "humano.md 8.4",
+      "usuario": "exemplos",
+      "env": {
+        "PRAZO_APROVACAO_HORAS": "0.00001"
+      },
+      "esperado": {
+        "motivo": "aprovacao_expirada",
+        "contem": "Nada foi gravado"
+      },
+      "ok": true,
+      "segundos": 43.4,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "expirado",
+          "usuario": "exemplos",
+          "entrada": "Quero o código da palheta traseira do meu Onix 2018 1.0 da Chevrolet.",
+          "pausas": [
+            {
+              "acao": "gravar_pecas",
+              "texto_mostrado": "Vou GRAVAR 26 peça(s) na base local (tabela pecas_automoveis) para Onix 2018 1.0, vindas do catálogo da Chevrolet:\n  1. Moldura da guarnição do estribo da porta traseira — código 52056749\n  2. Bujão do orifício do atuador da tampa traseira — código 52056750\n  3. Forro do painel da caixa de roda traseira — código 52038406\n  4. Forro do painel da caixa de roda traseira — código 52096890\n  5. Placa do nome do veículo na tampa traseira — código 52117031\n  6. Suporte do apoio de braço da porta traseira — código 52154567\n  7. Haste do atuador de trava da tampa traseira — código 94750396\n  8. Haste do cilindro de trava da tampa traseira — código 94760239\n  9. Tampa traseira — código 94747682\n  10. Tampa traseira — código 52176445\n  11. Porta traseira — código 2097.65\n  12. Porta traseira — código 1981.19\n  13. Compartimento da lanterna traseira lateral — código 397.91\n  14. Tampa traseira do eixo comando de válvulas — código 64.77\n  15. Regulador do vidro da porta traseira e dianteira — código 1182.23\n  16. Chicote da lanterna traseira — código 81.30\n  17. Soquete da lanterna traseira — código 36.64\n  18. Lanterna de freio traseira — código 238.23\n  19. Batente inferior da tampa traseira — código 20.64\n  20. Regulador do vidro da porta traseira — código 785.05\n  21. Painel da caixa de roda traseira — código 2077.14\n  22. Painel de acabamento da porta traseira — código 304.79\n  23. Defletor de água da porta traseira — código 129.41\n  24. Mola traseira — código Ooops, o estoque acabou\n  25. Suspensão traseira — código Ooops, o estoque acabou\n  26. Porta traseira — código Ooops, o estoque acabou\nConsequência: respostas futuras sobre este veículo passam a usar estes dados, sem nova consulta ao catálogo. Para desfazer, é preciso apagar as linhas da base.\nPrazo: 1e-05 h; depois disso nada é gravado.\nResponda: aprovar | rejeitar | editar remover 3,5 | editar codigo 2 ABC123",
+              "resposta_digitada": "aprovar"
+            }
+          ],
+          "segundos": 41.4,
+          "motivo": "aprovacao_expirada",
+          "situacao": "expirado",
+          "suficiencia": false,
+          "fonte": [
+            "base_local",
+            "catalogo_web"
+          ],
+          "chamadas_ao_modelo": 2,
+          "resultado": "A aprovação não veio a tempo (passou de 1e-05 h sem resposta). Nada foi gravado.",
+          "saida": {
+            "resultado": "A aprovação não veio a tempo (passou de 1e-05 h sem resposta). Nada foi gravado.",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "base_local",
+                "origem": "pecas_automoveis",
+                "evidencia": "0 linha(s) com {'modelo': 'Onix', 'ano_fabricacao': 2018, 'motorizacao': '1.0', 'nm_peca': 'palheta traseira'}"
+              },
+              {
+                "tipo": "catalogo_web",
+                "origem": "https://www.pecachevrolet.com.br/pesquisa?nomepeca=palheta+traseira&nomeveiculo=Onix&ano=2018",
+                "evidencia": "26 peça(s) extraída(s)"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "expirado",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "desistiu": {
+      "titulo": "Quatro mensagens vagas: desiste e diz por quê",
+      "enunciado": "arquitetura.md (término)",
+      "usuario": "exemplos",
+      "env": {},
+      "esperado": {
+        "motivo": "desistiu_apos_3_perguntas",
+        "contem": "Perguntei 3 vezes"
+      },
+      "ok": true,
+      "segundos": 7.2,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "desistiu",
+          "usuario": "exemplos",
+          "entrada": "oi",
+          "pausas": [],
+          "segundos": 2.7,
+          "motivo": "faltam_dados",
+          "situacao": "faltam_dados",
+          "suficiencia": false,
+          "fonte": [
+            "nenhuma"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Você procura uma peça compatível com o seu veículo ou quer tirar uma dúvida do manual do proprietário?",
+          "saida": {
+            "resultado": "Você procura uma peça compatível com o seu veículo ou quer tirar uma dúvida do manual do proprietário?",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "nenhuma",
+                "origem": "sistema",
+                "evidencia": "sem consulta"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "faltam_dados",
+            "pergunta_pendente": "Você procura uma peça compatível com o seu veículo ou quer tirar uma dúvida do manual do proprietário?"
+          }
+        },
+        {
+          "conversa": 1,
+          "sessao": "desistiu",
+          "usuario": "exemplos",
+          "entrada": "oi de novo",
+          "pausas": [],
+          "segundos": 0.9,
+          "motivo": "faltam_dados",
+          "situacao": "faltam_dados",
+          "suficiencia": false,
+          "fonte": [
+            "nenhuma"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Você procura uma peça compatível com o seu veículo ou quer tirar uma dúvida do manual do proprietário?",
+          "saida": {
+            "resultado": "Você procura uma peça compatível com o seu veículo ou quer tirar uma dúvida do manual do proprietário?",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "nenhuma",
+                "origem": "sistema",
+                "evidencia": "sem consulta"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "faltam_dados",
+            "pergunta_pendente": "Você procura uma peça compatível com o seu veículo ou quer tirar uma dúvida do manual do proprietário?"
+          }
+        },
+        {
+          "conversa": 1,
+          "sessao": "desistiu",
+          "usuario": "exemplos",
+          "entrada": "bom dia",
+          "pausas": [],
+          "segundos": 0.9,
+          "motivo": "faltam_dados",
+          "situacao": "faltam_dados",
+          "suficiencia": false,
+          "fonte": [
+            "nenhuma"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Você procura uma peça compatível com o seu veículo ou quer tirar uma dúvida do manual do proprietário?",
+          "saida": {
+            "resultado": "Você procura uma peça compatível com o seu veículo ou quer tirar uma dúvida do manual do proprietário?",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "nenhuma",
+                "origem": "sistema",
+                "evidencia": "sem consulta"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "faltam_dados",
+            "pergunta_pendente": "Você procura uma peça compatível com o seu veículo ou quer tirar uma dúvida do manual do proprietário?"
+          }
+        },
+        {
+          "conversa": 1,
+          "sessao": "desistiu",
+          "usuario": "exemplos",
+          "entrada": "tudo bem?",
+          "pausas": [],
+          "segundos": 0.9,
+          "motivo": "desistiu_apos_3_perguntas",
+          "situacao": "faltam_dados",
+          "suficiencia": false,
+          "fonte": [
+            "nenhuma"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Perguntei 3 vezes sobre \"intencao\" e não obtive a informação. Sem ela não consigo continuar; reformule o pedido ou procure o balcão.",
+          "saida": {
+            "resultado": "Perguntei 3 vezes sobre \"intencao\" e não obtive a informação. Sem ela não consigo continuar; reformule o pedido ou procure o balcão.",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "nenhuma",
+                "origem": "sistema",
+                "evidencia": "sem consulta"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "faltam_dados",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "erro_modelo": {
+      "titulo": "O modelo não responde a tempo (LLM_TIMEOUT minúsculo)",
+      "enunciado": "arquitetura.md (término)",
+      "usuario": "exemplos",
+      "env": {
+        "LLM_TIMEOUT": "0.15"
+      },
+      "esperado": {
+        "motivo": "erro_modelo",
+        "contem": "Não consegui concluir"
+      },
+      "ok": true,
+      "segundos": 4.3,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "erro_modelo",
+          "usuario": "exemplos",
+          "entrada": "Qual o código da palheta traseira do Corsa 2008 1.4 da Chevrolet?",
+          "pausas": [],
+          "segundos": 2.5,
+          "motivo": "erro_modelo",
+          "situacao": "erro",
+          "suficiencia": false,
+          "fonte": [
+            "nenhuma"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Não consegui concluir a consulta: APITimeoutError: Request timed out.",
+          "saida": {
+            "resultado": "Não consegui concluir a consulta: APITimeoutError: Request timed out.",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "nenhuma",
+                "origem": "sistema",
+                "evidencia": "sem consulta"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "erro",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "limite_turnos": {
+      "titulo": "Limite de mensagens por conversa (MAX_TURNOS=1)",
+      "enunciado": "arquitetura.md (término)",
+      "usuario": "exemplos",
+      "env": {
+        "MAX_TURNOS": "1"
+      },
+      "esperado": {
+        "motivo": "limite_turnos",
+        "contem": "limite"
+      },
+      "ok": true,
+      "segundos": 4.5,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "limite_turnos",
+          "usuario": "exemplos",
+          "entrada": "oi",
+          "pausas": [],
+          "segundos": 2.6,
+          "motivo": "faltam_dados",
+          "situacao": "faltam_dados",
+          "suficiencia": false,
+          "fonte": [
+            "nenhuma"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Você procura uma peça compatível com o seu veículo ou quer tirar uma dúvida do manual do proprietário?",
+          "saida": {
+            "resultado": "Você procura uma peça compatível com o seu veículo ou quer tirar uma dúvida do manual do proprietário?",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "nenhuma",
+                "origem": "sistema",
+                "evidencia": "sem consulta"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "faltam_dados",
+            "pergunta_pendente": "Você procura uma peça compatível com o seu veículo ou quer tirar uma dúvida do manual do proprietário?"
+          }
+        },
+        {
+          "conversa": 1,
+          "sessao": "limite_turnos",
+          "usuario": "exemplos",
+          "entrada": "oi",
+          "pausas": [],
+          "segundos": 0.1,
+          "motivo": "limite_turnos",
+          "situacao": "erro",
+          "suficiencia": false,
+          "fonte": [
+            "nenhuma"
+          ],
+          "chamadas_ao_modelo": 0,
+          "resultado": "Esta conversa chegou ao limite de 1 mensagens. Inicie uma nova conversa.",
+          "saida": {
+            "resultado": "Esta conversa chegou ao limite de 1 mensagens. Inicie uma nova conversa.",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "nenhuma",
+                "origem": "sistema",
+                "evidencia": "sem consulta"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "erro",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "memoria_veiculo": {
+      "titulo": "Memória semântica: a conversa seguinte usa o veículo lembrado",
+      "enunciado": "memoria.md (semântica)",
+      "usuario": "exemplos",
+      "env": {},
+      "esperado": {
+        "motivo": "respondido",
+        "contem": "Usei o veículo que você informou antes"
+      },
+      "ok": true,
+      "segundos": 6.2,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "memoria_veiculo",
+          "usuario": "exemplos",
+          "entrada": "Qual o código da palheta traseira do Corsa 2008 1.4 da Chevrolet?",
+          "pausas": [],
+          "segundos": 2.8,
+          "motivo": "respondido",
+          "situacao": "respondido",
+          "suficiencia": true,
+          "fonte": [
+            "base_local"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Encontrei 1 peça(s) para Corsa 2008 1.4 na base local:\n  1. Palheta traseira ACDelco — código 93356933",
+          "saida": {
+            "resultado": "Encontrei 1 peça(s) para Corsa 2008 1.4 na base local:\n  1. Palheta traseira ACDelco — código 93356933",
+            "dados": [
+              {
+                "nome_peca": "Palheta traseira ACDelco",
+                "codigo_peca": "93356933",
+                "carros_compativeis": [
+                  "Corsa A Hatch",
+                  "Corsa A Pickup",
+                  "Corsa A Sedan",
+                  "Corsa A Wagon"
+                ]
+              }
+            ],
+            "fonte": [
+              {
+                "tipo": "base_local",
+                "origem": "pecas_automoveis",
+                "evidencia": "1 linha(s) com {'modelo': 'Corsa', 'ano_fabricacao': 2008, 'motorizacao': '1.4', 'nm_peca': 'palheta traseira'}"
+              }
+            ],
+            "suficiencia": true,
+            "situacao": "respondido",
+            "pergunta_pendente": null
+          }
+        },
+        {
+          "conversa": 2,
+          "sessao": "memoria_veiculo-2",
+          "usuario": "exemplos",
+          "entrada": "Qual o código da palheta traseira?",
+          "pausas": [],
+          "segundos": 1.5,
+          "motivo": "respondido",
+          "situacao": "respondido",
+          "suficiencia": true,
+          "fonte": [
+            "memoria_semantica",
+            "base_local"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Encontrei 1 peça(s) para Corsa 2008 1.4 na base local:\n  1. Palheta traseira ACDelco — código 93356933\nObs.: Usei o veículo que você informou antes (Corsa 2008 1.4). Se mudou, é só dizer.",
+          "saida": {
+            "resultado": "Encontrei 1 peça(s) para Corsa 2008 1.4 na base local:\n  1. Palheta traseira ACDelco — código 93356933\nObs.: Usei o veículo que você informou antes (Corsa 2008 1.4). Se mudou, é só dizer.",
+            "dados": [
+              {
+                "nome_peca": "Palheta traseira ACDelco",
+                "codigo_peca": "93356933",
+                "carros_compativeis": [
+                  "Corsa A Hatch",
+                  "Corsa A Pickup",
+                  "Corsa A Sedan",
+                  "Corsa A Wagon"
+                ]
+              }
+            ],
+            "fonte": [
+              {
+                "tipo": "memoria_semantica",
+                "origem": "memoria_semantica",
+                "evidencia": "veículo declarado em 2026-10-16 (1 declaração(ões))"
+              },
+              {
+                "tipo": "base_local",
+                "origem": "pecas_automoveis",
+                "evidencia": "1 linha(s) com {'modelo': 'Corsa', 'ano_fabricacao': 2008, 'motorizacao': '1.4', 'nm_peca': 'palheta traseira'}"
+              }
+            ],
+            "suficiencia": true,
+            "situacao": "respondido",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "memoria_episodica": {
+      "titulo": "Memória episódica: a mesma dúvida, em outra conversa, sai da memória",
+      "enunciado": "memoria.md (episódica); rag.md",
+      "usuario": "exemplos",
+      "env": {},
+      "esperado": {
+        "motivo": "respondido",
+        "contem": "Já respondi uma pergunta parecida"
+      },
+      "ok": true,
+      "segundos": 17.3,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "memoria_episodica",
+          "usuario": "exemplos",
+          "entrada": "Qual a capacidade do tanque de combustível do meu Fox 2015?",
+          "pausas": [],
+          "segundos": 12.7,
+          "motivo": "respondido",
+          "situacao": "respondido",
+          "suficiencia": true,
+          "fonte": [
+            "memoria_episodica",
+            "manual_pdf"
+          ],
+          "chamadas_ao_modelo": 2,
+          "resultado": "O tanque de combustível tem uma capacidade aproximada de 50 litros, com 7 litros reservados.\n(Manual Volkswagen_Fox_2015.pdf, páginas [195, 196, 197])",
+          "saida": {
+            "resultado": "O tanque de combustível tem uma capacidade aproximada de 50 litros, com 7 litros reservados.\n(Manual Volkswagen_Fox_2015.pdf, páginas [195, 196, 197])",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "memoria_episodica",
+                "origem": "memoria_episodica",
+                "evidencia": "nenhuma pergunta parecida (melhor distância None, limiar de corte em memoria.py)"
+              },
+              {
+                "tipo": "manual_pdf",
+                "origem": "Volkswagen_Fox_2015.pdf",
+                "evidencia": "páginas [195, 196, 197]"
+              }
+            ],
+            "suficiencia": true,
+            "situacao": "respondido",
+            "pergunta_pendente": null
+          }
+        },
+        {
+          "conversa": 2,
+          "sessao": "memoria_episodica-2",
+          "usuario": "exemplos",
+          "entrada": "qual a capacidade do tanque de combustivel do meu fox 2015",
+          "pausas": [],
+          "segundos": 1.8,
+          "motivo": "respondido",
+          "situacao": "respondido",
+          "suficiencia": true,
+          "fonte": [
+            "memoria_semantica",
+            "memoria_episodica"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Já respondi uma pergunta parecida para Fox 2015 (similaridade 0.977): O tanque de combustível tem uma capacidade aproximada de 50 litros, com 7 litros reservados.",
+          "saida": {
+            "resultado": "Já respondi uma pergunta parecida para Fox 2015 (similaridade 0.977): O tanque de combustível tem uma capacidade aproximada de 50 litros, com 7 litros reservados.",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "memoria_semantica",
+                "origem": "memoria_semantica",
+                "evidencia": "veículo declarado em 2026-10-16 (1 declaração(ões))"
+              },
+              {
+                "tipo": "memoria_episodica",
+                "origem": "memoria_episodica",
+                "evidencia": "pergunta parecida encontrada (similaridade 0.977)"
+              }
+            ],
+            "suficiencia": true,
+            "situacao": "respondido",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "esquecer_cancelar": {
+      "titulo": "Pedir para apagar os dados e cancelar: nada é apagado",
+      "enunciado": "humano.md 6; memoria.md (remoção)",
+      "usuario": "exemplo-titular-a",
+      "env": {},
+      "esperado": {
+        "motivo": "esquecimento_recusado",
+        "contem": "nada foi apagado"
+      },
+      "ok": true,
+      "segundos": 14.0,
+      "auditoria_da_remocao": null,
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "esquecer_cancelar",
+          "usuario": "exemplo-titular-a",
+          "entrada": "Qual o código da palheta traseira do Corsa 2008 1.4 da Chevrolet?",
+          "pausas": [],
+          "segundos": 2.8,
+          "motivo": "respondido",
+          "situacao": "respondido",
+          "suficiencia": true,
+          "fonte": [
+            "base_local"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Encontrei 1 peça(s) para Corsa 2008 1.4 na base local:\n  1. Palheta traseira ACDelco — código 93356933",
+          "saida": {
+            "resultado": "Encontrei 1 peça(s) para Corsa 2008 1.4 na base local:\n  1. Palheta traseira ACDelco — código 93356933",
+            "dados": [
+              {
+                "nome_peca": "Palheta traseira ACDelco",
+                "codigo_peca": "93356933",
+                "carros_compativeis": [
+                  "Corsa A Hatch",
+                  "Corsa A Pickup",
+                  "Corsa A Sedan",
+                  "Corsa A Wagon"
+                ]
+              }
+            ],
+            "fonte": [
+              {
+                "tipo": "base_local",
+                "origem": "pecas_automoveis",
+                "evidencia": "1 linha(s) com {'modelo': 'Corsa', 'ano_fabricacao': 2008, 'motorizacao': '1.4', 'nm_peca': 'palheta traseira'}"
+              }
+            ],
+            "suficiencia": true,
+            "situacao": "respondido",
+            "pergunta_pendente": null
+          }
+        },
+        {
+          "conversa": 2,
+          "sessao": "esquecer_cancelar-2",
+          "usuario": "exemplo-titular-a",
+          "entrada": "Apague todos os meus dados, por favor.",
+          "pausas": [
+            {
+              "acao": "esquecer_dados",
+              "texto_mostrado": "Vou APAGAR todos os dados do usuário exemplo-titular-a: 1 fato(s) sobre o veículo, 0 dúvida(s) registrada(s) e 0 item(ns) do índice, 2 conversa(s) salva(s) (esta inclusive) e 2 arquivo(s) de log.\nNão dá para desfazer. Se ninguém confirmar, nada é apagado.\nResponda: confirmar | cancelar",
+              "resposta_digitada": "cancelar"
+            }
+          ],
+          "segundos": 8.5,
+          "motivo": "esquecimento_recusado",
+          "situacao": "rejeitado",
+          "suficiencia": false,
+          "fonte": [
+            "memoria_semantica"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Cancelei: nada foi apagado.",
+          "saida": {
+            "resultado": "Cancelei: nada foi apagado.",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "memoria_semantica",
+                "origem": "memoria_semantica",
+                "evidencia": "veículo declarado em 2026-10-16 (1 declaração(ões))"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "rejeitado",
+            "pergunta_pendente": null
+          }
+        }
+      ],
+      "verificacoes": []
+    },
+    "esquecer_confirmar": {
+      "titulo": "Apagar os dados: varredura 0 e o comportamento volta ao inicial",
+      "enunciado": "humano.md 6; memoria.md (remoção)",
+      "usuario": "exemplo-titular-b",
+      "env": {},
+      "esperado": {
+        "motivo": "faltam_dados",
+        "contem": "modelo"
+      },
+      "ok": true,
+      "segundos": 23.0,
+      "auditoria_da_remocao": [
+        "{\"ts\": \"2026-10-16T14:09:59\", \"alvo_hash\": \"ce0561295dc1\", \"contagens\": {\"fatos_veiculo\": 2, \"duvidas_registradas\": 1, \"vetores_episodicos\": 1, \"conversas_salvas\": 2, \"arquivos_de_log\": 3, \"regras_que_citam\": 0}, \"manteve_thread_atual\": true}"
+      ],
+      "turnos": [
+        {
+          "conversa": 1,
+          "sessao": "esquecer_confirmar",
+          "usuario": "exemplo-titular-b",
+          "entrada": "Qual o código da palheta traseira do Corsa 2008 1.4 da Chevrolet?",
+          "pausas": [],
+          "segundos": 2.7,
+          "motivo": "respondido",
+          "situacao": "respondido",
+          "suficiencia": true,
+          "fonte": [
+            "base_local"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Encontrei 1 peça(s) para Corsa 2008 1.4 na base local:\n  1. Palheta traseira ACDelco — código 93356933",
+          "saida": {
+            "resultado": "Encontrei 1 peça(s) para Corsa 2008 1.4 na base local:\n  1. Palheta traseira ACDelco — código 93356933",
+            "dados": [
+              {
+                "nome_peca": "Palheta traseira ACDelco",
+                "codigo_peca": "93356933",
+                "carros_compativeis": [
+                  "Corsa A Hatch",
+                  "Corsa A Pickup",
+                  "Corsa A Sedan",
+                  "Corsa A Wagon"
+                ]
+              }
+            ],
+            "fonte": [
+              {
+                "tipo": "base_local",
+                "origem": "pecas_automoveis",
+                "evidencia": "1 linha(s) com {'modelo': 'Corsa', 'ano_fabricacao': 2008, 'motorizacao': '1.4', 'nm_peca': 'palheta traseira'}"
+              }
+            ],
+            "suficiencia": true,
+            "situacao": "respondido",
+            "pergunta_pendente": null
+          }
+        },
+        {
+          "conversa": 2,
+          "sessao": "esquecer_confirmar-2",
+          "usuario": "exemplo-titular-b",
+          "entrada": "Qual a capacidade do tanque de combustível do meu Fox 2015?",
+          "pausas": [],
+          "segundos": 11.6,
+          "motivo": "respondido",
+          "situacao": "respondido",
+          "suficiencia": true,
+          "fonte": [
+            "memoria_semantica",
+            "memoria_episodica",
+            "manual_pdf"
+          ],
+          "chamadas_ao_modelo": 2,
+          "resultado": "O tanque de combustível tem uma capacidade aproximada de 50 litros, com 7 litros reservados.\n(Manual Volkswagen_Fox_2015.pdf, páginas [195, 196, 197])\nObs.: Considerei modelo = Fox (antes: Corsa).\nObs.: Considerei ano = 2015 (antes: 2008).\nObs.: Considerei fabricante = Volkswagen (antes: Chevrolet).\nObs.: Como o modelo mudou, descartei motorizacao do veículo anterior.",
+          "saida": {
+            "resultado": "O tanque de combustível tem uma capacidade aproximada de 50 litros, com 7 litros reservados.\n(Manual Volkswagen_Fox_2015.pdf, páginas [195, 196, 197])\nObs.: Considerei modelo = Fox (antes: Corsa).\nObs.: Considerei ano = 2015 (antes: 2008).\nObs.: Considerei fabricante = Volkswagen (antes: Chevrolet).\nObs.: Como o modelo mudou, descartei motorizacao do veículo anterior.",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "memoria_semantica",
+                "origem": "memoria_semantica",
+                "evidencia": "veículo declarado em 2026-10-16 (1 declaração(ões))"
+              },
+              {
+                "tipo": "memoria_episodica",
+                "origem": "memoria_episodica",
+                "evidencia": "nenhuma pergunta parecida (melhor distância None, limiar de corte em memoria.py)"
+              },
+              {
+                "tipo": "manual_pdf",
+                "origem": "Volkswagen_Fox_2015.pdf",
+                "evidencia": "páginas [195, 196, 197]"
+              }
+            ],
+            "suficiencia": true,
+            "situacao": "respondido",
+            "pergunta_pendente": null
+          }
+        },
+        {
+          "conversa": 3,
+          "sessao": "esquecer_confirmar-3",
+          "usuario": "exemplo-titular-b",
+          "entrada": "Apague todos os meus dados, por favor.",
+          "pausas": [
+            {
+              "acao": "esquecer_dados",
+              "texto_mostrado": "Vou APAGAR todos os dados do usuário exemplo-titular-b: 2 fato(s) sobre o veículo, 1 dúvida(s) registrada(s) e 1 item(ns) do índice, 3 conversa(s) salva(s) (esta inclusive) e 3 arquivo(s) de log.\nNão dá para desfazer. Se ninguém confirmar, nada é apagado.\nResponda: confirmar | cancelar",
+              "resposta_digitada": "confirmar"
+            }
+          ],
+          "segundos": 2.0,
+          "motivo": "esquecido",
+          "situacao": "esquecido",
+          "suficiencia": true,
+          "fonte": [
+            "memoria_semantica"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Apaguei seus dados: 2 fato(s) sobre o veículo, 1 dúvida(s) registrada(s), 1 item(ns) do índice, 2 conversa(s) salva(s) e 3 arquivo(s) de log. Esta conversa também é apagada ao terminar.",
+          "saida": {
+            "resultado": "Apaguei seus dados: 2 fato(s) sobre o veículo, 1 dúvida(s) registrada(s), 1 item(ns) do índice, 2 conversa(s) salva(s) e 3 arquivo(s) de log. Esta conversa também é apagada ao terminar.",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "memoria_semantica",
+                "origem": "memoria_semantica",
+                "evidencia": "veículo declarado em 2026-10-16 (2 declaração(ões))"
+              }
+            ],
+            "suficiencia": true,
+            "situacao": "esquecido",
+            "pergunta_pendente": null
+          },
+          "conversa_apagada_ao_terminar": true
+        },
+        {
+          "conversa": 4,
+          "sessao": "esquecer_confirmar-4",
+          "usuario": "exemplo-titular-b",
+          "entrada": "Qual o código da palheta traseira?",
+          "pausas": [],
+          "segundos": 1.4,
+          "motivo": "faltam_dados",
+          "situacao": "faltam_dados",
+          "suficiencia": false,
+          "fonte": [
+            "nenhuma"
+          ],
+          "chamadas_ao_modelo": 1,
+          "resultado": "Qual é o modelo do veículo?",
+          "saida": {
+            "resultado": "Qual é o modelo do veículo?",
+            "dados": null,
+            "fonte": [
+              {
+                "tipo": "nenhuma",
+                "origem": "sistema",
+                "evidencia": "sem consulta"
+              }
+            ],
+            "suficiencia": false,
+            "situacao": "faltam_dados",
+            "pergunta_pendente": "Qual é o modelo do veículo?"
+          }
+        }
+      ],
+      "verificacoes": [
+        {
+          "usuario": "exemplo-titular-b",
+          "codigo_de_saida": 0,
+          "saida": "Varredura por \"exemplo-titular-b\": 0 ocorrência(s).\n  (ignorado de propósito: logs/exemplos/resultado.json)"
+        }
+      ]
+    }
+  }
+}
