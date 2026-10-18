@@ -1,0 +1,180 @@
+{
+  "descricao": "Cenários dos exemplos da documentação (io.md, arquitetura.md, prompts.md). Cada um é uma ou mais conversas roteirizadas, rodadas no sistema real por gerar_exemplos.py. Passos: {\"usuario\": texto} é o que a pessoa digita; {\"humano\": texto} é a resposta a uma pausa (aprovar, rejeitar, editar..., confirmar, cancelar); {\"verificar_remocao\": true} roda verificar_remocao.py para o usuário do cenário. 'esperado' vale para a ÚLTIMA mensagem do cenário.",
+  "cenarios": [
+    {
+      "id": "feliz",
+      "titulo": "Caminho feliz: peça que está na base local",
+      "enunciado": "io.md 1.3 (caminho feliz); caso 1",
+      "usuario": "exemplos",
+      "conversas": [[{"usuario": "Qual o código da palheta traseira do Corsa 2008 1.4 da Chevrolet?"}]],
+      "esperado": {"motivo": "respondido", "contem": "93356933"}
+    },
+    {
+      "id": "manual",
+      "titulo": "Dúvida de manual respondida, com a fonte",
+      "enunciado": "io.md 1.3 (manual)",
+      "usuario": "exemplos",
+      "conversas": [[{"usuario": "Qual a capacidade do tanque de combustível do meu Fox 2015?"}]],
+      "esperado": {"motivo": "respondido", "contem": "50 litros"}
+    },
+    {
+      "id": "recusa_fora_corpus",
+      "titulo": "Recusa: a resposta não está no corpus",
+      "enunciado": "io.md 1.3 (recusa); caso 5",
+      "usuario": "exemplos",
+      "conversas": [[{"usuario": "Quais são os períodos de manutenção do meu Fox 2015?"}]],
+      "esperado": {"motivo": "sem_base", "contem": "não traz uma resposta clara"}
+    },
+    {
+      "id": "recusa_sem_codigo",
+      "titulo": "Recusa útil: a peça existe, mas sem código no catálogo",
+      "enunciado": "io.md 1.3 (recusa)",
+      "usuario": "exemplos",
+      "conversas": [[{"usuario": "Qual o código da roda de liga leve do Corsa 2008 1.4 da Chevrolet?"}]],
+      "esperado": {"motivo": "sem_base", "contem": "sem código"}
+    },
+    {
+      "id": "incompleta",
+      "titulo": "Entrada incompleta: pergunta o que falta",
+      "enunciado": "io.md 1.4 (incompleta)",
+      "usuario": "exemplos",
+      "conversas": [[{"usuario": "Qual é o código da pastilha de freio do Corolla 2020?"}]],
+      "esperado": {"motivo": "faltam_dados", "contem": "motoriza"}
+    },
+    {
+      "id": "ambigua",
+      "titulo": "Entrada ambígua: não escolhe, pergunta",
+      "enunciado": "io.md 1.4 (ambígua)",
+      "usuario": "exemplos",
+      "conversas": [[{"usuario": "Preciso da peça do Corolla 2020."}]],
+      "esperado": {"motivo": "faltam_dados", "contem": "?"}
+    },
+    {
+      "id": "fora_escopo",
+      "titulo": "Fora do escopo: pedido de compra; não consulta nem grava",
+      "enunciado": "io.md 1.4 (fora do escopo); caso 4",
+      "usuario": "exemplos",
+      "conversas": [[{"usuario": "Compre agora a pastilha de freio para o meu Corolla."}]],
+      "esperado": {"motivo": "fora_do_escopo", "contem": "não faço compra"}
+    },
+    {
+      "id": "divergencia",
+      "titulo": "Divergência: o sistema lembra Fox 2015, a pessoa diz Fox 2020",
+      "enunciado": "caso 2",
+      "usuario": "exemplos",
+      "conversas": [
+        [{"usuario": "Qual a capacidade do tanque de combustível do meu Fox 2015?"}],
+        [{"usuario": "Qual a capacidade do tanque de combustível do meu Fox 2020?"}]
+      ],
+      "esperado": {"contem": "antes: 2015"}
+    },
+    {
+      "id": "registro_inexistente",
+      "titulo": "Registro inexistente: montadora sem catálogo cadastrado",
+      "enunciado": "caso 3",
+      "usuario": "exemplos",
+      "conversas": [[{"usuario": "Qual o código da palheta traseira do Palio 1999 1.0 da Fiat?"}]],
+      "esperado": {"motivo": "sem_base", "contem": "catálogo"}
+    },
+    {
+      "id": "pausa_edicao",
+      "titulo": "Pausa para aprovar editando; segunda aprovação da mesma lista não duplica",
+      "enunciado": "caso 6; humano.md 8.2 e 8.5",
+      "usuario": "exemplos",
+      "conversas": [
+        [{"usuario": "Quero o código da palheta traseira do meu Onix 2018 1.0 da Chevrolet."}, {"humano": "editar remover 1,2,3,4,5"}],
+        [{"usuario": "Quero o código da palheta traseira do meu Onix 2018 1.0 da Chevrolet."}, {"humano": "editar remover 1,2,3,4,5"}]
+      ],
+      "esperado": {"motivo": "respondido", "contem": "0 nova(s)"}
+    },
+    {
+      "id": "rejeitado",
+      "titulo": "Pausa e rejeição: nada é gravado",
+      "enunciado": "humano.md 8.2",
+      "usuario": "exemplos",
+      "conversas": [[{"usuario": "Quero o código da palheta traseira do meu Onix 2018 1.0 da Chevrolet."}, {"humano": "rejeitar"}]],
+      "esperado": {"motivo": "rejeitado_pelo_humano", "contem": "Nada foi alterado"}
+    },
+    {
+      "id": "expirado",
+      "titulo": "Pausa e prazo vencido: o silêncio nunca grava",
+      "enunciado": "humano.md 8.4",
+      "usuario": "exemplos",
+      "env": {"PRAZO_APROVACAO_HORAS": "0.00001"},
+      "conversas": [[{"usuario": "Quero o código da palheta traseira do meu Onix 2018 1.0 da Chevrolet."}, {"humano": "aprovar"}]],
+      "esperado": {"motivo": "aprovacao_expirada", "contem": "Nada foi gravado"}
+    },
+    {
+      "id": "desistiu",
+      "titulo": "Quatro mensagens vagas: desiste e diz por quê",
+      "enunciado": "arquitetura.md (término)",
+      "usuario": "exemplos",
+      "conversas": [[{"usuario": "oi"}, {"usuario": "oi de novo"}, {"usuario": "bom dia"}, {"usuario": "tudo bem?"}]],
+      "esperado": {"motivo": "desistiu_apos_3_perguntas", "contem": "Perguntei 3 vezes"}
+    },
+    {
+      "id": "erro_modelo",
+      "titulo": "O modelo não responde a tempo (LLM_TIMEOUT minúsculo)",
+      "enunciado": "arquitetura.md (término)",
+      "usuario": "exemplos",
+      "env": {"LLM_TIMEOUT": "0.15"},
+      "conversas": [[{"usuario": "Qual o código da palheta traseira do Corsa 2008 1.4 da Chevrolet?"}]],
+      "esperado": {"motivo": "erro_modelo", "contem": "Não consegui concluir"}
+    },
+    {
+      "id": "limite_turnos",
+      "titulo": "Limite de mensagens por conversa (MAX_TURNOS=1)",
+      "enunciado": "arquitetura.md (término)",
+      "usuario": "exemplos",
+      "env": {"MAX_TURNOS": "1"},
+      "conversas": [[{"usuario": "oi"}, {"usuario": "oi"}]],
+      "esperado": {"motivo": "limite_turnos", "contem": "limite"}
+    },
+    {
+      "id": "memoria_veiculo",
+      "titulo": "Memória semântica: a conversa seguinte usa o veículo lembrado",
+      "enunciado": "memoria.md (semântica)",
+      "usuario": "exemplos",
+      "conversas": [
+        [{"usuario": "Qual o código da palheta traseira do Corsa 2008 1.4 da Chevrolet?"}],
+        [{"usuario": "Qual o código da palheta traseira?"}]
+      ],
+      "esperado": {"motivo": "respondido", "contem": "Usei o veículo que você informou antes"}
+    },
+    {
+      "id": "memoria_episodica",
+      "titulo": "Memória episódica: a mesma dúvida, em outra conversa, sai da memória",
+      "enunciado": "memoria.md (episódica); rag.md",
+      "usuario": "exemplos",
+      "conversas": [
+        [{"usuario": "Qual a capacidade do tanque de combustível do meu Fox 2015?"}],
+        [{"usuario": "qual a capacidade do tanque de combustivel do meu fox 2015"}]
+      ],
+      "esperado": {"motivo": "respondido", "contem": "Já respondi uma pergunta parecida"}
+    },
+    {
+      "id": "esquecer_cancelar",
+      "titulo": "Pedir para apagar os dados e cancelar: nada é apagado",
+      "enunciado": "humano.md 6; memoria.md (remoção)",
+      "usuario": "exemplo-titular-a",
+      "conversas": [
+        [{"usuario": "Qual o código da palheta traseira do Corsa 2008 1.4 da Chevrolet?"}],
+        [{"usuario": "Apague todos os meus dados, por favor."}, {"humano": "cancelar"}]
+      ],
+      "esperado": {"motivo": "esquecimento_recusado", "contem": "nada foi apagado"}
+    },
+    {
+      "id": "esquecer_confirmar",
+      "titulo": "Apagar os dados: varredura 0 e o comportamento volta ao inicial",
+      "enunciado": "humano.md 6; memoria.md (remoção)",
+      "usuario": "exemplo-titular-b",
+      "conversas": [
+        [{"usuario": "Qual o código da palheta traseira do Corsa 2008 1.4 da Chevrolet?"}],
+        [{"usuario": "Qual a capacidade do tanque de combustível do meu Fox 2015?"}],
+        [{"usuario": "Apague todos os meus dados, por favor."}, {"humano": "confirmar"}, {"verificar_remocao": true}],
+        [{"usuario": "Qual o código da palheta traseira?"}]
+      ],
+      "esperado": {"motivo": "faltam_dados", "contem": "modelo"}
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "commit": "106abee",
+  "codigo_limpo": false,
+  "arquivos_alterados": [
+    ".env.example",
+    "avaliar_raspagem.py",
+    "src/webscrapper.py"
+  ],
+  "data": "2026-10-18",
+  "modelo": "qwen2.5:7b",
+  "consulta": {
+    "modelo": "Onix",
+    "ano": 2018,
+    "motorizacao": "1.0",
+    "nome_peca": "palheta traseira",
+    "fabricante": "chevrolet"
+  },
+  "modo": "auto",
+  "rodadas": [
+    {
+      "consulta": "https://www.pecachevrolet.com.br/pesquisa?nomepeca=palheta+traseira&nomeveiculo=Onix&ano=2018",
+      "erro": null,
+      "paginas_lidas": 1,
+      "segundos": 5,
+      "paginas_catalogo_lidas": 1,
+      "modo": [
+        "codigo"
+      ],
+      "avisos": [
+        "O catálogo trouxe 198 peça(s) para esse carro; mostro as 1 com \"palheta traseira\" no nome."
+      ],
+      "caracteres_da_pagina": 73354,
+      "cartoes_na_pagina": 202,
+      "pecas_lidas_do_catalogo": 198,
+      "pecas": 1,
+      "nome_na_pagina": 1,
+      "codigo_na_pagina": 1,
+      "codigo_com_forma": 1,
+      "codigo_e_preco_da_pagina": 0,
+      "compat_todos": 1,
+      "compat_parte": 0,
+      "compat_nenhum": 0,
+      "codigos_repetidos": [],
+      "detalhe": [
+        {
+          "nome": "Palheta traseira ACDelco",
+          "codigo": "19376259",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        }
+      ]
+    },
+    {
+      "consulta": "https://www.pecachevrolet.com.br/pesquisa?nomepeca=palheta+traseira&nomeveiculo=Onix&ano=2018",
+      "erro": null,
+      "paginas_lidas": 1,
+      "segundos": 3,
+      "paginas_catalogo_lidas": 1,
+      "modo": [
+        "codigo"
+      ],
+      "avisos": [
+        "O catálogo trouxe 198 peça(s) para esse carro; mostro as 1 com \"palheta traseira\" no nome."
+      ],
+      "caracteres_da_pagina": 73354,
+      "cartoes_na_pagina": 202,
+      "pecas_lidas_do_catalogo": 198,
+      "pecas": 1,
+      "nome_na_pagina": 1,
+      "codigo_na_pagina": 1,
+      "codigo_com_forma": 1,
+      "codigo_e_preco_da_pagina": 0,
+      "compat_todos": 1,
+      "compat_parte": 0,
+      "compat_nenhum": 0,
+      "codigos_repetidos": [],
+      "detalhe": [
+        {
+          "nome": "Palheta traseira ACDelco",
+          "codigo": "19376259",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        }
+      ]
+    }
+  ]
+}

@@ -22,7 +22,7 @@ class Agent(ABC):
 
     def read_system_prompts(self, filename):
             path = Path(__file__).resolve().parent.parent
-            with open(f'{path}/prompts/{filename}','r') as prompt:
+            with open(f'{path}/src/prompts/{filename}','r', encoding='utf-8') as prompt:
                 return prompt.read()
 
     def send_message(self, message:Message)->None:

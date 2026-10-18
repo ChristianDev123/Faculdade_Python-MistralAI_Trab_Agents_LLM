@@ -1,0 +1,2084 @@
+{
+  "commit": "a5113fe",
+  "codigo_limpo": false,
+  "arquivos_alterados": [
+    "ablacao_prompts.py",
+    "avaliar_raspagem.py"
+  ],
+  "data": "2026-10-18",
+  "modelo": "qwen2.5:7b",
+  "rodadas": 2,
+  "contexto_ollama": "8192",
+  "duracao_s": 1269,
+  "resultados": {
+    "base": {
+      "casos": 29,
+      "vazados": [
+        1,
+        9,
+        11,
+        12,
+        17,
+        18,
+        23,
+        26
+      ],
+      "casos_heldout": 21,
+      "heldout_por_rodada": [
+        {
+          "intencao": 20,
+          "ficha": 20
+        },
+        {
+          "intencao": 20,
+          "ficha": 20
+        }
+      ],
+      "heldout_media_ficha": 20.0,
+      "heldout_media_intencao": 20.0,
+      "heldout_min_ficha": 20,
+      "heldout_max_ficha": 20,
+      "por_rodada": [
+        {
+          "intencao": 28,
+          "ficha": 28
+        },
+        {
+          "intencao": 28,
+          "ficha": 28
+        }
+      ],
+      "media_intencao": 28.0,
+      "media_ficha": 28.0,
+      "min_ficha": 28,
+      "max_ficha": 28,
+      "casos_instaveis": [],
+      "casos_que_sempre_erram": [
+        21
+      ],
+      "ficha_por_grupo": {
+        "peça completa": "12/12",
+        "peça incompleta": "4/4",
+        "várias mensagens": "4/4",
+        "manual": "14/14",
+        "fora do escopo": "8/10",
+        "esquecer": "6/6",
+        "indefinida": "8/8"
+      },
+      "acerta_em_todas_as_rodadas": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ]
+    },
+    "papel": {
+      "frase": "Você NÃO responde ao usuário e NÃO decide o que o sistema fará: só classifica e extrai.",
+      "caracteres_a_menos": 88,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 20,
+            "ficha": 20
+          },
+          {
+            "intencao": 20,
+            "ficha": 20
+          }
+        ],
+        "heldout_media_ficha": 20.0,
+        "heldout_media_intencao": 20.0,
+        "heldout_min_ficha": 20,
+        "heldout_max_ficha": 20,
+        "por_rodada": [
+          {
+            "intencao": 28,
+            "ficha": 28
+          },
+          {
+            "intencao": 28,
+            "ficha": 28
+          }
+        ],
+        "media_intencao": 28.0,
+        "media_ficha": 28.0,
+        "min_ficha": 28,
+        "max_ficha": 28,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [
+          21
+        ],
+        "ficha_por_grupo": {
+          "peça completa": "12/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "8/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 0.0,
+      "casos_que_saíram": [],
+      "casos_que_entraram": [],
+      "veredito": "sem efeito"
+    },
+    "conversa_inteira": {
+      "frase": "Use a conversa inteira. Se a intenção já ficou clara antes e a última mensagem só traz um dado do veículo, mantenha a intenção anterior.",
+      "caracteres_a_menos": 138,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 21,
+            "ficha": 20
+          },
+          {
+            "intencao": 21,
+            "ficha": 20
+          }
+        ],
+        "heldout_media_ficha": 20.0,
+        "heldout_media_intencao": 21.0,
+        "heldout_min_ficha": 20,
+        "heldout_max_ficha": 20,
+        "por_rodada": [
+          {
+            "intencao": 29,
+            "ficha": 28
+          },
+          {
+            "intencao": 29,
+            "ficha": 28
+          }
+        ],
+        "media_intencao": 29.0,
+        "media_ficha": 28.0,
+        "min_ficha": 28,
+        "max_ficha": 28,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [
+          5
+        ],
+        "ficha_por_grupo": {
+          "peça completa": "10/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "10/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 0.0,
+      "casos_que_saíram": [
+        5
+      ],
+      "casos_que_entraram": [
+        21
+      ],
+      "veredito": "faz diferença"
+    },
+    "manual_exemplos": {
+      "frase": "MANUAL: a lista \"(períodos de revisão, óleo recomendado, pressão dos pneus, luzes do painel, como fazer algo no carro)\"",
+      "caracteres_a_menos": 102,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 20,
+            "ficha": 20
+          },
+          {
+            "intencao": 20,
+            "ficha": 20
+          }
+        ],
+        "heldout_media_ficha": 20.0,
+        "heldout_media_intencao": 20.0,
+        "heldout_min_ficha": 20,
+        "heldout_max_ficha": 20,
+        "por_rodada": [
+          {
+            "intencao": 28,
+            "ficha": 28
+          },
+          {
+            "intencao": 28,
+            "ficha": 28
+          }
+        ],
+        "media_intencao": 28.0,
+        "media_ficha": 28.0,
+        "min_ficha": 28,
+        "max_ficha": 28,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [
+          21
+        ],
+        "ficha_por_grupo": {
+          "peça completa": "12/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "8/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 0.0,
+      "casos_que_saíram": [],
+      "casos_que_entraram": [],
+      "veredito": "sem efeito"
+    },
+    "fora_lista": {
+      "frase": "FORA_DO_ESCOPO: a lista \": comprar, reservar, saber preço ou onde comprar, diagnosticar defeito\"",
+      "caracteres_a_menos": 70,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 20,
+            "ficha": 20
+          },
+          {
+            "intencao": 20,
+            "ficha": 20
+          }
+        ],
+        "heldout_media_ficha": 20.0,
+        "heldout_media_intencao": 20.0,
+        "heldout_min_ficha": 20,
+        "heldout_max_ficha": 20,
+        "por_rodada": [
+          {
+            "intencao": 28,
+            "ficha": 28
+          },
+          {
+            "intencao": 28,
+            "ficha": 28
+          }
+        ],
+        "media_intencao": 28.0,
+        "media_ficha": 28.0,
+        "min_ficha": 28,
+        "max_ficha": 28,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [
+          21
+        ],
+        "ficha_por_grupo": {
+          "peça completa": "12/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "8/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 0.0,
+      "casos_que_saíram": [],
+      "casos_que_entraram": [],
+      "veredito": "sem efeito"
+    },
+    "modelo_sem_montadora": {
+      "frase": "`modelo`: só o modelo, sem a montadora (\"Corsa\", e não \"Chevrolet Corsa\").",
+      "caracteres_a_menos": 77,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 21,
+            "ficha": 20
+          },
+          {
+            "intencao": 21,
+            "ficha": 20
+          }
+        ],
+        "heldout_media_ficha": 20.0,
+        "heldout_media_intencao": 21.0,
+        "heldout_min_ficha": 20,
+        "heldout_max_ficha": 20,
+        "por_rodada": [
+          {
+            "intencao": 29,
+            "ficha": 28
+          },
+          {
+            "intencao": 29,
+            "ficha": 28
+          }
+        ],
+        "media_intencao": 29.0,
+        "media_ficha": 28.0,
+        "min_ficha": 28,
+        "max_ficha": 28,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [
+          3
+        ],
+        "ficha_por_grupo": {
+          "peça completa": "10/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "10/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 0.0,
+      "casos_que_saíram": [
+        3
+      ],
+      "casos_que_entraram": [
+        21
+      ],
+      "veredito": "faz diferença"
+    },
+    "fabricante": {
+      "frase": "`fabricante`: a montadora, somente se o usuário a disse.",
+      "caracteres_a_menos": 59,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 20,
+            "ficha": 20
+          },
+          {
+            "intencao": 20,
+            "ficha": 20
+          }
+        ],
+        "heldout_media_ficha": 20.0,
+        "heldout_media_intencao": 20.0,
+        "heldout_min_ficha": 20,
+        "heldout_max_ficha": 20,
+        "por_rodada": [
+          {
+            "intencao": 28,
+            "ficha": 28
+          },
+          {
+            "intencao": 28,
+            "ficha": 28
+          }
+        ],
+        "media_intencao": 28.0,
+        "media_ficha": 28.0,
+        "min_ficha": 28,
+        "max_ficha": 28,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [
+          21
+        ],
+        "ficha_por_grupo": {
+          "peça completa": "12/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "8/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 0.0,
+      "casos_que_saíram": [],
+      "casos_que_entraram": [],
+      "veredito": "sem efeito"
+    },
+    "nome_peca": {
+      "frase": "`nome_peca`: a peça procurada, com as palavras do usuário ... null se a intenção não for PECA.",
+      "caracteres_a_menos": 115,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 21,
+            "ficha": 21
+          },
+          {
+            "intencao": 21,
+            "ficha": 21
+          }
+        ],
+        "heldout_media_ficha": 21.0,
+        "heldout_media_intencao": 21.0,
+        "heldout_min_ficha": 21,
+        "heldout_max_ficha": 21,
+        "por_rodada": [
+          {
+            "intencao": 29,
+            "ficha": 29
+          },
+          {
+            "intencao": 29,
+            "ficha": 29
+          }
+        ],
+        "media_intencao": 29.0,
+        "media_ficha": 29.0,
+        "min_ficha": 29,
+        "max_ficha": 29,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [],
+        "ficha_por_grupo": {
+          "peça completa": "12/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "10/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 1.0,
+      "casos_que_saíram": [],
+      "casos_que_entraram": [
+        21
+      ],
+      "veredito": "melhora"
+    },
+    "duvida": {
+      "frase": "`duvida`: se a intenção for MANUAL, a dúvida completa com as palavras do usuário. null nos outros casos.",
+      "caracteres_a_menos": 107,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 21,
+            "ficha": 21
+          },
+          {
+            "intencao": 21,
+            "ficha": 21
+          }
+        ],
+        "heldout_media_ficha": 21.0,
+        "heldout_media_intencao": 21.0,
+        "heldout_min_ficha": 21,
+        "heldout_max_ficha": 21,
+        "por_rodada": [
+          {
+            "intencao": 29,
+            "ficha": 29
+          },
+          {
+            "intencao": 29,
+            "ficha": 29
+          }
+        ],
+        "media_intencao": 29.0,
+        "media_ficha": 29.0,
+        "min_ficha": 29,
+        "max_ficha": 29,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [],
+        "ficha_por_grupo": {
+          "peça completa": "12/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "10/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 1.0,
+      "casos_que_saíram": [],
+      "casos_que_entraram": [
+        21
+      ],
+      "veredito": "melhora"
+    },
+    "regra_null": {
+      "frase": "null para tudo o que o usuário não disse. Nunca invente nem deduza dado do veículo.",
+      "caracteres_a_menos": 86,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 21,
+            "ficha": 21
+          },
+          {
+            "intencao": 21,
+            "ficha": 21
+          }
+        ],
+        "heldout_media_ficha": 21.0,
+        "heldout_media_intencao": 21.0,
+        "heldout_min_ficha": 21,
+        "heldout_max_ficha": 21,
+        "por_rodada": [
+          {
+            "intencao": 29,
+            "ficha": 29
+          },
+          {
+            "intencao": 29,
+            "ficha": 29
+          }
+        ],
+        "media_intencao": 29.0,
+        "media_ficha": 29.0,
+        "min_ficha": 29,
+        "max_ficha": 29,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [],
+        "ficha_por_grupo": {
+          "peça completa": "12/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "10/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 1.0,
+      "casos_que_saíram": [],
+      "casos_que_entraram": [
+        21
+      ],
+      "veredito": "melhora"
+    },
+    "regra_correcao": {
+      "frase": "Se o usuário corrigiu um dado, vale o mais recente.",
+      "caracteres_a_menos": 54,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 21,
+            "ficha": 21
+          },
+          {
+            "intencao": 21,
+            "ficha": 21
+          }
+        ],
+        "heldout_media_ficha": 21.0,
+        "heldout_media_intencao": 21.0,
+        "heldout_min_ficha": 21,
+        "heldout_max_ficha": 21,
+        "por_rodada": [
+          {
+            "intencao": 29,
+            "ficha": 29
+          },
+          {
+            "intencao": 29,
+            "ficha": 29
+          }
+        ],
+        "media_intencao": 29.0,
+        "media_ficha": 29.0,
+        "min_ficha": 29,
+        "max_ficha": 29,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [],
+        "ficha_por_grupo": {
+          "peça completa": "12/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "10/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 1.0,
+      "casos_que_saíram": [],
+      "casos_que_entraram": [
+        21
+      ],
+      "veredito": "melhora"
+    },
+    "regra_json": {
+      "frase": "Responda só com o JSON do schema.",
+      "caracteres_a_menos": 36,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 21,
+            "ficha": 21
+          },
+          {
+            "intencao": 21,
+            "ficha": 21
+          }
+        ],
+        "heldout_media_ficha": 21.0,
+        "heldout_media_intencao": 21.0,
+        "heldout_min_ficha": 21,
+        "heldout_max_ficha": 21,
+        "por_rodada": [
+          {
+            "intencao": 29,
+            "ficha": 29
+          },
+          {
+            "intencao": 29,
+            "ficha": 29
+          }
+        ],
+        "media_intencao": 29.0,
+        "media_ficha": 29.0,
+        "min_ficha": 29,
+        "max_ficha": 29,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [],
+        "ficha_por_grupo": {
+          "peça completa": "12/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "10/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 1.0,
+      "casos_que_saíram": [],
+      "casos_que_entraram": [
+        21
+      ],
+      "veredito": "melhora"
+    },
+    "ex_peca": {
+      "frase": "exemplo: palheta traseira do Corsa (PECA completa)",
+      "caracteres_a_menos": 218,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 20,
+            "ficha": 20
+          },
+          {
+            "intencao": 20,
+            "ficha": 20
+          }
+        ],
+        "heldout_media_ficha": 20.0,
+        "heldout_media_intencao": 20.0,
+        "heldout_min_ficha": 20,
+        "heldout_max_ficha": 20,
+        "por_rodada": [
+          {
+            "intencao": 28,
+            "ficha": 28
+          },
+          {
+            "intencao": 28,
+            "ficha": 28
+          }
+        ],
+        "media_intencao": 28.0,
+        "media_ficha": 28.0,
+        "min_ficha": 28,
+        "max_ficha": 28,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [
+          21
+        ],
+        "ficha_por_grupo": {
+          "peça completa": "12/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "8/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 0.0,
+      "casos_que_saíram": [],
+      "casos_que_entraram": [],
+      "veredito": "sem efeito"
+    },
+    "ex_manual": {
+      "frase": "os dois exemplos de MANUAL (Fox 2015 e Fox 2020)",
+      "caracteres_a_menos": 450,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 20,
+            "ficha": 19
+          },
+          {
+            "intencao": 20,
+            "ficha": 19
+          }
+        ],
+        "heldout_media_ficha": 19.0,
+        "heldout_media_intencao": 20.0,
+        "heldout_min_ficha": 19,
+        "heldout_max_ficha": 19,
+        "por_rodada": [
+          {
+            "intencao": 28,
+            "ficha": 27
+          },
+          {
+            "intencao": 28,
+            "ficha": 27
+          }
+        ],
+        "media_intencao": 28.0,
+        "media_ficha": 27.0,
+        "min_ficha": 27,
+        "max_ficha": 27,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [
+          5,
+          21
+        ],
+        "ficha_por_grupo": {
+          "peça completa": "10/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "8/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": -1.0,
+      "casos_que_saíram": [
+        5
+      ],
+      "casos_que_entraram": [],
+      "veredito": "faz diferença"
+    },
+    "ex_fora": {
+      "frase": "exemplo: \"Compre agora a pastilha de freio\" (FORA_DO_ESCOPO)",
+      "caracteres_a_menos": 209,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 21,
+            "ficha": 20
+          },
+          {
+            "intencao": 21,
+            "ficha": 20
+          }
+        ],
+        "heldout_media_ficha": 20.0,
+        "heldout_media_intencao": 21.0,
+        "heldout_min_ficha": 20,
+        "heldout_max_ficha": 20,
+        "por_rodada": [
+          {
+            "intencao": 29,
+            "ficha": 28
+          },
+          {
+            "intencao": 29,
+            "ficha": 28
+          }
+        ],
+        "media_intencao": 29.0,
+        "media_ficha": 28.0,
+        "min_ficha": 28,
+        "max_ficha": 28,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [
+          5
+        ],
+        "ficha_por_grupo": {
+          "peça completa": "10/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "10/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 0.0,
+      "casos_que_saíram": [
+        5
+      ],
+      "casos_que_entraram": [
+        21
+      ],
+      "veredito": "faz diferença"
+    },
+    "ex_conversa": {
+      "frase": "exemplo de conversa com 3 mensagens (Gol 2012)",
+      "caracteres_a_menos": 232,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 20,
+            "ficha": 19
+          },
+          {
+            "intencao": 20,
+            "ficha": 19
+          }
+        ],
+        "heldout_media_ficha": 19.0,
+        "heldout_media_intencao": 20.0,
+        "heldout_min_ficha": 19,
+        "heldout_max_ficha": 19,
+        "por_rodada": [
+          {
+            "intencao": 28,
+            "ficha": 27
+          },
+          {
+            "intencao": 28,
+            "ficha": 27
+          }
+        ],
+        "media_intencao": 28.0,
+        "media_ficha": 27.0,
+        "min_ficha": 27,
+        "max_ficha": 27,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [
+          5,
+          21
+        ],
+        "ficha_por_grupo": {
+          "peça completa": "10/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "8/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": -1.0,
+      "casos_que_saíram": [
+        5
+      ],
+      "casos_que_entraram": [],
+      "veredito": "faz diferença"
+    },
+    "ex_indefinida": {
+      "frase": "exemplo: \"oi, bom dia\" (INDEFINIDA)",
+      "caracteres_a_menos": 144,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 21,
+            "ficha": 20
+          },
+          {
+            "intencao": 21,
+            "ficha": 20
+          }
+        ],
+        "heldout_media_ficha": 20.0,
+        "heldout_media_intencao": 21.0,
+        "heldout_min_ficha": 20,
+        "heldout_max_ficha": 20,
+        "por_rodada": [
+          {
+            "intencao": 29,
+            "ficha": 28
+          },
+          {
+            "intencao": 29,
+            "ficha": 28
+          }
+        ],
+        "media_intencao": 29.0,
+        "media_ficha": 28.0,
+        "min_ficha": 28,
+        "max_ficha": 28,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [
+          5
+        ],
+        "ficha_por_grupo": {
+          "peça completa": "10/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "10/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 0.0,
+      "casos_que_saíram": [
+        5
+      ],
+      "casos_que_entraram": [
+        21
+      ],
+      "veredito": "faz diferença"
+    },
+    "ex_esquecer": {
+      "frase": "exemplo: \"Apague todos os meus dados\" (ESQUECER)",
+      "caracteres_a_menos": 168,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 20,
+            "ficha": 19
+          },
+          {
+            "intencao": 20,
+            "ficha": 19
+          }
+        ],
+        "heldout_media_ficha": 19.0,
+        "heldout_media_intencao": 20.0,
+        "heldout_min_ficha": 19,
+        "heldout_max_ficha": 19,
+        "por_rodada": [
+          {
+            "intencao": 28,
+            "ficha": 27
+          },
+          {
+            "intencao": 28,
+            "ficha": 27
+          }
+        ],
+        "media_intencao": 28.0,
+        "media_ficha": 27.0,
+        "min_ficha": 27,
+        "max_ficha": 27,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [
+          5,
+          21
+        ],
+        "ficha_por_grupo": {
+          "peça completa": "10/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "8/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": -1.0,
+      "casos_que_saíram": [
+        5
+      ],
+      "casos_que_entraram": [],
+      "veredito": "faz diferença"
+    },
+    "zero_shot": {
+      "frase": "TODOS os exemplos (a seção \"# Exemplos\" inteira): vira zero-shot",
+      "caracteres_a_menos": 1433,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 20,
+            "ficha": 20
+          },
+          {
+            "intencao": 20,
+            "ficha": 20
+          }
+        ],
+        "heldout_media_ficha": 20.0,
+        "heldout_media_intencao": 20.0,
+        "heldout_min_ficha": 20,
+        "heldout_max_ficha": 20,
+        "por_rodada": [
+          {
+            "intencao": 28,
+            "ficha": 28
+          },
+          {
+            "intencao": 28,
+            "ficha": 28
+          }
+        ],
+        "media_intencao": 28.0,
+        "media_ficha": 28.0,
+        "min_ficha": 28,
+        "max_ficha": 28,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [
+          21
+        ],
+        "ficha_por_grupo": {
+          "peça completa": "12/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "8/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 0.0,
+      "casos_que_saíram": [],
+      "casos_que_entraram": [],
+      "veredito": "sem efeito"
+    },
+    "proc_compra": {
+      "frase": "regra aprendida: Pedido de compra, reserva, preço ou onde comprar é FORA_DO_ESCOPO...",
+      "caracteres_a_menos": null,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 21,
+            "ficha": 21
+          },
+          {
+            "intencao": 21,
+            "ficha": 21
+          }
+        ],
+        "heldout_media_ficha": 21.0,
+        "heldout_media_intencao": 21.0,
+        "heldout_min_ficha": 21,
+        "heldout_max_ficha": 21,
+        "por_rodada": [
+          {
+            "intencao": 29,
+            "ficha": 29
+          },
+          {
+            "intencao": 29,
+            "ficha": 29
+          }
+        ],
+        "media_intencao": 29.0,
+        "media_ficha": 29.0,
+        "min_ficha": 29,
+        "max_ficha": 29,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [],
+        "ficha_por_grupo": {
+          "peça completa": "12/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "10/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 1.0,
+      "casos_que_saíram": [],
+      "casos_que_entraram": [
+        21
+      ],
+      "veredito": "melhora"
+    },
+    "proc_cumprimento": {
+      "frase": "regra aprendida: Cumprimento ou mensagem sem pedido é INDEFINIDA...",
+      "caracteres_a_menos": null,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 21,
+            "ficha": 21
+          },
+          {
+            "intencao": 21,
+            "ficha": 21
+          }
+        ],
+        "heldout_media_ficha": 21.0,
+        "heldout_media_intencao": 21.0,
+        "heldout_min_ficha": 21,
+        "heldout_max_ficha": 21,
+        "por_rodada": [
+          {
+            "intencao": 29,
+            "ficha": 29
+          },
+          {
+            "intencao": 29,
+            "ficha": 29
+          }
+        ],
+        "media_intencao": 29.0,
+        "media_ficha": 29.0,
+        "min_ficha": 29,
+        "max_ficha": 29,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [],
+        "ficha_por_grupo": {
+          "peça completa": "12/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "10/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": 1.0,
+      "casos_que_saíram": [],
+      "casos_que_entraram": [
+        21
+      ],
+      "veredito": "melhora"
+    },
+    "proc_todas": {
+      "frase": "as duas regras aprendidas de `extrair`",
+      "caracteres_a_menos": null,
+      "resumo": {
+        "casos": 29,
+        "vazados": [
+          1,
+          9,
+          11,
+          12,
+          17,
+          18,
+          23,
+          26
+        ],
+        "casos_heldout": 21,
+        "heldout_por_rodada": [
+          {
+            "intencao": 20,
+            "ficha": 19
+          },
+          {
+            "intencao": 20,
+            "ficha": 19
+          }
+        ],
+        "heldout_media_ficha": 19.0,
+        "heldout_media_intencao": 20.0,
+        "heldout_min_ficha": 19,
+        "heldout_max_ficha": 19,
+        "por_rodada": [
+          {
+            "intencao": 28,
+            "ficha": 27
+          },
+          {
+            "intencao": 28,
+            "ficha": 27
+          }
+        ],
+        "media_intencao": 28.0,
+        "media_ficha": 27.0,
+        "min_ficha": 27,
+        "max_ficha": 27,
+        "casos_instaveis": [],
+        "casos_que_sempre_erram": [
+          5,
+          21
+        ],
+        "ficha_por_grupo": {
+          "peça completa": "10/12",
+          "peça incompleta": "4/4",
+          "várias mensagens": "4/4",
+          "manual": "14/14",
+          "fora do escopo": "8/10",
+          "esquecer": "6/6",
+          "indefinida": "8/8"
+        },
+        "acerta_em_todas_as_rodadas": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      "diferenca_fora_do_prompt": -1.0,
+      "casos_que_saíram": [
+        5
+      ],
+      "casos_que_entraram": [],
+      "veredito": "faz diferença"
+    }
+  }
+}

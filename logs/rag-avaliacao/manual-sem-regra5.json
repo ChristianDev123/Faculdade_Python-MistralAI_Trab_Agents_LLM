@@ -1,0 +1,98 @@
+{
+  "commit": "b1880be",
+  "codigo_limpo": true,
+  "arquivos_alterados": [],
+  "data": "2026-10-18",
+  "modelo": "qwen2.5:7b",
+  "contexto_ollama": "8192",
+  "prompts": {
+    "extracao.md": "dcfc251e172c",
+    "leitor_manual_pdf/tool_call_leitura_pdf.md": "6ea02d3b88d4",
+    "procedural.md": "02dd05f431ac",
+    "webscrapper/tool_scrapping.md": "05f6cdea7fe1"
+  },
+  "rotulo": "sem-regra5",
+  "rodadas": [
+    {
+      "respondeu": 16,
+      "com_fato": 15,
+      "recusou": 14,
+      "falsas": 0,
+      "erros": 0,
+      "por_pergunta": {
+        "Qual a capacidade do tanque de combustível?": true,
+        "Quantos litros cabem no tanque do Fox?": true,
+        "Como montar a argola de reboque dianteira?": true,
+        "Onde coloco a argola para rebocar o carro?": true,
+        "Como trocar a lâmpada do farol?": true,
+        "Queimou a lâmpada do farol, como substituo?": true,
+        "Como substituir a bateria do veículo?": false,
+        "O que devo fazer antes de desconectar a bateria?": true,
+        "Qual a pressão máxima de inflação do pneu?": true,
+        "Quantos kPa suporta o pneu no máximo?": true,
+        "A luz de advertência da pressão do óleo indica o nível do óleo?": true,
+        "O que significa a luz da pressão do óleo no painel?": true,
+        "Como funciona o desembaçador do vidro traseiro?": true,
+        "Como desembaçar o vidro de trás?": false,
+        "O pó que sai do airbag é perigoso?": false,
+        "É normal sair fumaça ou pó quando o airbag dispara?": true,
+        "Posso lavar o carro com lavador de alta pressão?": true,
+        "Cuidados ao lavar o veículo com jato de alta pressão": true
+      }
+    },
+    {
+      "respondeu": 16,
+      "com_fato": 15,
+      "recusou": 14,
+      "falsas": 0,
+      "erros": 0,
+      "por_pergunta": {
+        "Qual a capacidade do tanque de combustível?": true,
+        "Quantos litros cabem no tanque do Fox?": true,
+        "Como montar a argola de reboque dianteira?": true,
+        "Onde coloco a argola para rebocar o carro?": true,
+        "Como trocar a lâmpada do farol?": true,
+        "Queimou a lâmpada do farol, como substituo?": true,
+        "Como substituir a bateria do veículo?": false,
+        "O que devo fazer antes de desconectar a bateria?": true,
+        "Qual a pressão máxima de inflação do pneu?": true,
+        "Quantos kPa suporta o pneu no máximo?": true,
+        "A luz de advertência da pressão do óleo indica o nível do óleo?": true,
+        "O que significa a luz da pressão do óleo no painel?": true,
+        "Como funciona o desembaçador do vidro traseiro?": true,
+        "Como desembaçar o vidro de trás?": false,
+        "O pó que sai do airbag é perigoso?": false,
+        "É normal sair fumaça ou pó quando o airbag dispara?": true,
+        "Posso lavar o carro com lavador de alta pressão?": true,
+        "Cuidados ao lavar o veículo com jato de alta pressão": true
+      }
+    },
+    {
+      "respondeu": 16,
+      "com_fato": 15,
+      "recusou": 14,
+      "falsas": 0,
+      "erros": 0,
+      "por_pergunta": {
+        "Qual a capacidade do tanque de combustível?": true,
+        "Quantos litros cabem no tanque do Fox?": true,
+        "Como montar a argola de reboque dianteira?": true,
+        "Onde coloco a argola para rebocar o carro?": true,
+        "Como trocar a lâmpada do farol?": true,
+        "Queimou a lâmpada do farol, como substituo?": true,
+        "Como substituir a bateria do veículo?": false,
+        "O que devo fazer antes de desconectar a bateria?": true,
+        "Qual a pressão máxima de inflação do pneu?": true,
+        "Quantos kPa suporta o pneu no máximo?": true,
+        "A luz de advertência da pressão do óleo indica o nível do óleo?": true,
+        "O que significa a luz da pressão do óleo no painel?": true,
+        "Como funciona o desembaçador do vidro traseiro?": true,
+        "Como desembaçar o vidro de trás?": false,
+        "O pó que sai do airbag é perigoso?": false,
+        "É normal sair fumaça ou pó quando o airbag dispara?": true,
+        "Posso lavar o carro com lavador de alta pressão?": true,
+        "Cuidados ao lavar o veículo com jato de alta pressão": true
+      }
+    }
+  ]
+}

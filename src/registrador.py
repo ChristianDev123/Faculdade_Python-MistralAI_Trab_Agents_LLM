@@ -1,19 +1,22 @@
 import sys
 from pathlib import Path
-sys.path.append(Path(__file__).resolve().parent.parent)
-from interfaces.agent import Agent
-from interfaces.message import Message
-from interfaces.json_format import createJsonFormat
-from openai import OpenAI
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import hashlib
 import sqlite3
 import json
 
+# Coluna interna: hash do conteúdo da linha. Não aparece para o modelo, só impede gravar a mesma linha duas vezes.
+CHAVE = 'chave_idempotencia'
+# Colunas que não entram no hash do conteúdo: a mesma dúvida respondida duas vezes é a mesma linha, não importa a hora.
+FORA_DA_CHAVE = {'log_interacoes': ('created_at',)}
+# Linhas que existiam antes de a tabela ter dono e data recebem estes valores na migração (a data é aproximada).
+DEFAULT_DE_COLUNA_NOVA = {'log_interacoes': {'user_id': 'legado', 'created_at': '2026-10-12T00:00:00+00:00'}}
 
-class Registrador(Agent):
-    
-    def __init__(self, client:OpenAI):
-        super().__init__('registrador',client, f_entrada="", f_saida="")
-        self.send_message(Message('system',self.read_system_prompts('registrador_system_prompt.md')))
+
+class Registrador:
+    """Acesso ao SQLite local. Só regra em código: nenhuma chamada de modelo passa por aqui."""
+
+    def __init__(self):
         self.PATH_DATABASE = Path(__file__).resolve().parent.parent / 'databases'
         self.tabelas_criadas = []
         self._cria_tabela('log_interacoes', [
@@ -23,7 +26,16 @@ class Registrador(Agent):
             'motorizacao VARCHAR(150)',
             'duvida_usuario TEXT',
             'kws_duvida_usuario TEXT',
-            'resolucao TEXT'
+            'resolucao TEXT',
+            'user_id VARCHAR(100)',
+            'created_at VARCHAR(40)'
+        ])
+        self._cria_tabela('memoria_semantica', [
+            'id INTEGER PRIMARY KEY AUTOINCREMENT',
+            'user_id VARCHAR(100)',
+            'entidade VARCHAR(50)',
+            'valor TEXT',
+            'created_at VARCHAR(40)'
         ])
         self._cria_tabela('webcatalogos', [
             'id INTEGER PRIMARY KEY AUTOINCREMENT',
@@ -41,124 +53,191 @@ class Registrador(Agent):
             'carros_compatíveis TEXT',           
         ])
         self._default_data()
-        self.send_message(Message('system', f"Ao Realizar uma operação, você estritamente só poderá escolher entre as tabelas :[{','.join(self.tabelas_criadas)}]"))
-        self.tool_calls = []
-        self.tool_calls_func = {}
 
     def _default_data(self):
-        if(len(self._get_data('webcatalogos')) == 0):
-            datalist = [
-                {
-                    "fabricante":'Volkswagen',
-                    'link':'https://pecas.vw.com.br/todas-categorias',
-                    'regra':'q=<modelo> + <ano> + <motorizacao>&page=<num_page>'
-                },
-                {
-                    'fabricante': 'chevrolet',
-                    'link':'https://www.pecachevrolet.com.br/pesquisa',
-                    'regra':'nomepeca=<motorizacao>&nomeveiculo=<modelo>&ano=<ano>'
-                }
-            ]
-            for data in datalist: 
-                self._inserir_tabela('webcatalogos',data)
+        # Esta lista é a fonte da verdade dos catálogos: o ausente é criado e o gravado com link ou regra
+        # diferentes é corrigido. As lacunas <...> da regra são preenchidas por WebScrapper._get_data.
+        catalogos = [
+            {
+                "fabricante":'Volkswagen',
+                'link':'https://pecas.vw.com.br/todas-categorias',
+                'regra':'q=<modelo> + <ano> + <motorizacao>&page=<num_page>'
+            },
+            {
+                'fabricante': 'chevrolet',
+                'link':'https://www.pecachevrolet.com.br/pesquisa',
+                'regra':'nomepeca=<nome_peca>&nomeveiculo=<modelo>&ano=<ano>'
+            }
+        ]
+        for data in catalogos:
+            existentes = self._get_data('webcatalogos', {'fabricante': data['fabricante']})
+            if not existentes:
+                self.inserir('webcatalogos', data)
+            elif any(existentes[0][campo] != valor for campo, valor in data.items()):
+                self._atualizar_catalogo(existentes[0]['id'], data)
 
-    def _get_data(self, tablename:str, filter:list[str] = []):
+    def _atualizar_catalogo(self, id_linha:int, data:dict) -> None:
+        print(f"--- CORRIGINDO CATÁLOGO GRAVADO: {data['fabricante']} ---")
+        chave = self._chave('webcatalogos', data)
+        with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
+            conn.execute(
+                f"UPDATE webcatalogos SET fabricante=?, link=?, regra=?, {CHAVE}=? WHERE id=?",
+                (data['fabricante'], data['link'], data['regra'], chave, id_linha)
+            )
+
+    def _validar_tabela(self, tablename:str) -> None:
+        # Nome de tabela não pode ser parametrizado em SQL: só entra na query se estiver na lista fixa.
+        if tablename not in self.tabelas_criadas:
+            raise ValueError(f"Tabela '{tablename}' não existe. Tabelas disponíveis: {self.tabelas_criadas}")
+
+    def _colunas(self, tablename:str) -> list[tuple[str, str]]:
+        """(nome, tipo) de cada coluna visível da tabela, na ordem em que foram criadas."""
+        self._validar_tabela(tablename)
+        with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
+            return [(col[1], str(col[2]).upper()) for col in conn.execute(f"PRAGMA table_info({tablename})") if col[1] != CHAVE]
+
+    def esquema(self) -> dict[str, list[str]]:
+        """{tabela: [colunas]}: o que o modelo precisa saber para montar filtros válidos."""
+        return {t: [nome for nome, _ in self._colunas(t)] for t in self.tabelas_criadas}
+
+    def _get_data(self, tablename:str, filter:dict|None = None):
+        colunas = dict(self._colunas(tablename))
+        where, params = [], []
+        for coluna, valor in (filter or {}).items():
+            if coluna not in colunas:
+                raise ValueError(f"Coluna '{coluna}' não existe em '{tablename}'. Colunas disponíveis: {list(colunas)}")
+            if any(t in colunas[coluna] for t in ('CHAR', 'TEXT')):
+                where.append(f"{coluna} LIKE ? COLLATE NOCASE")
+                params.append(f"%{valor}%")
+            else:
+                where.append(f"{coluna} = ?")
+                params.append(valor)
+        sql = f"SELECT {','.join(colunas)} FROM {tablename}" + (f" WHERE {' AND '.join(where)}" if where else "")
         with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
             conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute(f"""SELECT * FROM {tablename}""")
-            return [dict(line) for line in cursor.fetchall()]
-        
-    def _get_db_json_format(self, tablename):
+            return [dict(line) for line in conn.execute(sql, params).fetchall()]
+
+    def resgatar(self, tablename:str, filtros:dict|None = None):
+        """Leitura com erro como dado: tabela ou coluna inválida volta como {'erro': ...} listando o que existe."""
+        if filtros is not None and not isinstance(filtros, dict):
+            return {'erro': 'Os filtros devem ser um objeto no formato {coluna: valor}'}
+        try:
+            return self._get_data(tablename, filtros)
+        except ValueError as err:
+            return {
+                'erro': str(err),
+                'dica': (
+                    "Refaça a consulta usando somente as tabelas e colunas de 'esquema'; "
+                    "se o filtro inválido não for essencial, omita-o ou envie query_filter {}. "
+                    "O erro é da consulta, não do usuário: não peça a ele que confirme dados por causa dele."
+                ),
+                'esquema': self.esquema(),
+            }
+
+    def _onde_exato(self, tablename:str, filtros:dict) -> tuple[str, list]:
+        colunas = {nome for nome, _ in self._colunas(tablename)}
+        invalidas = [c for c in filtros if c not in colunas]
+        if invalidas or not filtros:
+            raise ValueError(f"Filtro exato inválido em '{tablename}': {invalidas or 'vazio'}. Colunas: {sorted(colunas)}")
+        return ' AND '.join(f"{c} = ?" for c in filtros), list(filtros.values())
+
+    def buscar_exato(self, tablename:str, filtros:dict) -> list[dict]:
+        """Igualdade exata (ao contrário de `resgatar`, que casa texto por "contém"): para chaves como user_id."""
+        onde, params = self._onde_exato(tablename, filtros)
+        colunas = [nome for nome, _ in self._colunas(tablename)]
         with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
-            cursor = conn.cursor()
-            cursor.execute(f"PRAGMA table_info({tablename})")
+            conn.row_factory = sqlite3.Row
+            return [dict(l) for l in conn.execute(f"SELECT {','.join(colunas)} FROM {tablename} WHERE {onde}", params)]
 
-            # Estrutura: cid, nome_campo, tipo campo, not null (0=false, 1=true), default_value, primary key (0=False, 1=True)
-            columns = cursor.fetchall()
+    def apagar_exato(self, tablename:str, filtros:dict) -> int:
+        """Remove as linhas que casam exatamente com todos os filtros e devolve quantas saíram."""
+        onde, params = self._onde_exato(tablename, filtros)
+        with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
+            return conn.execute(f"DELETE FROM {tablename} WHERE {onde}", params).rowcount
 
-            type_str = ['VARCHAR', 'TEXT', 'CHAR']
-            
-            list_props = [
-                {
-                    'name':col[1], 
-                    'type':str(col[2]).lower() if not any(map(lambda x: x in col[2], type_str)) else 'string' 
-                } 
-                for col in columns if(col[1] != 'id')]
-            return createJsonFormat(f'{tablename}_json_format', list_props)
-            
+    def compactar(self) -> None:
+        """VACUUM: DELETE deixa o dado em páginas livres do arquivo; compactar o sobrescreve de verdade."""
+        conn = sqlite3.connect(self.PATH_DATABASE / 'db.sqlite')
+        try:
+            conn.execute('VACUUM')
+        finally:
+            conn.close()
+
     def _cria_tabela(self, tablename, fields:list[str]):
         self.tabelas_criadas.append(tablename)
         with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
             cursor = conn.cursor()
             cursor.execute(f"CREATE TABLE IF NOT EXISTS {tablename}({','.join(fields)})")
+        self._garantir_colunas(tablename, fields)
+        self._garantir_chave(tablename)
 
-    def _inserir_tabela(self, tablename, data:dict):
+    def _garantir_colunas(self, tablename:str, fields:list[str]) -> None:
+        """Migra bancos antigos: acrescenta colunas que a definição ganhou. A chave das linhas antigas é recalculada."""
+        with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
+            existentes = {c[1] for c in conn.execute(f"PRAGMA table_info({tablename})")}
+            novas = [f for f in fields if f.split()[0] not in existentes]
+            for definicao in novas:
+                conn.execute(f"ALTER TABLE {tablename} ADD COLUMN {definicao}")
+            if novas:
+                for coluna, valor in DEFAULT_DE_COLUNA_NOVA.get(tablename, {}).items():
+                    conn.execute(f"UPDATE {tablename} SET {coluna} = ? WHERE {coluna} IS NULL", (valor,))
+                if CHAVE in existentes:
+                    conn.execute(f"UPDATE {tablename} SET {CHAVE} = NULL")
+
+    def _chave_de(self, colunas:list[str], dados:dict, ignorar:tuple = ()) -> str:
+        """Hash do conteúdo: mesmas colunas e mesmos valores (sem diferenciar maiúsculas ou espaços) dão a mesma chave."""
+        canonico = {c: ('' if dados.get(c) is None else str(dados[c]).strip().casefold()) for c in colunas if c not in ignorar}
+        return hashlib.sha256(json.dumps(canonico, ensure_ascii=False, sort_keys=True).encode('utf-8')).hexdigest()
+
+    def _chave(self, tablename:str, dados:dict) -> str:
+        return self._chave_de([nome for nome, _ in self._colunas(tablename) if nome != 'id'], dados, FORA_DA_CHAVE.get(tablename, ()))
+
+    def _garantir_chave(self, tablename:str) -> None:
+        """Migra bancos antigos: cria a coluna da chave, preenche as linhas existentes e impede novas duplicatas."""
+        with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
+            colunas = [c[1] for c in conn.execute(f"PRAGMA table_info({tablename})")]
+            if CHAVE not in colunas:
+                conn.execute(f"ALTER TABLE {tablename} ADD COLUMN {CHAVE} TEXT")
+            visiveis = [c for c in colunas if c not in ('id', CHAVE)]
+            conn.row_factory = sqlite3.Row
+            usadas = {r[0] for r in conn.execute(f"SELECT {CHAVE} FROM {tablename} WHERE {CHAVE} IS NOT NULL")}
+            for linha in conn.execute(f"SELECT id, {','.join(visiveis)} FROM {tablename} WHERE {CHAVE} IS NULL").fetchall():
+                chave = self._chave_de(visiveis, dict(linha), FORA_DA_CHAVE.get(tablename, ()))
+                if chave in usadas: continue  # duplicata antiga: fica sem chave, o índice único ignora NULL
+                conn.execute(f"UPDATE {tablename} SET {CHAVE}=? WHERE id=?", (chave, linha['id']))
+                usadas.add(chave)
+            conn.execute(f"CREATE UNIQUE INDEX IF NOT EXISTS ux_{tablename}_{CHAVE} ON {tablename}({CHAVE})")
+
+    def _inserir_tabela(self, tablename, data:dict) -> dict:
         print(f"""
             --- REALIZANDO INSERÇÃO EM BASE ---
                 - nm_tabela: {tablename}
                 - dados: {data}
         """)
+        colunas = [nome for nome, _ in self._colunas(tablename) if nome != 'id']
+        dados = {k: v for k, v in data.items() if k != 'id'}
+        desconhecidas = [k for k in dados if k not in colunas]
+        if desconhecidas:
+            raise ValueError(f"Colunas inexistentes em '{tablename}': {desconhecidas}. Colunas disponíveis: {colunas}")
+        chave = self._chave_de(colunas, dados, FORA_DA_CHAVE.get(tablename, ()))
+        cols = [c for c in colunas if c in dados]
         with sqlite3.connect(self.PATH_DATABASE / 'db.sqlite') as conn:
-            cursor = conn.cursor()
-            cursor.execute(f"SELECT * FROM {tablename} LIMIT 0")
-            if(data.get('id')): del data['id']
-            cols = [str(col[0]) for col in cursor.description if(str(col[0]) != 'id')]
-            desc_db = self._get_db_json_format(tablename)['json_schema']['schema']['properties']
-            ordenated_data=dict(sorted(data.items(), key=lambda item: cols.index(item[0])))
-            def func_map(key):    
-                if(str(desc_db[key]['type']).lower() in ['integer', 'float', 'decimal']):
-                    return str(ordenated_data[key])
-                else:
-                    return f"'{ordenated_data[key]}'"
-            ordenated_data = list(map(func_map, ordenated_data.keys()))
-            cursor.execute(f"""
-                INSERT INTO {tablename} 
-                ({','.join(cols)})
-                VALUES
-                ({','.join(ordenated_data)})
-            """)
+            existente = conn.execute(f"SELECT id FROM {tablename} WHERE {CHAVE} = ?", (chave,)).fetchone()
+            if existente:
+                return {'ja_existia': True, 'id': existente[0]}
+            cursor = conn.execute(
+                f"INSERT INTO {tablename} ({','.join(cols + [CHAVE])}) VALUES ({','.join('?' * (len(cols) + 1))})",
+                [dados[c] for c in cols] + [chave]
+            )
+        return {'ja_existia': False, 'id': cursor.lastrowid}
 
-    def _loop_insert_data(self, sys_message):
-        conteudo = json.loads(sys_message['conteudo'])
-        json_format = self._get_db_json_format(conteudo['nm_tabela'])
-        messages = [
-            Message('system', 'Estruture os dados que serão enviados pelo o usuário em um json').to_dict(),
-            Message('user', str(conteudo['dado_a_ser_registrado'])).to_dict()
-        ] 
-        response = json.loads(self.client.chat.completions.create(
-            model= self.model,
-            messages=messages,
-            response_format=json_format,
-            temperature=0
-        ).choices[0].message.content)
+    def inserir(self, tablename:str, dados:dict) -> dict:
+        """Escrita idempotente, com erro como dado. A chave vem do conteúdo: repetir a chamada não grava de novo."""
         try:
-            self._inserir_tabela(conteudo['nm_tabela'], response)
-            return {'Sucesso': 'Linha registrada com sucesso!'}
-        except Exception as err:
-            print(err)
-            return {'Erro':'Falha ao tentar inserir registro!'}
-
-    def _loop_select_data(self, sys_message):
-        conteudo = json.loads(sys_message['conteudo'])
-        try:
-            response = self._get_data(conteudo['nm_tabela'],[])
-            return response
-        except Exception as err:
-            print(err)
-            return {'Erro': 'Falha ao tentar recuperar dados'}
-   
-    def run(self):
-        response_format = createJsonFormat('loop_json_format', [
-            {'name':'pensamento', 'type':'string'},
-            {'name':'acao', 'type':'string', 'enum':["RESGATAR_DADOS", "INSERIR_DADOS"]},
-            {'name':'conteudo', 'type':'string'},
-        ])
-        for _ in range(1):
-            self.send_message(Message('system','escolha qual será o proximo passo.'))
-            sys_message = json.loads(self.get_answer(response_format=response_format).content)
-            
-            if(sys_message['acao'] == "INSERIR_DADOS"):
-                return self._loop_insert_data(sys_message)
-            elif(sys_message['acao'] == "RESGATAR_DADOS"):
-                return self._loop_select_data(sys_message)
+            resultado = self._inserir_tabela(tablename, dados)
+        except (ValueError, sqlite3.Error) as err:
+            return {'erro': f'Falha ao inserir em {tablename}: {err}'}
+        return {
+            'sucesso': 'Linha já existia, nada foi gravado.' if resultado['ja_existia'] else 'Linha registrada com sucesso!',
+            **resultado
+        }

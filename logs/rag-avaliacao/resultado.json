@@ -1,0 +1,192 @@
+{
+  "commit": "b1880be",
+  "codigo_limpo": true,
+  "arquivos_alterados": [],
+  "data": "2026-10-18",
+  "modelo": "qwen2.5:7b",
+  "resultados": [
+    {
+      "id": 1,
+      "pergunta": "Qual o código da palheta traseira do Corsa 2008 1.4 da Chevrolet?",
+      "forma": "consulta estruturada",
+      "ok": true,
+      "pausou_para_aprovacao": false,
+      "situacao": "respondido",
+      "motivo": "respondido",
+      "suficiencia": true,
+      "fonte": [
+        "base_local"
+      ],
+      "chamadas_ao_modelo": 1,
+      "segundos": 3.6,
+      "resultado": "Encontrei 1 peça(s) para Corsa 2008 1.4 na base local:\n  1. Palheta traseira ACDelco — código 93356933",
+      "coberta_pelo_grafo": true
+    },
+    {
+      "id": 2,
+      "pergunta": "Qual o código da roda de liga leve do Corsa 2008 1.4 da Chevrolet?",
+      "forma": "consulta estruturada",
+      "ok": true,
+      "pausou_para_aprovacao": false,
+      "situacao": "sem_base",
+      "motivo": "sem_base",
+      "suficiencia": false,
+      "fonte": [
+        "memoria_semantica",
+        "base_local"
+      ],
+      "chamadas_ao_modelo": 1,
+      "segundos": 1.8,
+      "resultado": "Encontrei \"Roda de liga leve\" para Corsa 2008 1.4 no catálogo, mas sem código cadastrado. Sem o código não indico a peça; confirme no balcão ou com o distribuidor.",
+      "coberta_pelo_grafo": true
+    },
+    {
+      "id": 3,
+      "pergunta": "Qual a capacidade do tanque de combustível do meu Fox 2015?",
+      "forma": "busca textual",
+      "ok": true,
+      "pausou_para_aprovacao": false,
+      "situacao": "respondido",
+      "motivo": "respondido",
+      "suficiencia": true,
+      "fonte": [
+        "memoria_semantica",
+        "memoria_episodica",
+        "manual_pdf"
+      ],
+      "chamadas_ao_modelo": 2,
+      "segundos": 16.7,
+      "resultado": "A capacidade do tanque de combustível é de aproximadamente 50 litros.\n(Manual Volkswagen_Fox_2015.pdf, páginas [195, 196, 197])\nObs.: Considerei modelo = Fox (antes: Corsa).\nObs.: Considerei ano = 2015 (antes: 2008).\nObs.: Considerei fabricante = Volkswagen (antes: Chevrolet).\nObs.: Como o modelo mudou, descartei motorizacao do veículo anterior.",
+      "coberta_pelo_grafo": true
+    },
+    {
+      "id": 4,
+      "pergunta": "O meu Fox 2015 pode ser rebocado se a transmissão estiver sem lubrificante?",
+      "forma": "busca textual",
+      "ok": true,
+      "pausou_para_aprovacao": false,
+      "situacao": "respondido",
+      "motivo": "respondido",
+      "suficiencia": true,
+      "fonte": [
+        "memoria_semantica",
+        "memoria_episodica",
+        "manual_pdf"
+      ],
+      "chamadas_ao_modelo": 2,
+      "segundos": 4.8,
+      "resultado": "O veículo não pode ser rebocado se a transmissão estiver sem lubrificante.\n(Manual Volkswagen_Fox_2015.pdf, páginas [158, 312, 313, 317])",
+      "coberta_pelo_grafo": true
+    },
+    {
+      "id": 5,
+      "pergunta": "Posso lavar o meu Fox 2015 com lavador de alta pressão?",
+      "forma": "busca textual",
+      "ok": true,
+      "pausou_para_aprovacao": false,
+      "situacao": "respondido",
+      "motivo": "respondido",
+      "suficiencia": true,
+      "fonte": [
+        "memoria_semantica",
+        "memoria_episodica",
+        "manual_pdf"
+      ],
+      "chamadas_ao_modelo": 2,
+      "segundos": 6.5,
+      "resultado": "É possível lavar o veículo com lavador de alta pressão, mas é necessário seguir as orientações de segurança e utilizar a pressão e distância corretas.\n(Manual Volkswagen_Fox_2015.pdf, páginas [226, 228, 322, 325, 327])",
+      "coberta_pelo_grafo": true
+    },
+    {
+      "id": 6,
+      "pergunta": "Quais são os períodos de manutenção do meu Fox 2015?",
+      "forma": "busca textual (a resposta não está no corpus)",
+      "ok": true,
+      "pausou_para_aprovacao": false,
+      "situacao": "sem_base",
+      "motivo": "sem_base",
+      "suficiencia": false,
+      "fonte": [
+        "memoria_semantica",
+        "memoria_episodica",
+        "manual_pdf"
+      ],
+      "chamadas_ao_modelo": 2,
+      "segundos": 3.5,
+      "resultado": "O manual Volkswagen_Fox_2015.pdf não traz uma resposta clara para essa dúvida. Os trechos não informam os períodos de manutenção. Consulte a concessionária para confirmar.",
+      "coberta_pelo_grafo": true
+    },
+    {
+      "id": 7,
+      "pergunta": "Quantos litros cabem no tanque do meu Fox 2015?",
+      "forma": "busca vetorial (memória episódica: pergunta já respondida com outras palavras)",
+      "ok": true,
+      "pausou_para_aprovacao": false,
+      "situacao": "respondido",
+      "motivo": "respondido",
+      "suficiencia": true,
+      "fonte": [
+        "memoria_semantica",
+        "memoria_episodica",
+        "manual_pdf"
+      ],
+      "chamadas_ao_modelo": 2,
+      "segundos": 4.4,
+      "resultado": "O tanque do Fox 2015 tem capacidade de aproximadamente 50 litros de combustível.\n(Manual Volkswagen_Fox_2015.pdf, páginas [23, 196, 197, 211])",
+      "coberta_pelo_grafo": true
+    },
+    {
+      "id": 8,
+      "pergunta": "Que carros usam a palheta traseira ACDelco de código 93356933?",
+      "forma": "grafo (relação peça -> veículos)",
+      "ok": false,
+      "pausou_para_aprovacao": false,
+      "situacao": "faltam_dados",
+      "motivo": "faltam_dados",
+      "suficiencia": false,
+      "fonte": [
+        "memoria_semantica"
+      ],
+      "chamadas_ao_modelo": 1,
+      "segundos": 2.1,
+      "resultado": "Qual é a motorização do veículo (por exemplo 1.0 ou 1.6)?\nObs.: Usei o veículo que você informou antes (Fox 2015). Se mudou, é só dizer.",
+      "coberta_pelo_grafo": false
+    },
+    {
+      "id": 9,
+      "pergunta": "Quais são as dúvidas de manual mais perguntadas?",
+      "forma": "agregação (pré-cálculo)",
+      "ok": false,
+      "pausou_para_aprovacao": false,
+      "situacao": "faltam_dados",
+      "motivo": "faltam_dados",
+      "suficiencia": false,
+      "fonte": [
+        "memoria_semantica"
+      ],
+      "chamadas_ao_modelo": 1,
+      "segundos": 1.5,
+      "resultado": "Você procura uma peça compatível com o seu veículo ou quer tirar uma dúvida do manual do proprietário?",
+      "coberta_pelo_grafo": false
+    },
+    {
+      "id": 10,
+      "pergunta": "O meu Fox 2020 tem Android Auto e Apple CarPlay?",
+      "forma": "busca textual",
+      "ok": true,
+      "pausou_para_aprovacao": false,
+      "situacao": "respondido",
+      "motivo": "respondido",
+      "suficiencia": true,
+      "fonte": [
+        "memoria_semantica",
+        "memoria_episodica",
+        "manual_pdf"
+      ],
+      "chamadas_ao_modelo": 2,
+      "segundos": 65.8,
+      "resultado": "O manual menciona explicitamente o suporte para Android Auto™ e Apple CarPlay™.\n(Manual Volkswagen_Fox_2020.pdf, páginas [141, 143, 144, 285, 291, 292])\nObs.: Considerei ano = 2020 (antes: 2015).",
+      "coberta_pelo_grafo": true
+    }
+  ]
+}

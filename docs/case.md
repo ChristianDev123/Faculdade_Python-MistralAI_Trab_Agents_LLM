@@ -29,10 +29,6 @@ confirmação do fornecedor.
 - Compatibilidade depende de modelo + versão + motorização, não só modelo e ano
   — é a mesma lógica que o próprio setor usa para prever demanda de peças
   (Sistema de Informações de Frota e Demanda do Sindipeças).
-- Existem três categorias de peça, com implicação direta de confiabilidade: **genuína**
-  (fabricada pela montadora, vendida em concessionária), **original** (fornecedor
-  homologado, marca própria, vendida no varejo) e **paralela/genérica** (terceiros,
-  sem homologação da montadora, mais barata e com variação de qualidade).
 - Desde 2019 as seguradoras não são obrigadas a usar peça original em sinistro
   parcial, o que ampliou o uso de peça paralela no mercado e, com isso, o risco de
   retrabalho quando a compatibilidade é mal verificada.
@@ -226,3 +222,70 @@ dado pessoal, financeiro ou de saúde.
 |---|---|
 | Acesso à API pública de peças pode não ter cobertura suficiente pra todos os modelos testados | Realizar Webscrapping |
 | Em caso do webscrapping não ser possível por conta da forma de desenvolvimento das páginas web | Utilizar dados mocados |
+
+
+# 2.12 O que o domínio ensinou (complemento da Parte 2)
+
+> **RASCUNHO para revisão.** Cada item traz **como sabemos**: ou foi **observado no sistema rodando** (com o arquivo onde está a prova), ou é **conhecimento de balcão** que só quem atende confirma. O que está marcado com **[confirmar]** não foi verificado por medição nenhuma e deve ser corrigido, ou apagado.
+
+## 2.12.1 O vocabulário que ninguém de fora entende
+
+| Termo | O que quer dizer aqui | Como sabemos |
+|---|---|---|
+| **Nº original GM** | o código da peça no catálogo da Chevrolet, o número que o mecânico leva ao balcão. No site ele também é o trecho do endereço do link (`/peca/19376259/…`) | observado: em 194 dos 202 cartões de uma busca os dois são iguais (`docs/prompts.md` §5) |
+| **Aplicações** | os carros em que a peça serve, escritos **por geração e carroceria** ("Onix A Hatch", "Corsa B Sedan", "Prisma B"), e não por ano | observado no catálogo; o sistema guarda o texto como está e **não converte o ano do usuário para a geração** (ver 2.12.6) |
+| **"Compatível com"** | equivalências de outras marcas para a mesma peça (BOSCH, VALEO, DYNA); aparece em poucos cartões (2 de 202) | observado (`docs/prompts.md` §5) |
+| **Lado esquerdo / lado direito** | a peça é uma para cada lado, com código diferente e **o mesmo nome**; o lado aparece como linha à parte no cartão (107 de 202) | observado. O sistema agora acrescenta o lado ao nome da peça ("… (Lado esquerdo)"); antes, na lista de aprovação as duas pareciam repetidas |
+| **Esgotado** | o cartão traz o aviso "Ooops, o estoque acabou" no lugar do preço (12 de 202); o código existe mesmo assim | observado. O sistema não guarda preço nem disponibilidade |
+| **Caderno "Manutenção e garantia"** | publicação à parte, a que o manual do proprietário remete para os períodos de revisão | observado: manual do Fox 2015, páginas 176, 211 e 219 (`docs/rag.md` §3) |
+| **Genuína, original, paralela** | as três categorias de peça da seção 2.1 | fontes da Parte 1 (`docs/fontes.md`, itens 1 a 4) |
+
+## 2.12.2 As regras que o sistema teve de aprender
+
+1. **Quem pede a peça fala o modelo do carro, não a montadora.** "Corsa 2008", e não "Chevrolet Corsa". O catálogo, porém, é **por montadora**: o sistema completa a montadora a partir do modelo com uma lista curta escrita pelo grupo (`MODELO_FABRICANTE`, em `src/nos.py`: Fox, Gol, Corsa, Onix, Palio, Corolla, Civic e mais alguns). Modelo fora da lista gera a pergunta "qual a montadora?". *Como sabemos:* observado, casos 2, 3, 4 e 6 de `dados/casos_extracao.json`. **[confirmar]** se a lista cobre os modelos que aparecem no balcão.
+2. **A motorização é parte da identidade da peça** (já estava na seção 2.1) **e nem sempre vem na primeira frase.** O sistema pergunta, uma coisa de cada vez, em vez de escolher uma. *Como sabemos:* observado, cenários `incompleta` e `ambigua` (`docs/io.md`).
+3. **O manual vale para um ano exato.** O Fox 2015 e o Fox 2020 respondem diferente (o de 2020 tem Android Auto e Apple CarPlay; o de 2015 não menciona nenhum dos dois). Um sistema que busca nos dois ao mesmo tempo devolve a resposta do carro errado. Por isso a escolha do manual é uma regra em código, por modelo **e** ano, e um Fox 2018 recebe "não tenho o manual do Fox 2018", sem aproximação para o mais próximo. *Como sabemos:* medido, `docs/rag.md` §2. **[confirmar]** quais anos cada edição do manual cobre (um Fox 2016 a 2019 hoje fica sem manual).
+4. **"Peça sem código" é "não encontrei", nunca "mais ou menos".** No cadastro, uma roda de liga leve do Corsa existe, mas sem código ("N/A"). A resposta certa é dizer que a peça existe e que não há código, e mandar confirmar no balcão ou com o distribuidor. Antes de corrigirmos, o sistema respondia "código N/A" como se fosse resposta. *Como sabemos:* observado e corrigido, pergunta 2 de `docs/rag.md` §3.
+5. **Pedido de compra, reserva, preço e "onde comprar" estão fora do escopo**, mesmo quando a frase cita peça e veículo, assim como **diagnosticar defeito** ("meu carro está fazendo um barulho na roda, o que pode ser?"). *Como sabemos:* regras de `src/prompts/procedural.md` e casos 18 a 22 de `dados/casos_extracao.json`; o diagnóstico (caso 21) é o único caso em que o modelo local ainda erra a classificação (`docs/prompts.md` §3).
+6. **Dado novo do veículo vale mais que o lembrado.** Quem disse "Fox 2015" e depois diz "Fox 2020" quer o 2020, e o sistema avisa que mudou ("Considerei ano = 2020 (antes: 2015)"). Se o **modelo** muda, a motorização antiga é descartada, porque não é mais a do mesmo carro. *Como sabemos:* observado, cenário `divergencia`.
+
+## 2.12.3 As exceções que decidiram a arquitetura
+
+| Exceção | O que ela mudou no sistema | Como sabemos |
+|---|---|---|
+| **A palavra aparece, a resposta não.** "Trocar a embreagem" aparece 28 vezes no manual, só no uso do pedal. Um índice ou sumário também "menciona" o assunto sem respondê-lo | a leitura do manual tem uma regra explícita (índice e sumário nunca respondem) e um conjunto de 14 perguntas sem resposta no manual, para medir a falsa resposta (0 em 14) | medido, `docs/rag.md` §6.3 |
+| **A regra tem exceção escondida no mesmo parágrafo.** Rebocar o Fox é permitido, **exceto** com a transmissão sem lubrificante; lavar com jato de alta pressão pode, mas com distância dos pneus | eram as duas perguntas que o modelo local errava na leitura do manual; viraram o teste da leitura (hoje respondem, `docs/rag.md` §3) | medido, `docs/rag.md` §3 e §6.2 |
+| **O catálogo traz centenas de peças para uma busca de uma.** A busca "palheta traseira" devolveu 202 cartões (portas, tampas, painéis, mola…) | a lista que a pessoa aprova antes de gravar ficava enorme; o sistema agora fica só com as peças que têm as palavras do pedido no nome (198 viram 1 para a palheta). **Não conhece sinônimo**: "limpador de para-brisa" não casa com "Palheta" | observado, `docs/prompts.md` §5.3 e §5.4 |
+| **O código existe no endereço do link, mas o modelo o inventava.** Lendo a página inteira, o modelo local devolvia códigos que não estavam nela (57% a 62%) | a leitura passou a ser em código; o modelo é só reserva e o código devolvido é conferido contra o texto | medido, `docs/prompts.md` §5 |
+| **Peça esgotada continua sendo peça.** O cartão mostra o aviso de estoque no lugar do preço, mas o código serve | o sistema não confunde "esgotado" com "inexistente" porque não guarda disponibilidade | observado |
+
+## 2.12.4 O passo que parecia um e são vários
+
+A seção 2.3 descreve "consulta, registro e apresentação". Na prática, **achar a peça** são cinco passos, um deles de uma pessoa:
+
+1. **Descobrir o carro**: modelo, depois a montadora (o catálogo é por montadora), ano e motorização, perguntando só o que falta.
+2. **Olhar a base local** (uma consulta estruturada, sem modelo): se o carro já foi pesquisado, a resposta sai daqui.
+3. **Ir ao catálogo** (leitura externa, sem gravar nada).
+4. **Pedir a aprovação de uma pessoa** antes de gravar na base: um código errado gravado vira resposta futura para todo mundo, e desfazer exige apagar linhas. A pessoa aprova, rejeita ou **aprova editando** (remove linhas, corrige um código). Se ninguém responde em 24 h, **nada é gravado**.
+5. **Responder** com a lista, a fonte e os avisos (o que foi lembrado, o que mudou, o que foi descartado).
+
+*Como sabemos:* `docs/grafo.md` e `docs/humano.md`. **[confirmar]** quem, na loja, deve ser essa pessoa: hoje quem conversa com o sistema também aprova (limite declarado em `docs/arquitetura.md` §2.6).
+
+## 2.12.5 O que mudou em relação ao que escrevemos na Parte 1
+
+| Seção da Parte 1 | O que dizia | O que é hoje | Por quê |
+|---|---|---|---|
+| 2.4.2 Nível de autonomia | "agente simples" | **roteador**: o modelo classifica a intenção, decide se os trechos do manual respondem e, na reserva da raspagem, propõe peças; toda rota, texto e término é código | `docs/arquitetura.md` §3: a menor autonomia que resolve |
+| 2.4.3 `executar_webscrapping` | **Escrita** | **Leitura**; a escrita é um passo à parte (`gravar`), só depois da aprovação | gravar dado de catálogo de terceiro sem revisão cria resposta errada permanente |
+| 2.3 Workflow | quatro etapas marcadas "decide: MODELO" | três pontos de modelo (`extrair`, `ler_manual` e a reserva do `raspar`); o resto é código | `docs/prompts.md` |
+| 2.11 O maior risco: "dados mocados" se o scraping falhar | plano B | o scraping funcionou no catálogo da Chevrolet; o da Volkswagen **ainda não foi inspecionado** | `docs/prompts.md` §5.3 |
+| 2.5.2 Ganhos esperados: "~50% de tempo" e "~90% de devoluções" | estimativas a confirmar | **continuam sem medição**: o que medimos é a qualidade das respostas do sistema, não o tempo nem a devolução na loja | `docs/prompts.md`, `docs/rag.md` |
+| 2.9 Dado sensível: "nenhum" | só dado do veículo | **o veículo lembrado fica ligado ao usuário** (memória semântica), e há remoção de dados sob pedido, com varredura de todas as estruturas | `docs/memoria.md` |
+
+## 2.12.6 O que ainda não sabemos do domínio (perguntas para quem atende no balcão)
+
+- **[confirmar]** O balconista digita como no caso 5 (*"me ve a palheta traseria do corsa 2008 motor 1.4"*)? Os casos de teste foram escritos pelo grupo, não colhidos de quem usa; isso muda o resultado, e o enunciado avisa.
+- **[confirmar]** Qual a taxa real de devolução por peça errada hoje? Sem esse número, o "~90%" da seção 2.5.2 é um palpite.
+- **[confirmar]** Os catálogos da Chevrolet e da Volkswagen são as fontes que a loja aceita como verdade, ou o distribuidor tem a última palavra?
+- **[confirmar]** Em quais anos a geração do carro muda (o "Onix A" e o "Onix B")? O catálogo fala em geração; quem pede fala em ano. Sem essa tabela o sistema não sabe dizer se uma peça "Onix A Hatch" serve num Onix 2018.
+- **[confirmar]** A peça de segurança (freio, suspensão, direção) deve ter um caminho próprio, como diz o critério de sucesso da seção 2.7? Hoje o sistema trata todas as peças do mesmo jeito, e a aprovação humana é o único freio.

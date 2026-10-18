@@ -1,0 +1,2094 @@
+{
+  "commit": "0f6e856",
+  "codigo_limpo": false,
+  "arquivos_alterados": [
+    "avaliar_raspagem.py",
+    "src/nos.py",
+    "src/prompts/webscrapper/tool_scrapping.md",
+    "src/webscrapper.py"
+  ],
+  "data": "2026-10-18",
+  "modelo": "qwen2.5:7b",
+  "consulta": {
+    "modelo": "Onix",
+    "ano": 2018,
+    "motorizacao": "1.0",
+    "nome_peca": "palheta traseira",
+    "fabricante": "chevrolet"
+  },
+  "modo": "modelo",
+  "rodadas": [
+    {
+      "consulta": "https://www.pecachevrolet.com.br/pesquisa?nomepeca=palheta+traseira&nomeveiculo=Onix&ano=2018",
+      "erro": null,
+      "paginas_lidas": 1,
+      "segundos": 126,
+      "paginas_catalogo_lidas": 1,
+      "modo": [
+        "modelo"
+      ],
+      "avisos": [
+        "O tempo máximo da raspagem (120 s) acabou no meio da página 1; a leitura dela ficou incompleta."
+      ],
+      "caracteres_da_pagina": 73354,
+      "cartoes_na_pagina": 202,
+      "pecas": 91,
+      "nome_na_pagina": 91,
+      "codigo_na_pagina": 91,
+      "codigo_com_forma": 91,
+      "codigo_e_preco_da_pagina": 0,
+      "compat_todos": 91,
+      "compat_parte": 0,
+      "compat_nenhum": 0,
+      "codigos_repetidos": [],
+      "detalhe": [
+        {
+          "nome": "Palheta traseira ACDelco",
+          "codigo": "19376259",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Guia traseira do vidro da porta traseira",
+          "codigo": "94760012",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Guia traseira do vidro da porta traseira",
+          "codigo": "94760011",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Mola traseira",
+          "codigo": "52038942",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Mola traseira",
+          "codigo": "52085067",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Câmera traseira",
+          "codigo": "52133596",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Mola traseira",
+          "codigo": "52117393",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Suspensão traseira",
+          "codigo": "52125710",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Porta traseira",
+          "codigo": "52141408",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa traseira",
+          "codigo": "52141449",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Porta traseira",
+          "codigo": "52141403",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa traseira",
+          "codigo": "52141448",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Porta traseira",
+          "codigo": "52141405",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Travessa lateral traseira do teto",
+          "codigo": "94749438",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Vedador da carcaça traseira da transmissão",
+          "codigo": "24582739",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 8,
+          "compativeis_na_pagina": 8
+        },
+        {
+          "nome": "Alça de apoio traseira do teto",
+          "codigo": "52018704",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Alça de apoio traseira do teto",
+          "codigo": "52018705",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Alça de apoio traseira do teto",
+          "codigo": "52018706",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Guarnição traseira do capuz do motor",
+          "codigo": "94746325",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral",
+          "codigo": "52125238",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral",
+          "codigo": "52125237",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral",
+          "codigo": "52156414",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Retentor da moldura traseira inferior lateral",
+          "codigo": "94757326",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Tampa traseira do eixo comando de válvulas",
+          "codigo": "24579395",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Parafuso da alça de apoio traseira do teto",
+          "codigo": "11610956",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 18,
+          "compativeis_na_pagina": 18
+        },
+        {
+          "nome": "Parafuso do cubo da roda traseira e dianteira",
+          "codigo": "11611063",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 5,
+          "compativeis_na_pagina": 5
+        },
+        {
+          "nome": "Saia esportiva traseira",
+          "codigo": "94755375",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Retentor da lanterna traseira",
+          "codigo": "11519918",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Parafuso da tampa traseira",
+          "codigo": "11571248",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Rolamento da roda traseira",
+          "codigo": "13500590",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 6,
+          "compativeis_na_pagina": 6
+        },
+        {
+          "nome": "Trava da tampa traseira",
+          "codigo": "13524683",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 5,
+          "compativeis_na_pagina": 5
+        },
+        {
+          "nome": "Fechadura da porta traseira",
+          "codigo": "13518395",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Fechadura da porta traseira",
+          "codigo": "13578466",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Emblema da tampa traseira",
+          "codigo": "52101539",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Placa da tampa traseira",
+          "codigo": "52099526",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Roda dianteira e traseira",
+          "codigo": "52088849",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Amortecedor da tampa traseira",
+          "codigo": "52085132",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Emblema da tampa traseira",
+          "codigo": "52096409",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Suporte da tampa traseira",
+          "codigo": "52097831",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Apoio da tampa traseira",
+          "codigo": "52136791",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Dobradiça da tampa traseira",
+          "codigo": "52118160",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Decalque da tampa traseira",
+          "codigo": "52117429",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52134656",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Placa da tampa traseira",
+          "codigo": "52135242",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Decalque da tampa traseira",
+          "codigo": "52117428",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Roda dianteira e traseira",
+          "codigo": "52117048",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Roda dianteira e traseira",
+          "codigo": "52117049",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Atuador da porta traseira",
+          "codigo": "52136978",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Chicote da tampa traseira",
+          "codigo": "52021298",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52147828",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52146736",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52146735",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52147829",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Guarnição da porta traseira",
+          "codigo": "52165475",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Guarnição da porta traseira",
+          "codigo": "52165476",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Vidro da porta traseira",
+          "codigo": "52172594",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Placa da tampa traseira",
+          "codigo": "94706854",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 6,
+          "compativeis_na_pagina": 6
+        },
+        {
+          "nome": "Emblema da tampa traseira",
+          "codigo": "94716502",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 13,
+          "compativeis_na_pagina": 13
+        },
+        {
+          "nome": "Placa da tampa traseira",
+          "codigo": "94747905",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Moldura da porta traseira",
+          "codigo": "94754501",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Guarnição da porta traseira",
+          "codigo": "94746849",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Guarnição da tampa traseira",
+          "codigo": "94746851",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Vidro da porta traseira",
+          "codigo": "94748572",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Guarnição da porta traseira",
+          "codigo": "94746848",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Vidro da porta traseira",
+          "codigo": "94748570",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Moldura da porta traseira",
+          "codigo": "94754503",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Vidro da porta traseira",
+          "codigo": "94748569",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Moldura da porta traseira",
+          "codigo": "94754504",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Moldura da porta traseira",
+          "codigo": "94754502",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Porca da lanterna traseira",
+          "codigo": "96260548",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 7,
+          "compativeis_na_pagina": 7
+        },
+        {
+          "nome": "Isolador da mola traseira",
+          "codigo": "96853902",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 6,
+          "compativeis_na_pagina": 6
+        },
+        {
+          "nome": "Fechadura da porta traseira",
+          "codigo": "13592528",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Fechadura da porta traseira",
+          "codigo": "13518393",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Fechadura da porta traseira",
+          "codigo": "13518394",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Fechadura da porta traseira",
+          "codigo": "13578469",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52091240",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52094730",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52091098",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52047653",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52134657",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Vidro da porta traseira",
+          "codigo": "52172595",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Dobradiça da tampa traseira",
+          "codigo": "52139593",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Guarnição da porta traseira",
+          "codigo": "52143520",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Guarnição da porta traseira",
+          "codigo": "52143521",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Vidro da porta traseira",
+          "codigo": "52172597",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Vidro da porta traseira",
+          "codigo": "52172596",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Guarnição da porta traseira",
+          "codigo": "94746316",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Emblema da tampa traseira",
+          "codigo": "94747906",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Extensão traseira do trilho lateral do compartimento frontal",
+          "codigo": "52147454",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Fita traseira da estrutura do vidro da porta dianteira",
+          "codigo": "52158748",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Fita traseira da estrutura do vidro da porta dianteira",
+          "codigo": "52158749",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        }
+      ]
+    },
+    {
+      "consulta": "https://www.pecachevrolet.com.br/pesquisa?nomepeca=palheta+traseira&nomeveiculo=Onix&ano=2018",
+      "erro": null,
+      "paginas_lidas": 1,
+      "segundos": 143,
+      "paginas_catalogo_lidas": 1,
+      "modo": [
+        "modelo"
+      ],
+      "avisos": [
+        "O tempo máximo da raspagem (120 s) acabou no meio da página 1; a leitura dela ficou incompleta."
+      ],
+      "caracteres_da_pagina": 73354,
+      "cartoes_na_pagina": 202,
+      "pecas": 111,
+      "nome_na_pagina": 111,
+      "codigo_na_pagina": 111,
+      "codigo_com_forma": 111,
+      "codigo_e_preco_da_pagina": 0,
+      "compat_todos": 111,
+      "compat_parte": 0,
+      "compat_nenhum": 0,
+      "codigos_repetidos": [],
+      "detalhe": [
+        {
+          "nome": "Palheta traseira ACDelco",
+          "codigo": "19376259",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Guia traseira do vidro da porta traseira",
+          "codigo": "94760012",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Guia traseira do vidro da porta traseira",
+          "codigo": "94760011",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Mola traseira",
+          "codigo": "52038942",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Mola traseira",
+          "codigo": "52085067",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Câmera traseira",
+          "codigo": "52133596",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Mola traseira",
+          "codigo": "52117393",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Suspensão traseira",
+          "codigo": "52125710",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Porta traseira",
+          "codigo": "52141408",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa traseira",
+          "codigo": "52141449",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Porta traseira",
+          "codigo": "52141403",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa traseira",
+          "codigo": "52141448",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Porta traseira",
+          "codigo": "52141405",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Travessa lateral traseira do teto",
+          "codigo": "94749438",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Vedador da carcaça traseira da transmissão",
+          "codigo": "24582739",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 8,
+          "compativeis_na_pagina": 8
+        },
+        {
+          "nome": "Alça de apoio traseira do teto",
+          "codigo": "52018704",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Alça de apoio traseira do teto",
+          "codigo": "52018705",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Alça de apoio traseira do teto",
+          "codigo": "52018706",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Guarnição traseira do capuz do motor",
+          "codigo": "94746325",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral",
+          "codigo": "52125238",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral",
+          "codigo": "52125237",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral",
+          "codigo": "52156414",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Retentor da moldura traseira inferior lateral",
+          "codigo": "94757326",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Tampa traseira do eixo comando de válvulas",
+          "codigo": "24579395",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Parafuso da alça de apoio traseira do teto",
+          "codigo": "11610956",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 18,
+          "compativeis_na_pagina": 18
+        },
+        {
+          "nome": "Parafuso do cubo da roda traseira e dianteira",
+          "codigo": "11611063",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 5,
+          "compativeis_na_pagina": 5
+        },
+        {
+          "nome": "Saia esportiva traseira",
+          "codigo": "94755375",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Retentor da lanterna traseira",
+          "codigo": "11519918",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Parafuso da tampa traseira",
+          "codigo": "11571248",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Rolamento da roda traseira",
+          "codigo": "13500590",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 6,
+          "compativeis_na_pagina": 6
+        },
+        {
+          "nome": "Trava da tampa traseira",
+          "codigo": "13524683",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 5,
+          "compativeis_na_pagina": 5
+        },
+        {
+          "nome": "Fechadura da porta traseira",
+          "codigo": "13518395",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Fechadura da porta traseira",
+          "codigo": "13578466",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Emblema da tampa traseira",
+          "codigo": "52101539",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Placa da tampa traseira",
+          "codigo": "52099526",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Roda dianteira e traseira",
+          "codigo": "52088849",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Amortecedor da tampa traseira",
+          "codigo": "52085132",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Emblema da tampa traseira",
+          "codigo": "52096409",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Suporte da tampa traseira",
+          "codigo": "52097831",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Apoio da tampa traseira",
+          "codigo": "52136791",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Dobradiça da tampa traseira",
+          "codigo": "52118160",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Decalque da tampa traseira",
+          "codigo": "52117429",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52134656",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Placa da tampa traseira",
+          "codigo": "52135242",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Decalque da tampa traseira",
+          "codigo": "52117428",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Roda dianteira e traseira",
+          "codigo": "52117048",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Roda dianteira e traseira",
+          "codigo": "52117049",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Atuador da porta traseira",
+          "codigo": "52136978",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Chicote da tampa traseira",
+          "codigo": "52021298",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52147828",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52146736",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52146735",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52147829",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Guarnição da porta traseira",
+          "codigo": "52165475",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Guarnição da porta traseira",
+          "codigo": "52165476",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Vidro da porta traseira",
+          "codigo": "52172594",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Placa da tampa traseira",
+          "codigo": "94706854",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 6,
+          "compativeis_na_pagina": 6
+        },
+        {
+          "nome": "Emblema da tampa traseira",
+          "codigo": "94716502",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 13,
+          "compativeis_na_pagina": 13
+        },
+        {
+          "nome": "Placa da tampa traseira",
+          "codigo": "94747905",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Moldura da porta traseira",
+          "codigo": "94754501",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Guarnição da porta traseira",
+          "codigo": "94746849",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Guarnição da tampa traseira",
+          "codigo": "94746851",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Vidro da porta traseira",
+          "codigo": "94748572",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Guarnição da porta traseira",
+          "codigo": "94746848",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Vidro da porta traseira",
+          "codigo": "94748570",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Moldura da porta traseira",
+          "codigo": "94754503",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Vidro da porta traseira",
+          "codigo": "94748569",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Moldura da porta traseira",
+          "codigo": "94754504",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Moldura da porta traseira",
+          "codigo": "94754502",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Porca da lanterna traseira",
+          "codigo": "96260548",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 7,
+          "compativeis_na_pagina": 7
+        },
+        {
+          "nome": "Isolador da mola traseira",
+          "codigo": "96853902",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 6,
+          "compativeis_na_pagina": 6
+        },
+        {
+          "nome": "Fechadura da porta traseira",
+          "codigo": "13592528",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Fechadura da porta traseira",
+          "codigo": "13518393",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Fechadura da porta traseira",
+          "codigo": "13518394",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Fechadura da porta traseira",
+          "codigo": "13578469",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52091240",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52094730",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52091098",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52047653",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52134657",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Vidro da porta traseira",
+          "codigo": "52172595",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Dobradiça da tampa traseira",
+          "codigo": "52139593",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Guarnição da porta traseira",
+          "codigo": "52143520",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Guarnição da porta traseira",
+          "codigo": "52143521",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Vidro da porta traseira",
+          "codigo": "52172597",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Vidro da porta traseira",
+          "codigo": "52172596",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Guarnição da porta traseira",
+          "codigo": "94746316",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Emblema da tampa traseira",
+          "codigo": "94747906",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Extensão traseira do trilho lateral do compartimento frontal",
+          "codigo": "52147454",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Fita traseira da estrutura do vidro da porta dianteira",
+          "codigo": "52158748",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Fita traseira da estrutura do vidro da porta dianteira",
+          "codigo": "52158749",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Suporte do apoio de braço da porta traseira LD",
+          "codigo": "94750397",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Maçaneta externa da porta traseira",
+          "codigo": "52032362",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Maçaneta interna da porta traseira",
+          "codigo": "52048214",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Moldura inferior da porta traseira",
+          "codigo": "52125743",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Decalque inferior da porta traseira",
+          "codigo": "52117437",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Moldura inferior da porta traseira",
+          "codigo": "52125745",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Decalque inferior da porta traseira",
+          "codigo": "52117438",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Decalque inferior da porta traseira",
+          "codigo": "52117441",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Decalque inferior da porta traseira",
+          "codigo": "52117440",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Batente inferior da tampa traseira",
+          "codigo": "52157591",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Liame limitador da porta traseira",
+          "codigo": "52158970",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 5,
+          "compativeis_na_pagina": 5
+        },
+        {
+          "nome": "Maçaneta externa da porta traseira",
+          "codigo": "52154904",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Maçaneta externa da porta traseira",
+          "codigo": "52160781",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Assento superior da mola traseira",
+          "codigo": "96901624",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 6,
+          "compativeis_na_pagina": 6
+        },
+        {
+          "nome": "Maçaneta externa da porta traseira",
+          "codigo": "52037563",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Maçaneta externa da porta traseira",
+          "codigo": "52113415",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Maçaneta externa da porta traseira",
+          "codigo": "52160746",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Maçaneta externa da porta traseira",
+          "codigo": "94776877",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Prisioneiro do rolamento da roda traseira",
+          "codigo": "09599302",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 11,
+          "compativeis_na_pagina": 11
+        },
+        {
+          "nome": "Parafuso de trava da tampa traseira",
+          "codigo": "11610966",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 13,
+          "compativeis_na_pagina": 13
+        }
+      ]
+    }
+  ]
+}

@@ -8,7 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from dotenv import load_dotenv
 from openai import OpenAI
-from prompts.system_prompt import SYSTEM_PROMPT
+from src.prompts.system_prompt import SYSTEM_PROMPT
 
 load_dotenv()
 
