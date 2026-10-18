@@ -172,7 +172,7 @@ O que a página mostra: **200 dos 202 cartões trazem o código no endereço do 
 | Tempo | 5 s e 4 s | 126 s e 143 s |
 | Avisos | nenhum | "o tempo máximo (120 s) acabou no meio da página 1" |
 
-(Os logs são `logs/avaliacao-raspagem/resultado.json` e `resultado-modelo.json`.) Das 200 peças com endereço `/peca/`, 198 saem porque 2 repetem o código de outra.
+(Os logs são `resultado.json` (no commit `106abee`, que é a medição desta tabela) e `resultado-modelo.json`, em `logs/avaliacao-raspagem/`. Depois do filtro da §5.4, `resultado.json` passou a conter a medição com filtro; as 198 peças com 198/198 códigos na página estão em `resultado-auto-traseira.json`.) Das 200 peças com endereço `/peca/`, 198 saem porque 2 repetem o código de outra.
 
 **Leitura.** O leitor em código leva ~5 s (antes, 41 a 57 s) e entrega **todas** as peças da página com o código certo; o código inventado deixou de existir. A reserva com o modelo também deixou de inventar (100% dos códigos estão na página, porque o que não estiver é descartado), mas é lenta: 91 a 111 peças em 120 s, e o teto de tempo a corta, com aviso. Ela existe para o dia em que o catálogo mudar, não como caminho principal. Nas duas rodadas da reserva nenhuma peça foi descartada pela validação: com o prompt pedindo para copiar o código, o modelo passou a copiá-lo quando vê o card inteiro no lote.
 
@@ -180,9 +180,34 @@ O que a página mostra: **200 dos 202 cartões trazem o código no endereço do 
 
 ### 5.3 O que a mudança não resolve
 
-- **Relevância.** O catálogo devolve 202 cartões para "palheta traseira" (portas, tampas, painéis), e a pessoa aprova uma lista de 198 linhas, onde só 1 ou 2 são palheta. Antes eram 24 a 54 linhas com os mesmos pontos. Filtrar pelo nome da peça pedida, em código, é o próximo passo e ficou de fora por decisão.
+- **Sinônimo.** O filtro por nome (§5.4) exige as palavras do pedido no nome da peça. Quem pede "limpador de para-brisa" não encontra o cartão "Palheta": o sistema responde "não encontrei" e diz quantas peças o catálogo trouxe, em vez de mostrar peças que não pediu. Tabela de sinônimos é decisão de quem conhece o balcão.
 - **O leitor em código é específico do formato do site.** Se o endereço deixar de ter `/peca/<código>/`, ele devolve 0 peças e o sistema cai na reserva, lenta mas validada. O catálogo da Volkswagen (outro layout) ainda não foi inspecionado.
 - **Só o tempo entre páginas e lotes é conferido**; uma única navegação ou chamada ao modelo já longa passa do teto (`LLM_TIMEOUT` cobre a segunda).
+
+### 5.4 Ajustes depois da validação: o lado no nome e o filtro por relevância
+
+A validação da §5.2 deixou dois defeitos, ambos de uso e não de código inventado:
+
+1. **Duas peças de lados opostos pareciam repetidas.** Em 107 dos 202 cartões a linha "Lado esquerdo" ou "Lado direito" vem à parte (e ainda "M12x1.5x44mm", "EFFECT branco"), e o leitor a ignorava. Agora tudo o que o cartão diz antes de "Aplicações:" entra no nome, entre parênteses: "Guia traseira do vidro da porta traseira (Lado esquerdo)".
+2. **A pessoa aprovava 198 linhas, onde 1 era palheta.** O catálogo devolve tudo o que casa com o carro e uma das palavras da busca. `filtrar_por_nome` fica só com a peça cujo nome tem **todas** as palavras do pedido (sem artigo nem preposição, no radical: "palhetas traseiras" casa "Palheta traseira"). O `avisos` diz o que foi filtrado ("O catálogo trouxe 198 peça(s)…; mostro as 1…") e, se nada casa, a resposta é "não encontrei" com esse aviso.
+
+Medido (`avaliar_raspagem.py 2 auto <peça>`, 2 rodadas cada, mesmo carro; logs em `logs/avaliacao-raspagem/`):
+
+| Pedido | Peças do catálogo | Ficaram | Código está na página | Tempo |
+|---|---|---|---|---|
+| palheta traseira | 198 | **1** | 1/1 nas 2 rodadas | 3 a 5 s |
+| traseira | 198 | 198 | 198/198 nas 2 rodadas | 4 s |
+| lanterna (outra página, 75 cartões) | 60 | 60 | 60/60 nas 2 rodadas | 3 s |
+
+Fluxo real pelo grafo (`logs/validacao-raspagem/filtro-*`, o banco foi restaurado depois de cada um):
+
+| Pergunta | O que aconteceu |
+|---|---|
+| código da palheta traseira do Onix 2018 1.0 | pausou em 16 s com **1 candidata** ("Palheta traseira ACDelco — código 19376259") e o aviso do filtro; aprovada, gravou 1 |
+| código do espelho retrovisor | pausou em 7 s com **44 de 49** peças (as com "espelho retrovisor" no nome); aprovada, gravou 44 |
+| código da palheta **dianteira** | o catálogo trouxe 196 peças, nenhuma com "palheta dianteira" no nome; **não pausou** e respondeu: "Não encontrei "palheta dianteira" para Onix 2018 1.0 na base local nem no catálogo.", com a observação do filtro |
+
+**Limite do filtro:** é por palavra do pedido no nome, sem sinônimo. Os estados anteriores (o catálogo inteiro na tela de aprovação) estão em §5.2.
 
 ## 6. O corte silencioso do servidor (achado desta medição)
 

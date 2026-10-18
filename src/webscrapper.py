@@ -73,12 +73,43 @@ def ler_cartoes(markdown: str) -> list[dict]:
             continue
         detalhes = [l[2:].strip() for l in bloco.splitlines()[1:] if l.startswith('- ')]
         aplicacoes = []
+        descritores = detalhes  # sem "Aplicações:", tudo o que o cartão diz da peça é descritor
         if 'Aplicações:' in detalhes:
             i = detalhes.index('Aplicações:')
+            descritores = detalhes[:i]
             if i + 1 < len(detalhes) and not detalhes[i + 1].endswith(':'):
                 aplicacoes = [a.strip() for a in detalhes[i + 1].split(',') if a.strip()]
-        pecas.append({'nome_peca': m['nome'].strip(), 'carros_compativeis': aplicacoes, 'codigo_peca': m['codigo']})
+        # O que vem antes de "Aplicações:" distingue peças de mesmo título e código diferente: o lado ("Lado esquerdo", em 107 de 202 cartões),
+        # a medida ("M12x1.5x44mm"), a versão. Sem isso, duas peças de lados opostos aparecem repetidas na lista de aprovação.
+        nome = m['nome'].strip() + (f" ({', '.join(descritores)})" if descritores else '')
+        pecas.append({'nome_peca': nome, 'carros_compativeis': aplicacoes, 'codigo_peca': m['codigo']})
     return pecas
+
+
+PALAVRAS_VAZIAS = {'de', 'da', 'do', 'das', 'dos', 'para', 'pra', 'o', 'a', 'os', 'as', 'e', 'em', 'no', 'na', 'com', 'um', 'uma'}
+
+
+def _radicais(texto: str) -> list[str]:
+    """Palavras do pedido sem artigo e preposição, reduzidas ao radical (plural e final de gênero saem): "palhetas traseiras" -> palhet, traseir."""
+    radicais = []
+    for palavra in re.findall(r'[a-z0-9]+', _dobrar(texto)):
+        if palavra in PALAVRAS_VAZIAS:
+            continue
+        if len(palavra) > 3 and palavra.endswith('s'):
+            palavra = palavra[:-1]
+        if len(palavra) > 4 and palavra[-1] in 'aoe':
+            palavra = palavra[:-1]
+        radicais.append(palavra)
+    return radicais
+
+
+def filtrar_por_nome(pecas: list[dict], nome_peca: str) -> list[dict]:
+    """Fica só com a peça cujo nome tem todas as palavras do pedido. O catálogo devolve tudo o que casa com o carro (202 cartões para "palheta
+    traseira"), e a lista que uma pessoa aprova não pode ser o catálogo inteiro. Pedido sem palavra útil não filtra."""
+    radicais = _radicais(nome_peca)
+    if not radicais:
+        return pecas
+    return [p for p in pecas if all(r in _dobrar(p['nome_peca']) for r in radicais)]
 
 
 def em_lotes(markdown: str, limite: int = LOTE_CARACTERES) -> list[str]:
@@ -294,5 +325,12 @@ class WebScrapper:
                         avisos.append(f"O tempo máximo da raspagem ({MAX_SEGUNDOS} s) acabou depois de {paginas_lidas} página(s); podem faltar peças.")
                         break
         except Exception as err:
-            return {'consulta': link, 'pecas': pecas, 'erro': f'{type(err).__name__}: {err}', 'avisos': avisos, 'paginas_lidas': paginas_lidas, 'modo': modos}
-        return {'consulta': link, 'pecas': pecas, 'erro': None, 'avisos': avisos, 'paginas_lidas': paginas_lidas, 'modo': modos}
+            erro = f'{type(err).__name__}: {err}'
+        else:
+            erro = None
+        lidas = len(pecas)
+        pecas = filtrar_por_nome(pecas, nome_peca)
+        if lidas and len(pecas) < lidas:
+            avisos.append(f"O catálogo trouxe {lidas} peça(s) para esse carro; mostro as {len(pecas)} com \"{nome_peca}\" no nome." if pecas else
+                          f"O catálogo trouxe {lidas} peça(s) para esse carro, nenhuma com \"{nome_peca}\" no nome; não mostro nenhuma.")
+        return {'consulta': link, 'pecas': pecas, 'erro': erro, 'avisos': avisos, 'paginas_lidas': paginas_lidas, 'modo': modos, 'pecas_lidas': lidas}

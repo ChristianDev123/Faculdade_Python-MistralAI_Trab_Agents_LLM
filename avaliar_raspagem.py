@@ -1,7 +1,7 @@
 """Avalia a extração de peças da página do catálogo (etapa `raspar`): o que o modelo devolveu está mesmo na página?
 
 Uso:
-  python avaliar_raspagem.py [rodadas] [modo]   raspa o catálogo da Chevrolet ao vivo (Onix 2018 1.0, "palheta traseira")
+  python avaliar_raspagem.py [rodadas] [modo] [peça]   raspa o catálogo da Chevrolet ao vivo (Onix 2018 1.0; peça padrão: "palheta traseira")
       modo "auto" (padrão): como o sistema roda (cartões lidos em código; o modelo só se a página não tiver esse formato)
       modo "modelo": obriga a reserva (o modelo lê a página em lotes e o código confere), para medi-la; grava resultado-modelo.json
 
@@ -43,7 +43,7 @@ def eh_preco_reformatado(codigo: str, pagina: str) -> bool:
     return f"{int(inteiro):,}".replace(',', '.') + ',' + centavos in pagina
 
 
-def avaliar_uma_vez(forcar_modelo: bool = False) -> dict:
+def avaliar_uma_vez(forcar_modelo: bool = False, consulta: dict = CONSULTA) -> dict:
     from src.config import client
     from src.registrador import Registrador
     from src.webscrapper import WebScrapper
@@ -60,13 +60,13 @@ def avaliar_uma_vez(forcar_modelo: bool = False) -> dict:
 
     scraper.processar_html_generico_para_markdown = capturar
     inicio = time.time()
-    achado = scraper.buscar_candidatas(catalogo['link'], catalogo['regra'], CONSULTA['modelo'], CONSULTA['ano'],
-                                       CONSULTA['motorizacao'], CONSULTA['nome_peca'], forcar_modelo=forcar_modelo)
+    achado = scraper.buscar_candidatas(catalogo['link'], catalogo['regra'], consulta['modelo'], consulta['ano'],
+                                       consulta['motorizacao'], consulta['nome_peca'], forcar_modelo=forcar_modelo)
     pagina = _fold(' '.join(paginas))
     pecas = achado['pecas']
     linhas, contagem = [], {'nome_na_pagina': 0, 'codigo_na_pagina': 0, 'codigo_com_forma': 0, 'codigo_e_preco_da_pagina': 0, 'compat_todos': 0, 'compat_parte': 0, 'compat_nenhum': 0}
     for p in pecas:
-        nome_ok = _fold(p['nome_peca']) in pagina
+        nome_ok = _fold(re.sub(r' \([^)]*\)$', '', p['nome_peca'])) in pagina  # sem os descritores que o leitor acrescenta ao nome (lado, medida)
         cod_ok = _fold(p['codigo_peca']) in pagina
         forma_ok = bool(FORMA_DE_CODIGO.fullmatch(p['codigo_peca'].strip()))
         preco_ok = (not cod_ok) and eh_preco_reformatado(p['codigo_peca'], pagina)
@@ -86,18 +86,19 @@ def avaliar_uma_vez(forcar_modelo: bool = False) -> dict:
     return {'consulta': achado['consulta'], 'erro': achado['erro'], 'paginas_lidas': len(paginas), 'segundos': round(time.time() - inicio),
             'paginas_catalogo_lidas': achado['paginas_lidas'], 'modo': achado['modo'], 'avisos': achado['avisos'],
             'caracteres_da_pagina': len(bruto), 'cartoes_na_pagina': len(re.findall(r'### \[', bruto)),
-            'pecas': len(pecas), **contagem, 'codigos_repetidos': repetidos, 'detalhe': linhas}
+            'pecas_lidas_do_catalogo': achado['pecas_lidas'], 'pecas': len(pecas), **contagem, 'codigos_repetidos': repetidos, 'detalhe': linhas}
 
 
-def main(rodadas: int, modo: str = 'auto') -> int:
+def main(rodadas: int, modo: str = 'auto', peca: str = CONSULTA['nome_peca']) -> int:
+    consulta = {**CONSULTA, 'nome_peca': peca}
     from src.trajetoria import estado_do_codigo
     from src.util import modelo_em_uso
     resultados = []
     for i in range(1, rodadas + 1):
-        r = avaliar_uma_vez(forcar_modelo=(modo == 'modelo'))
+        r = avaliar_uma_vez(forcar_modelo=(modo == 'modelo'), consulta=consulta)
         resultados.append(r)
         n = r['pecas'] or 1
-        print(f"rodada {i}: página de {r['caracteres_da_pagina']} caracteres com {r['cartoes_na_pagina']} cartões; o scraper devolveu {r['pecas']} peças, {r['segundos']} s | nome na página {r['nome_na_pagina']}/{r['pecas']} | "
+        print(f"rodada {i}: página de {r['caracteres_da_pagina']} caracteres com {r['cartoes_na_pagina']} cartões; o catálogo trouxe {r['pecas_lidas_do_catalogo']} peças e o filtro por nome deixou {r['pecas']}, {r['segundos']} s | nome na página {r['nome_na_pagina']}/{r['pecas']} | "
               f"código na página {r['codigo_na_pagina']}/{r['pecas']} | dos que faltam, são preço da página {r['codigo_e_preco_da_pagina']} | código com forma de código {r['codigo_com_forma']}/{r['pecas']} | "
               f"compatíveis: todos {r['compat_todos']}, parte {r['compat_parte']}, nenhum {r['compat_nenhum']} | códigos repetidos: {r['codigos_repetidos']} | modo {r['modo']} | avisos {r['avisos']}", flush=True)
         for d in r['detalhe']:
@@ -105,12 +106,12 @@ def main(rodadas: int, modo: str = 'auto') -> int:
                 print(f"    atenção: {d['nome']!r} código {d['codigo']!r} | nome na página: {d['nome_na_pagina']} | código na página: {d['codigo_na_pagina']} | forma de código: {d['codigo_com_forma']}")
     destino = RAIZ / 'logs' / 'avaliacao-raspagem'
     destino.mkdir(parents=True, exist_ok=True)
-    arquivo = 'resultado.json' if modo == 'auto' else f'resultado-{modo}.json'
+    arquivo = ('resultado.json' if modo == 'auto' else f'resultado-{modo}.json') if peca == CONSULTA['nome_peca'] else f'resultado-{modo}-{peca.replace(" ", "-")}.json'
     (destino / arquivo).write_text(json.dumps({**estado_do_codigo(), 'data': time.strftime('%Y-%m-%d'), 'modelo': modelo_em_uso(),
-                                                         'consulta': CONSULTA, 'modo': modo, 'rodadas': resultados}, ensure_ascii=False, indent=2), encoding='utf-8')
+                                                         'consulta': consulta, 'modo': modo, 'rodadas': resultados}, ensure_ascii=False, indent=2), encoding='utf-8')
     print(f'Resultado em {destino / arquivo}')
     return 0
 
 
 if __name__ == '__main__':
-    sys.exit(main(int(sys.argv[1]) if len(sys.argv) > 1 else 2, sys.argv[2] if len(sys.argv) > 2 else 'auto'))
+    sys.exit(main(int(sys.argv[1]) if len(sys.argv) > 1 else 2, sys.argv[2] if len(sys.argv) > 2 else 'auto', sys.argv[3] if len(sys.argv) > 3 else CONSULTA['nome_peca']))

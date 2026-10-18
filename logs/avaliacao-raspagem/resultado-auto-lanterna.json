@@ -1,0 +1,1271 @@
+{
+  "commit": "106abee",
+  "codigo_limpo": false,
+  "arquivos_alterados": [
+    ".env.example",
+    "avaliar_raspagem.py",
+    "src/webscrapper.py"
+  ],
+  "data": "2026-10-18",
+  "modelo": "qwen2.5:7b",
+  "consulta": {
+    "modelo": "Onix",
+    "ano": 2018,
+    "motorizacao": "1.0",
+    "nome_peca": "lanterna",
+    "fabricante": "chevrolet"
+  },
+  "modo": "auto",
+  "rodadas": [
+    {
+      "consulta": "https://www.pecachevrolet.com.br/pesquisa?nomepeca=lanterna&nomeveiculo=Onix&ano=2018",
+      "erro": null,
+      "paginas_lidas": 1,
+      "segundos": 3,
+      "paginas_catalogo_lidas": 1,
+      "modo": [
+        "codigo"
+      ],
+      "avisos": [],
+      "caracteres_da_pagina": 25473,
+      "cartoes_na_pagina": 75,
+      "pecas_lidas_do_catalogo": 60,
+      "pecas": 60,
+      "nome_na_pagina": 60,
+      "codigo_na_pagina": 60,
+      "codigo_com_forma": 60,
+      "codigo_e_preco_da_pagina": 0,
+      "compat_todos": 60,
+      "compat_parte": 0,
+      "compat_nenhum": 0,
+      "codigos_repetidos": [],
+      "detalhe": [
+        {
+          "nome": "Lanterna do painel instrumentos (Porta-luvas)",
+          "codigo": "13577963",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 11,
+          "compativeis_na_pagina": 11
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52134656",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52147828",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52146736",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52146735",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52147829",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52091240",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52094730",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52091098",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52047653",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52134657",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Moldura da lanterna do teto",
+          "codigo": "52069233",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Lâmpada da lanterna (W5W - Cor: Azul effect)",
+          "codigo": "94708354",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 21,
+          "compativeis_na_pagina": 21
+        },
+        {
+          "nome": "Retentor da lanterna traseira",
+          "codigo": "11519918",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Porca da lanterna traseira",
+          "codigo": "96260548",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 7,
+          "compativeis_na_pagina": 7
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral (Lado direito)",
+          "codigo": "52125238",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral (Lado esquerdo)",
+          "codigo": "52125237",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral (Lado direito)",
+          "codigo": "52156414",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna da placa de licença traseira",
+          "codigo": "13575339",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Moldura da lanterna de neblina dianteira (Lado esquerdo)",
+          "codigo": "52037795",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Moldura da lanterna de neblina dianteira (Lado direito)",
+          "codigo": "52037793",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Lanterna da placa de licença traseira",
+          "codigo": "13526495",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Retentor da moldura da lanterna do teto",
+          "codigo": "11569965",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 17,
+          "compativeis_na_pagina": 17
+        },
+        {
+          "nome": "Lâmpada da lanterna do compartimento de carga (T10-8W)",
+          "codigo": "13500832",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 23,
+          "compativeis_na_pagina": 23
+        },
+        {
+          "nome": "Lanterna de cortesia central para-brisa (Com lâmpadas)",
+          "codigo": "13126729",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 9,
+          "compativeis_na_pagina": 9
+        },
+        {
+          "nome": "Lanterna inferior do para-choque traseiro",
+          "codigo": "52107843",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Lanterna inferior do para-choque traseiro (Lado esquerdo)",
+          "codigo": "52137554",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Lanterna inferior do para-choque traseiro (Lado direito)",
+          "codigo": "52137555",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa da abertura da lanterna de neblina dianteira (Lado esquerdo)",
+          "codigo": "52092365",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa da abertura da lanterna de neblina dianteira (Lado direito)",
+          "codigo": "52092366",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa da abertura da lanterna de neblina dianteira (Lado esquerdo)",
+          "codigo": "52092363",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa da abertura da lanterna de neblina dianteira (Lado direito)",
+          "codigo": "52092364",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa da abertura da lanterna de neblina dianteira (Lado direito)",
+          "codigo": "94757854",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa da abertura da lanterna de neblina dianteira (Lado esquerdo)",
+          "codigo": "94757853",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52091244",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Soquete da lanterna traseira",
+          "codigo": "94746824",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral (Lado esquerdo)",
+          "codigo": "52156415",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lâmpada da lanterna de posição dianteira (5W)",
+          "codigo": "13503405",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 7,
+          "compativeis_na_pagina": 7
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52130712",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52130711",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52150621",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52150620",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52150622",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52150619",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52047650",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52037860",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52094727",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52104493",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52091099",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52091238",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52094729",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52047651",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52047652",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52144436",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52147382",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52147381",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52144437",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Moldura da lanterna do teto",
+          "codigo": "52047459",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral (Lado direito)",
+          "codigo": "52111934",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna inferior do para-choque traseiro (Lado direito)",
+          "codigo": "52107840",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        }
+      ]
+    },
+    {
+      "consulta": "https://www.pecachevrolet.com.br/pesquisa?nomepeca=lanterna&nomeveiculo=Onix&ano=2018",
+      "erro": null,
+      "paginas_lidas": 1,
+      "segundos": 3,
+      "paginas_catalogo_lidas": 1,
+      "modo": [
+        "codigo"
+      ],
+      "avisos": [],
+      "caracteres_da_pagina": 25473,
+      "cartoes_na_pagina": 75,
+      "pecas_lidas_do_catalogo": 60,
+      "pecas": 60,
+      "nome_na_pagina": 60,
+      "codigo_na_pagina": 60,
+      "codigo_com_forma": 60,
+      "codigo_e_preco_da_pagina": 0,
+      "compat_todos": 60,
+      "compat_parte": 0,
+      "compat_nenhum": 0,
+      "codigos_repetidos": [],
+      "detalhe": [
+        {
+          "nome": "Lanterna do painel instrumentos (Porta-luvas)",
+          "codigo": "13577963",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 11,
+          "compativeis_na_pagina": 11
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52134656",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52147828",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52146736",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52146735",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52147829",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52091240",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52094730",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52091098",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52047653",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52134657",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Moldura da lanterna do teto",
+          "codigo": "52069233",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Lâmpada da lanterna (W5W - Cor: Azul effect)",
+          "codigo": "94708354",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 21,
+          "compativeis_na_pagina": 21
+        },
+        {
+          "nome": "Retentor da lanterna traseira",
+          "codigo": "11519918",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 4,
+          "compativeis_na_pagina": 4
+        },
+        {
+          "nome": "Porca da lanterna traseira",
+          "codigo": "96260548",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 7,
+          "compativeis_na_pagina": 7
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral (Lado direito)",
+          "codigo": "52125238",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral (Lado esquerdo)",
+          "codigo": "52125237",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral (Lado direito)",
+          "codigo": "52156414",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna da placa de licença traseira",
+          "codigo": "13575339",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Moldura da lanterna de neblina dianteira (Lado esquerdo)",
+          "codigo": "52037795",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Moldura da lanterna de neblina dianteira (Lado direito)",
+          "codigo": "52037793",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Lanterna da placa de licença traseira",
+          "codigo": "13526495",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Retentor da moldura da lanterna do teto",
+          "codigo": "11569965",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 17,
+          "compativeis_na_pagina": 17
+        },
+        {
+          "nome": "Lâmpada da lanterna do compartimento de carga (T10-8W)",
+          "codigo": "13500832",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 23,
+          "compativeis_na_pagina": 23
+        },
+        {
+          "nome": "Lanterna de cortesia central para-brisa (Com lâmpadas)",
+          "codigo": "13126729",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 9,
+          "compativeis_na_pagina": 9
+        },
+        {
+          "nome": "Lanterna inferior do para-choque traseiro",
+          "codigo": "52107843",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Lanterna inferior do para-choque traseiro (Lado esquerdo)",
+          "codigo": "52137554",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Lanterna inferior do para-choque traseiro (Lado direito)",
+          "codigo": "52137555",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa da abertura da lanterna de neblina dianteira (Lado esquerdo)",
+          "codigo": "52092365",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa da abertura da lanterna de neblina dianteira (Lado direito)",
+          "codigo": "52092366",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa da abertura da lanterna de neblina dianteira (Lado esquerdo)",
+          "codigo": "52092363",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa da abertura da lanterna de neblina dianteira (Lado direito)",
+          "codigo": "52092364",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa da abertura da lanterna de neblina dianteira (Lado direito)",
+          "codigo": "94757854",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Tampa da abertura da lanterna de neblina dianteira (Lado esquerdo)",
+          "codigo": "94757853",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52091244",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Soquete da lanterna traseira",
+          "codigo": "94746824",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral (Lado esquerdo)",
+          "codigo": "52156415",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lâmpada da lanterna de posição dianteira (5W)",
+          "codigo": "13503405",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 7,
+          "compativeis_na_pagina": 7
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52130712",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52130711",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52150621",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52150620",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52150622",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52150619",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52047650",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52037860",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52094727",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52104493",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira",
+          "codigo": "52091099",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52091238",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52094729",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52047651",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52047652",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52144436",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52147382",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado esquerdo)",
+          "codigo": "52147381",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna de freio traseira (Lado direito)",
+          "codigo": "52144437",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Moldura da lanterna do teto",
+          "codigo": "52047459",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 3,
+          "compativeis_na_pagina": 3
+        },
+        {
+          "nome": "Compartimento da lanterna traseira lateral (Lado direito)",
+          "codigo": "52111934",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 1,
+          "compativeis_na_pagina": 1
+        },
+        {
+          "nome": "Lanterna inferior do para-choque traseiro (Lado direito)",
+          "codigo": "52107840",
+          "nome_na_pagina": true,
+          "codigo_na_pagina": true,
+          "codigo_com_forma": true,
+          "codigo_e_preco_da_pagina": false,
+          "compativeis": 2,
+          "compativeis_na_pagina": 2
+        }
+      ]
+    }
+  ]
+}

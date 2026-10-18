@@ -66,7 +66,7 @@ A gravação usa chave de idempotência derivada do conteúdo (hash dos campos d
 | 1 | `logs/exemplos/pausa_edicao/` | `editar remover 1,2,3,4,5` | 21 nova(s), 0 já existia(m) |
 | 2 | `logs/exemplos/pausa_edicao-2/` | `editar remover 1,2,3,4,5` | **0 nova(s)**, 21 já existia(m) |
 
-**Atualização de 2026-10-18:** o `raspar` agora devolve todas as peças do cartão (198 para a palheta do Onix, sem filtro de relevância), e a pessoa aprova uma lista de 198 linhas, o que torna `editar remover` trabalhoso; a prova acima (21 peças) é de antes da mudança, e `logs/validacao-raspagem/s1` mostra a aprovação da lista grande. O `avisos` do raspar (peças descartadas, teto de páginas ou de tempo) aparece junto da resposta.
+**Atualização de 2026-10-18:** o `raspar` agora lê todos os cartões do catálogo e filtra, em código, as peças que têm as palavras do pedido no nome (198 cartões viram 1 para a palheta do Onix; [prompts.md](prompts.md) §5.4). A prova acima (21 peças) é de antes da mudança. O `avisos` do raspar (o que o filtro tirou, peças descartadas, teto de páginas ou de tempo) aparece junto da resposta, e `logs/validacao-raspagem/` guarda as aprovações da lista grande (`s1`, 198 peças, sem filtro) e da lista filtrada (`filtro-palheta`, `filtro-retrovisor`).
 
 A aprovação repetida não criou linha nenhuma. O gerador restaura o banco depois de cada cenário, então não há contagem de linhas da tabela para citar: a prova é o `ja_existia` devolvido pela gravação.
 
