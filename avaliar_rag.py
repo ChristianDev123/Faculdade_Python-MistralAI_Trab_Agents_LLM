@@ -2,7 +2,8 @@
 
 Uso:
   python avaliar_rag.py perguntas   as 10 perguntas oficiais, pelo grafo inteiro (uma conversa por pergunta, mesmo usuário)
-  python avaliar_rag.py manual      os 30 casos do leitor de manual (18 com resposta, 12 sem), 'n' vezes
+  python avaliar_rag.py manual [n] [rotulo]   os 32 casos do leitor de manual (18 com resposta, 14 sem), 'n' vezes;
+                                    grava logs/rag-avaliacao/manual-<rotulo>.json (rótulo padrão: atual)
 
 O que mede (e o que não mede) está em docs/rag.md. O modelo local não é determinístico nem com temperature 0:
 rode `manual` mais de uma vez e leia a faixa, não um número.
@@ -59,14 +60,19 @@ def avaliar_perguntas(usuario: str = 'rag-avaliacao') -> int:
     return 0
 
 
-def avaliar_manual(repeticoes: int = 1) -> int:
+def avaliar_manual(repeticoes: int = 1, rotulo: str = 'atual') -> int:
+    import os
     from src.config import client
     from src.leitor_manual_pdf import LeitorManualPDF
+    from src.trajetoria import carimbo_prompts, estado_do_codigo
+    from src.util import modelo_em_uso
 
     d = DADOS['avaliacao_manual']
     leitor = LeitorManualPDF(client)
+    rodadas = []
     for rodada in range(1, repeticoes + 1):
         sanadas = com_fato = falsas = recusas = erros = 0
+        por_pergunta = {}
         total_sem = sum(len(g['perguntas']) for g in d['sem_resposta'])
         for caso in d['com_resposta']:
             for q in caso['perguntas']:
@@ -76,7 +82,9 @@ def avaliar_manual(repeticoes: int = 1) -> int:
                     continue
                 x = r['leitura']
                 sanadas += x.sanada
-                com_fato += bool(x.sanada and re.search(caso['fato'], (x.resumo + ' ' + x.trecho_original).lower()))
+                acertou = bool(x.sanada and re.search(caso['fato'], (x.resumo + ' ' + x.trecho_original).lower()))
+                com_fato += acertou
+                por_pergunta[q] = acertou
         for grupo in d['sem_resposta']:
             for q in grupo['perguntas']:
                 r = leitor.ler(d['manual'], q.rstrip('?') + d['sufixo_da_pergunta'] + '?', d['veiculo'])
@@ -84,9 +92,17 @@ def avaliar_manual(repeticoes: int = 1) -> int:
                     recusas += 1
                 else:
                     falsas += 1
+                    por_pergunta[q] = 'FALSA'
         n_com = sum(len(c['perguntas']) for c in d['com_resposta'])
         print(f"rodada {rodada}: respondeu {sanadas}/{n_com} | com o fato esperado {com_fato}/{n_com} | "
-              f"recusou {recusas}/{total_sem} | FALSA RESPOSTA {falsas}/{total_sem} | erros {erros}")
+              f"recusou {recusas}/{total_sem} | FALSA RESPOSTA {falsas}/{total_sem} | erros {erros}", flush=True)
+        rodadas.append({'respondeu': sanadas, 'com_fato': com_fato, 'recusou': recusas, 'falsas': falsas, 'erros': erros, 'por_pergunta': por_pergunta})
+    destino = RAIZ / 'logs' / 'rag-avaliacao'
+    destino.mkdir(parents=True, exist_ok=True)
+    (destino / f'manual-{rotulo}.json').write_text(json.dumps(
+        {**estado_do_codigo(), 'data': time.strftime('%Y-%m-%d'), 'modelo': modelo_em_uso(), 'contexto_ollama': os.environ.get('CONTEXTO_OLLAMA', 'não informado'),
+         'prompts': carimbo_prompts(), 'rotulo': rotulo, 'rodadas': rodadas}, ensure_ascii=False, indent=2), encoding='utf-8')
+    print(f'Resultado gravado em {destino / ("manual-" + rotulo + ".json")}')
     return 0
 
 
@@ -95,6 +111,6 @@ if __name__ == '__main__':
     if modo == 'perguntas':
         sys.exit(avaliar_perguntas())
     if modo == 'manual':
-        sys.exit(avaliar_manual(int(sys.argv[2]) if len(sys.argv) > 2 else 1))
+        sys.exit(avaliar_manual(int(sys.argv[2]) if len(sys.argv) > 2 else 1, sys.argv[3] if len(sys.argv) > 3 else 'atual'))
     print(__doc__)
     sys.exit(2)

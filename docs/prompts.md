@@ -108,7 +108,7 @@ Nada em `src/prompts/` foi alterado por esta ablação, então não há "frase q
 | **regra 2** (sanada em qualquer formato) | 4,5 | 4,5 | **−6,0** | 7 | 0 | 0 | **faz diferença, nítida** |
 | **regra 3** (`sanada` falso só se nenhum trecho trata) | 8,5 | 8,0 | **−2,5** | 4 | 0 | 0 | **faz diferença** |
 | regra 4 (`trecho_original` literal) | 10,5 | 9,5 | −1,0 | 2 | 1 | 0 | ruído |
-| **regra 5** (`resumo` ≤ 80 palavras…) | 16,0 | 15,0 | **+4,5** | 0 | 5 | 0 | **tirar melhora**, nas 2 rodadas (16/15 e 16/15) |
+| **regra 5** (`resumo` ≤ 80 palavras…) | 16,0 | 15,0 | **+4,5** | 0 | 5 | 0 | **tirar melhora**, nas 2 rodadas (16/15 e 16/15); aplicada, ver §4.1 |
 | regra 6 (`pensamento` ≤ 2 frases) | 12,0 | 12,0 | +1,5 | 1 | 3 | 0 | sem efeito mensurável |
 | `proc_indice` (regra aprendida do índice) | 13,0 | 12,0 | +1,5 | 2 | 5 | 0 | sem efeito mensurável |
 
@@ -117,9 +117,22 @@ Nada em `src/prompts/` foi alterado por esta ablação, então não há "frase q
 **Achados.**
 
 1. **As regras 2 e 3 fazem o trabalho do prompt.** Sem a regra 2 o leitor responde 4,5 de 18; sem a 3, 8,5. Elas impedem que o modelo trate "formato diferente de parágrafo" ou "assunto só tocado por um trecho" como "sem resposta". É a mesma lição do diagnóstico do RAG ([rag.md](rag.md) §6.2): o prompt rígido responde 3/18, o permissivo, 10 a 11.
-2. **A regra 5 prejudica.** Sem o limite de 80 palavras e a frase sobre o que falta, o leitor responde 16 de 18 (contra 11,5), **sem nenhuma falsa resposta nas 14 sem resposta**. Não investiguei a causa e não vou chutar. Esta é a **ação que a ablação recomenda**, mas **não a apliquei**: mudar o prompt muda as medições de `rag.md`. Proposta: tirar a regra 5, medir em 3 rodadas (e conferir de novo as 14 sem resposta) e commitar junto.
+2. **A regra 5 prejudica.** Sem o limite de 80 palavras e a frase sobre o que falta, o leitor responde 16 de 18 (contra 11,5), **sem nenhuma falsa resposta nas 14 sem resposta**. Não investiguei a causa e não vou chutar. Foi a única mudança de prompt que a ablação recomendou, e foi **aplicada e confirmada em 3 rodadas** (§4.1).
 3. **`proc_indice` não mostra efeito** (+1,5, dentro do ruído). A regra aprendida foi escrita depois de uma falha real (o índice do manual como "resposta"); a medição **não a sustenta nem a derruba**.
 4. **0 falsas respostas** em todas as variantes e rodadas (14 de 14 recusadas): a amostra é pequena (14 perguntas, um manual, um modelo).
+
+### 4.1 Mudança aplicada: o prompt sem a regra 5
+
+A regra 5 (`resumo` em português, no máximo 80 palavras, só com o que os trechos dizem; se `sanada` for falso, uma frase sobre o que falta) foi removida de `tool_call_leitura_pdf.md`, e a regra 6 virou a 5 (a numeração da tabela acima é a antiga). O resto do prompt, inclusive "usando SOMENTE os trechos" e "Nunca complete com conhecimento próprio", ficou. Controle e variante rodaram na mesma sessão, com o mesmo contexto (8192), o mesmo modelo e `python avaliar_rag.py manual 3 <rótulo>`; os logs são `logs/rag-avaliacao/manual-com-regra5.json` (hash do prompt `4c304a9c2377`) e `manual-sem-regra5.json` (`6ea02d3b88d4`).
+
+| | Rodada 1 | Rodada 2 | Rodada 3 | Falsas respostas (14 sem resposta) |
+|---|---|---|---|---|
+| **com** a regra 5 | 12 / fato 11 | 11 / fato 10 | 11 / fato 10 | 0, 0, 0 |
+| **sem** a regra 5 | 16 / fato 15 | 16 / fato 15 | 16 / fato 15 | 0, 0, 0 |
+
+Por pergunta, das 18 com resposta: **5 passaram a acertar nas 3 rodadas e nenhuma deixou de acertar**. Entraram "Como trocar a lâmpada do farol?", "O que devo fazer antes de desconectar a bateria?", "Quantos kPa suporta o pneu no máximo?", "É normal sair fumaça ou pó quando o airbag dispara?" e "Cuidados ao lavar o veículo com jato de alta pressão" (esta acertava 1 de 3). **Continuam errando nas 3 rodadas**: "Como substituir a bateria do veículo?", "Como desembaçar o vidro de trás?" e "O pó que sai do airbag é perigoso?". O resultado é estável: as 3 rodadas deram o mesmo número, ao contrário da base, que variou.
+
+Limites: o teste é de um manual, 18 + 14 perguntas e um modelo; as 3 perguntas que seguem erradas não foram investigadas (hipótese não verificada: o trecho certo não está entre os 6 devolvidos, como nas falhas 4 e 5 de [rag.md](rag.md) §3). O stamp mostra `codigo_limpo: false` (`avaliar_rag.py` e o prompt alterados, ainda sem commit). As medições de [rag.md](rag.md) §3 (as 10 perguntas pelo grafo, 2026-10-16) e os exemplos de `logs/exemplos/` foram feitos com o prompt anterior, e o hash de cada log diz qual.
 
 ## 5. Raspagem (`raspar`)
 

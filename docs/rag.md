@@ -146,6 +146,17 @@ Pôr "do meu Fox 2015" na consulta derruba a busca vetorial de 16 para 12 acerto
 
 (Esta tabela vem do experimento de laboratório, com o leitor simulado fora do sistema, e só tinha 2 perguntas sem resposta.) **No sistema real, com o código final**, em 5 rodadas: **10 a 11 de 18 respondidas, 9 a 10 com o fato esperado, 14 de 14 recusadas e 0 falsas respostas** (`python avaliar_rag.py manual 3`: 11, 11, 11). A diferença para o laboratório (13-14) não é erro de contagem: no sistema real o prompt do leitor e a pergunta são os de produção, e o modelo varia entre rodadas. A faixa honesta do sistema real é a segunda. Remedido em 2026-10-18 como base da ablação do leitor ([prompts.md](prompts.md) §4, contexto do Ollama em 8192, 2 rodadas): 11 e 12 respondidas, 10 e 11 com o fato, 14 de 14 recusadas, 0 falsas: a mesma faixa. O servidor não corta o prompt do leitor (até 2.307 tokens, [prompts.md](prompts.md) §6).
 
+### 6.2.1 O prompt do leitor sem a regra 5 (2026-10-18)
+
+A ablação das regras do prompt ([prompts.md](prompts.md) §4) mostrou que a regra 5 (resumo com no máximo 80 palavras e uma frase sobre o que falta) prejudicava a leitura. Ela foi removida e a medição repetida em 3 rodadas, contra a versão anterior na mesma sessão (`python avaliar_rag.py manual 3 <rótulo>`, logs `manual-com-regra5.json` e `manual-sem-regra5.json`):
+
+| Prompt do leitor | Respondeu | Com o fato | Recusou o que não está no manual | Falsas respostas |
+|---|---|---|---|---|
+| com a regra 5 (anterior) | 12, 11, 11 de 18 | 11, 10, 10 | 14 de 14 | 0 |
+| **sem a regra 5 (atual)** | **16, 16, 16 de 18** | **15, 15, 15** | **14 de 14** | **0** |
+
+5 perguntas passaram a acertar, nenhuma deixou de acertar, e as 14 sem resposta (inclusive as do grupo "termo presente, resposta ausente") continuam recusadas. **A faixa honesta do sistema real passa a ser 16 de 18 respondidas e 15 com o fato** (antes, 10 a 12 e 9 a 11); a tabela acima e o parágrafo anterior descrevem o prompt antigo. Seguem erradas, nas 3 rodadas, "Como substituir a bateria do veículo?", "Como desembaçar o vidro de trás?" e "O pó que sai do airbag é perigoso?". A tabela da §3 (as 10 perguntas pelo grafo, 2026-10-16) e as falhas 4 e 5 foram medidas com o prompt antigo e não foram refeitas.
+
 ### 6.3 Falsa resposta, o risco que o prompt permissivo poderia ter piorado
 
 O prompt aceita passos, listas e advertências como resposta, e isso poderia levar o modelo a "sanar" dúvidas que o manual não responde. Foram **14 perguntas** sem resposta no manual, em três grupos:
