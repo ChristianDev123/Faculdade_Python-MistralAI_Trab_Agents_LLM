@@ -6,15 +6,19 @@ Uso:
   python ablacao_prompts.py leitor [rodadas]     tira uma regra por vez do prompt de leitura do manual e mede nos 32 casos
 
 Cada variante é o prompt ATUAL menos uma frase (ou um bloco). Nada em src/prompts/ é alterado: o texto é trocado em
-memória durante a medição. Regra de decisão, fixada antes de medir:
-  - extracao: "faz diferença" se, sem a frase, a média de acertos da ficha nos casos que o prompt nunca viu cai pelo menos
-    0,5 caso abaixo da linha de base; "sem efeito" se é igual; "melhora" se sobe. (A extração foi idêntica nas 3 rodadas da
-    linha de base, então a diferença é sinal, não ruído.)
-  - leitor: o modelo varia entre rodadas; "faz diferença" se a média de dúvidas respondidas com o fato esperado cai 2 ou
-    mais, ou se a falsa resposta passa de 0.
+memória durante a medição. Regra de decisão:
+  - extracao: compara CASO A CASO com a linha de base (um caso "acerta" se acerta a ficha em todas as rodadas). "faz
+    diferença" se, sem a frase, algum caso fora do prompt que a base acertava deixa de ser acertado; "melhora" se só
+    entram casos; "sem efeito" se nada muda. A primeira versão da regra olhava só a média de casos fora do prompt
+    (queda de 0,5 ou mais), o que escondia trocas (um caso sai e outro entra); foi trocada depois de ver dados parciais.
+  - leitor: o modelo varia entre rodadas, então cada pergunta vale a fração de rodadas em que acertou o fato esperado;
+    "entrou"/"saiu" é uma mudança de 0,5 ou mais na fração. "faz diferença" se alguma pergunta saiu ou se a falsa
+    resposta passou da linha de base; "melhora" se só entraram; "sem efeito" nos demais casos.
+O relatório lista, por variante, os casos que entraram e que saíram. Registre o contexto do servidor em CONTEXTO_OLLAMA.
 Resultados em logs/ablacao-prompts/<alvo>.json.
 """
 import json
+import os
 import re
 import sys
 import time
@@ -107,7 +111,10 @@ def ablacao_extracao(rodadas: int) -> dict:
 
     def medir(variante):
         aplicar_extracao(nos, variante)
-        res = ae.resumir(ae.rodar(nos, rodadas))
+        feitas = ae.rodar(nos, rodadas)
+        res = ae.resumir(feitas)
+        res['acerta_em_todas_as_rodadas'] = sorted(i for i in {r['id'] for r in feitas[0]}
+                                                   if all(next(x for x in rod if x['id'] == i)['ficha_ok'] for rod in feitas))
         nos.ler_prompt, nos.texto_procedural = original
         return res
 
@@ -119,12 +126,15 @@ def ablacao_extracao(rodadas: int) -> dict:
         r = medir(v)
         economia = len(base_prompt) - len(v['extracao']) if 'extracao' in v else None
         dif = round(r['heldout_media_ficha'] - base['heldout_media_ficha'], 2)
-        veredito = 'faz diferença' if dif <= -0.5 else ('melhora' if dif >= 0.5 else 'sem efeito')
-        erros_novos = sorted(set(r['casos_que_sempre_erram']) - set(base['casos_que_sempre_erram']))
+        antes, depois = set(base['acerta_em_todas_as_rodadas']), set(r['acerta_em_todas_as_rodadas'])
+        saiu, entrou = sorted(antes - depois), sorted(depois - antes)
+        saiu_fora = [i for i in saiu if i not in base['vazados']]
+        entrou_fora = [i for i in entrou if i not in base['vazados']]
+        veredito = 'faz diferença' if saiu_fora else ('melhora' if entrou_fora else 'sem efeito')
         resultados[v['id']] = {'frase': v['frase'], 'caracteres_a_menos': economia, 'resumo': r, 'diferenca_fora_do_prompt': dif,
-                               'casos_que_passaram_a_errar': erros_novos, 'veredito': veredito}
+                               'casos_que_saíram': saiu, 'casos_que_entraram': entrou, 'veredito': veredito}
         print(f"  {v['id']:<22} fora do prompt {r['heldout_media_ficha']}/{r['casos_heldout']} ({dif:+}) | total {r['media_ficha']}/{r['casos']} | "
-              f"novos erros {erros_novos} | {veredito}", flush=True)
+              f"saíram {saiu} | entraram {entrou} | {veredito}", flush=True)
     return resultados
 
 
@@ -155,6 +165,7 @@ def ablacao_leitor(rodadas: int) -> dict:
 
     def uma_rodada():
         sanadas = fato = recusas = falsas = 0
+        por_pergunta = {}
         suf = dados['sufixo_da_pergunta']
         for caso in dados['com_resposta']:
             for q in caso['perguntas']:
@@ -163,7 +174,9 @@ def ablacao_leitor(rodadas: int) -> dict:
                     continue
                 x = r['leitura']
                 sanadas += x.sanada
-                fato += bool(x.sanada and re.search(caso['fato'], (x.resumo + ' ' + x.trecho_original).lower()))
+                acertou = bool(x.sanada and re.search(caso['fato'], (x.resumo + ' ' + x.trecho_original).lower()))
+                fato += acertou
+                por_pergunta[q] = acertou
         for grupo in dados['sem_resposta']:
             for q in grupo['perguntas']:
                 r = leitor.ler(dados['manual'], q.rstrip('?') + suf + '?', dados['veiculo'])
@@ -171,7 +184,8 @@ def ablacao_leitor(rodadas: int) -> dict:
                     recusas += 1
                 else:
                     falsas += 1
-        return {'respondeu': sanadas, 'fato': fato, 'recusou': recusas, 'falsas': falsas}
+                    por_pergunta[q] = 'FALSA'
+        return {'respondeu': sanadas, 'fato': fato, 'recusou': recusas, 'falsas': falsas, 'por_pergunta': por_pergunta}
 
     def medir(variante):
         texto = (variante or {}).get('leitor')
@@ -179,7 +193,12 @@ def ablacao_leitor(rodadas: int) -> dict:
         lm.texto_procedural = (lambda secao=None: '' if (variante or {}).get('procedural_leitor_vazio') and secao == 'ler_manual' else original[1](secao))
         rs = [uma_rodada() for _ in range(rodadas)]
         lm.ler_prompt, lm.texto_procedural = original
-        return {'rodadas': rs, 'media_respondeu': round(sum(r['respondeu'] for r in rs) / len(rs), 2), 'media_fato': round(sum(r['fato'] for r in rs) / len(rs), 2),
+        acerto = {q: round(sum(r['por_pergunta'].get(q) is True for r in rs) / len(rs), 2)
+                  for caso in dados['com_resposta'] for q in caso['perguntas']}
+        falsa = {q: round(sum(r['por_pergunta'].get(q) == 'FALSA' for r in rs) / len(rs), 2)
+                 for grupo in dados['sem_resposta'] for q in grupo['perguntas']}
+        return {'acerto_por_pergunta': acerto, 'falsa_por_pergunta': falsa,
+                'rodadas': [{k: v for k, v in r.items() if k != 'por_pergunta'} for r in rs], 'media_respondeu': round(sum(r['respondeu'] for r in rs) / len(rs), 2), 'media_fato': round(sum(r['fato'] for r in rs) / len(rs), 2),
                 'media_recusou': round(sum(r['recusou'] for r in rs) / len(rs), 2), 'max_falsas': max(r['falsas'] for r in rs)}
 
     resultados = {}
@@ -190,10 +209,15 @@ def ablacao_leitor(rodadas: int) -> dict:
     for v in variantes_leitor():
         r = medir(v)
         dif = round(r['media_fato'] - base['media_fato'], 2)
-        veredito = 'faz diferença' if (dif <= -2 or r['max_falsas'] > 0) else ('melhora' if dif >= 2 else 'sem efeito')
+        saiu = [q for q, f in r['acerto_por_pergunta'].items() if f - base['acerto_por_pergunta'][q] <= -0.5]
+        entrou = [q for q, f in r['acerto_por_pergunta'].items() if f - base['acerto_por_pergunta'][q] >= 0.5]
+        falsas_novas = [q for q, f in r['falsa_por_pergunta'].items() if f - base['falsa_por_pergunta'][q] >= 0.5]
+        veredito = 'faz diferença' if (saiu or r['max_falsas'] > base['max_falsas']) else ('melhora' if entrou else 'sem efeito')
         resultados[v['id']] = {'frase': v['frase'], 'caracteres_a_menos': (len(base_texto) - len(v['leitor'])) if 'leitor' in v else None,
-                               'resumo': r, 'diferenca_fato': dif, 'veredito': veredito}
-        print(f"  {v['id']:<36} respondeu {r['media_respondeu']}/18 | fato {r['media_fato']}/18 ({dif:+}) | recusou {r['media_recusou']}/14 | falsas (máx) {r['max_falsas']} | {veredito}", flush=True)
+                               'resumo': r, 'diferenca_fato': dif, 'perguntas_que_saíram': saiu, 'perguntas_que_entraram': entrou,
+                               'falsas_novas': falsas_novas, 'veredito': veredito}
+        print(f"  {v['id']:<36} respondeu {r['media_respondeu']}/18 | fato {r['media_fato']}/18 ({dif:+}) | recusou {r['media_recusou']}/14 | falsas (máx) {r['max_falsas']} | "
+              f"saíram {len(saiu)} | entraram {len(entrou)} | {veredito}", flush=True)
     return resultados
 
 
@@ -209,6 +233,6 @@ if __name__ == '__main__':
     res = ablacao_extracao(rodadas) if alvo == 'extracao' else ablacao_leitor(rodadas)
     destino = RAIZ / 'logs' / 'ablacao-prompts'
     destino.mkdir(parents=True, exist_ok=True)
-    (destino / f'{alvo}.json').write_text(json.dumps({**estado_do_codigo(), 'data': time.strftime('%Y-%m-%d'), 'modelo': modelo_em_uso(), 'rodadas': rodadas,
+    (destino / f'{alvo}.json').write_text(json.dumps({**estado_do_codigo(), 'data': time.strftime('%Y-%m-%d'), 'modelo': modelo_em_uso(), 'rodadas': rodadas, 'contexto_ollama': os.environ.get('CONTEXTO_OLLAMA', 'não informado'),
                                                        'duracao_s': round(time.time() - inicio), 'resultados': res}, ensure_ascii=False, indent=2), encoding='utf-8')
     print(f'\nResultado em {destino / (alvo + ".json")} ({time.time() - inicio:.0f} s)')

@@ -144,7 +144,7 @@ Pôr "do meu Fox 2015" na consulta derruba a busca vetorial de 16 para 12 acerto
 | busca textual, sem veículo, **k=6** | 13-14/18 | 13/18 | 2/2 |
 | híbrido, sem veículo, k=8 | 13/18 | 13/18 | 2/2 |
 
-(Esta tabela vem do experimento de laboratório, com o leitor simulado fora do sistema, e só tinha 2 perguntas sem resposta.) **No sistema real, com o código final**, em 5 rodadas: **10 a 11 de 18 respondidas, 9 a 10 com o fato esperado, 14 de 14 recusadas e 0 falsas respostas** (`python avaliar_rag.py manual 3`: 11, 11, 11). A diferença para o laboratório (13-14) não é erro de contagem: no sistema real o prompt do leitor e a pergunta são os de produção, e o modelo varia entre rodadas. A faixa honesta do sistema real é a segunda.
+(Esta tabela vem do experimento de laboratório, com o leitor simulado fora do sistema, e só tinha 2 perguntas sem resposta.) **No sistema real, com o código final**, em 5 rodadas: **10 a 11 de 18 respondidas, 9 a 10 com o fato esperado, 14 de 14 recusadas e 0 falsas respostas** (`python avaliar_rag.py manual 3`: 11, 11, 11). A diferença para o laboratório (13-14) não é erro de contagem: no sistema real o prompt do leitor e a pergunta são os de produção, e o modelo varia entre rodadas. A faixa honesta do sistema real é a segunda. Remedido em 2026-10-18 como base da ablação do leitor ([prompts.md](prompts.md) §4, contexto do Ollama em 8192, 2 rodadas): 11 e 12 respondidas, 10 e 11 com o fato, 14 de 14 recusadas, 0 falsas: a mesma faixa. O servidor não corta o prompt do leitor (até 2.307 tokens, [prompts.md](prompts.md) §6).
 
 ### 6.3 Falsa resposta, o risco que o prompt permissivo poderia ter piorado
 

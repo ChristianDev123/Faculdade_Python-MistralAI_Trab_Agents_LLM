@@ -1,0 +1,641 @@
+{
+  "commit": "a5113fe",
+  "codigo_limpo": false,
+  "arquivos_alterados": [
+    "ablacao_prompts.py",
+    "avaliar_raspagem.py"
+  ],
+  "data": "2026-10-18",
+  "modelo": "qwen2.5:7b",
+  "rodadas": 2,
+  "contexto_ollama": "8192",
+  "duracao_s": 1621,
+  "resultados": {
+    "base": {
+      "acerto_por_pergunta": {
+        "Qual a capacidade do tanque de combustível?": 1.0,
+        "Quantos litros cabem no tanque do Fox?": 1.0,
+        "Como montar a argola de reboque dianteira?": 1.0,
+        "Onde coloco a argola para rebocar o carro?": 1.0,
+        "Como trocar a lâmpada do farol?": 0.0,
+        "Queimou a lâmpada do farol, como substituo?": 1.0,
+        "Como substituir a bateria do veículo?": 0.0,
+        "O que devo fazer antes de desconectar a bateria?": 0.0,
+        "Qual a pressão máxima de inflação do pneu?": 1.0,
+        "Quantos kPa suporta o pneu no máximo?": 0.0,
+        "A luz de advertência da pressão do óleo indica o nível do óleo?": 1.0,
+        "O que significa a luz da pressão do óleo no painel?": 1.0,
+        "Como funciona o desembaçador do vidro traseiro?": 1.0,
+        "Como desembaçar o vidro de trás?": 0.0,
+        "O pó que sai do airbag é perigoso?": 0.0,
+        "É normal sair fumaça ou pó quando o airbag dispara?": 0.0,
+        "Posso lavar o carro com lavador de alta pressão?": 1.0,
+        "Cuidados ao lavar o veículo com jato de alta pressão": 0.5
+      },
+      "falsa_por_pergunta": {
+        "Qual o preço do Fox zero quilômetro?": 0.0,
+        "Qual a receita de bolo de cenoura?": 0.0,
+        "Quem ganhou a Copa do Mundo de 2014?": 0.0,
+        "Como programar o piloto automático?": 0.0,
+        "Como pagar o IPVA?": 0.0,
+        "Quais as condições de financiamento?": 0.0,
+        "Quanto custa a revisão de 10.000 km?": 0.0,
+        "Qual a cor mais popular?": 0.0,
+        "Como trocar a embreagem?": 0.0,
+        "Como trocar as pastilhas de freio?": 0.0,
+        "Qual o melhor posto de gasolina da cidade?": 0.0,
+        "Quanto custa a gasolina aditivada?": 0.0,
+        "Quais são os períodos de manutenção?": 0.0,
+        "De quanto em quanto tempo devo fazer a revisão?": 0.0
+      },
+      "rodadas": [
+        {
+          "respondeu": 12,
+          "fato": 11,
+          "recusou": 14,
+          "falsas": 0
+        },
+        {
+          "respondeu": 11,
+          "fato": 10,
+          "recusou": 14,
+          "falsas": 0
+        }
+      ],
+      "media_respondeu": 11.5,
+      "media_fato": 10.5,
+      "media_recusou": 14.0,
+      "max_falsas": 0
+    },
+    "nunca_conhecimento_proprio": {
+      "frase": "Nunca complete com conhecimento próprio.",
+      "caracteres_a_menos": 41,
+      "resumo": {
+        "acerto_por_pergunta": {
+          "Qual a capacidade do tanque de combustível?": 1.0,
+          "Quantos litros cabem no tanque do Fox?": 0.0,
+          "Como montar a argola de reboque dianteira?": 1.0,
+          "Onde coloco a argola para rebocar o carro?": 0.0,
+          "Como trocar a lâmpada do farol?": 0.0,
+          "Queimou a lâmpada do farol, como substituo?": 1.0,
+          "Como substituir a bateria do veículo?": 0.0,
+          "O que devo fazer antes de desconectar a bateria?": 0.0,
+          "Qual a pressão máxima de inflação do pneu?": 1.0,
+          "Quantos kPa suporta o pneu no máximo?": 1.0,
+          "A luz de advertência da pressão do óleo indica o nível do óleo?": 1.0,
+          "O que significa a luz da pressão do óleo no painel?": 1.0,
+          "Como funciona o desembaçador do vidro traseiro?": 1.0,
+          "Como desembaçar o vidro de trás?": 0.0,
+          "O pó que sai do airbag é perigoso?": 0.0,
+          "É normal sair fumaça ou pó quando o airbag dispara?": 0.0,
+          "Posso lavar o carro com lavador de alta pressão?": 1.0,
+          "Cuidados ao lavar o veículo com jato de alta pressão": 0.0
+        },
+        "falsa_por_pergunta": {
+          "Qual o preço do Fox zero quilômetro?": 0.0,
+          "Qual a receita de bolo de cenoura?": 0.0,
+          "Quem ganhou a Copa do Mundo de 2014?": 0.0,
+          "Como programar o piloto automático?": 0.0,
+          "Como pagar o IPVA?": 0.0,
+          "Quais as condições de financiamento?": 0.0,
+          "Quanto custa a revisão de 10.000 km?": 0.0,
+          "Qual a cor mais popular?": 0.0,
+          "Como trocar a embreagem?": 0.0,
+          "Como trocar as pastilhas de freio?": 0.0,
+          "Qual o melhor posto de gasolina da cidade?": 0.0,
+          "Quanto custa a gasolina aditivada?": 0.0,
+          "Quais são os períodos de manutenção?": 0.0,
+          "De quanto em quanto tempo devo fazer a revisão?": 0.0
+        },
+        "rodadas": [
+          {
+            "respondeu": 9,
+            "fato": 9,
+            "recusou": 14,
+            "falsas": 0
+          },
+          {
+            "respondeu": 10,
+            "fato": 9,
+            "recusou": 14,
+            "falsas": 0
+          }
+        ],
+        "media_respondeu": 9.5,
+        "media_fato": 9.0,
+        "media_recusou": 14.0,
+        "max_falsas": 0
+      },
+      "diferenca_fato": -1.5,
+      "perguntas_que_saíram": [
+        "Quantos litros cabem no tanque do Fox?",
+        "Onde coloco a argola para rebocar o carro?",
+        "Cuidados ao lavar o veículo com jato de alta pressão"
+      ],
+      "perguntas_que_entraram": [
+        "Quantos kPa suporta o pneu no máximo?"
+      ],
+      "falsas_novas": [],
+      "veredito": "faz diferença"
+    },
+    "regra1_formato_da_mensagem": {
+      "frase": "A mensagem traz a dúvida e trechos numerados, cada um com a página de origem.",
+      "caracteres_a_menos": 81,
+      "resumo": {
+        "acerto_por_pergunta": {
+          "Qual a capacidade do tanque de combustível?": 1.0,
+          "Quantos litros cabem no tanque do Fox?": 0.0,
+          "Como montar a argola de reboque dianteira?": 1.0,
+          "Onde coloco a argola para rebocar o carro?": 1.0,
+          "Como trocar a lâmpada do farol?": 0.0,
+          "Queimou a lâmpada do farol, como substituo?": 1.0,
+          "Como substituir a bateria do veículo?": 0.0,
+          "O que devo fazer antes de desconectar a bateria?": 0.0,
+          "Qual a pressão máxima de inflação do pneu?": 1.0,
+          "Quantos kPa suporta o pneu no máximo?": 0.0,
+          "A luz de advertência da pressão do óleo indica o nível do óleo?": 1.0,
+          "O que significa a luz da pressão do óleo no painel?": 1.0,
+          "Como funciona o desembaçador do vidro traseiro?": 1.0,
+          "Como desembaçar o vidro de trás?": 0.0,
+          "O pó que sai do airbag é perigoso?": 0.0,
+          "É normal sair fumaça ou pó quando o airbag dispara?": 0.0,
+          "Posso lavar o carro com lavador de alta pressão?": 0.5,
+          "Cuidados ao lavar o veículo com jato de alta pressão": 1.0
+        },
+        "falsa_por_pergunta": {
+          "Qual o preço do Fox zero quilômetro?": 0.0,
+          "Qual a receita de bolo de cenoura?": 0.0,
+          "Quem ganhou a Copa do Mundo de 2014?": 0.0,
+          "Como programar o piloto automático?": 0.0,
+          "Como pagar o IPVA?": 0.0,
+          "Quais as condições de financiamento?": 0.0,
+          "Quanto custa a revisão de 10.000 km?": 0.0,
+          "Qual a cor mais popular?": 0.0,
+          "Como trocar a embreagem?": 0.0,
+          "Como trocar as pastilhas de freio?": 0.0,
+          "Qual o melhor posto de gasolina da cidade?": 0.0,
+          "Quanto custa a gasolina aditivada?": 0.0,
+          "Quais são os períodos de manutenção?": 0.0,
+          "De quanto em quanto tempo devo fazer a revisão?": 0.0
+        },
+        "rodadas": [
+          {
+            "respondeu": 9,
+            "fato": 9,
+            "recusou": 14,
+            "falsas": 0
+          },
+          {
+            "respondeu": 11,
+            "fato": 10,
+            "recusou": 14,
+            "falsas": 0
+          }
+        ],
+        "media_respondeu": 10.0,
+        "media_fato": 9.5,
+        "media_recusou": 14.0,
+        "max_falsas": 0
+      },
+      "diferenca_fato": -1.0,
+      "perguntas_que_saíram": [
+        "Quantos litros cabem no tanque do Fox?",
+        "Posso lavar o carro com lavador de alta pressão?"
+      ],
+      "perguntas_que_entraram": [
+        "Cuidados ao lavar o veículo com jato de alta pressão"
+      ],
+      "falsas_novas": [],
+      "veredito": "faz diferença"
+    },
+    "regra2_sanada_em_qualquer_formato": {
+      "frase": "A dúvida está sanada quando algum trecho traz a informação pedida, em qualquer formato...",
+      "caracteres_a_menos": 183,
+      "resumo": {
+        "acerto_por_pergunta": {
+          "Qual a capacidade do tanque de combustível?": 0.0,
+          "Quantos litros cabem no tanque do Fox?": 0.5,
+          "Como montar a argola de reboque dianteira?": 0.0,
+          "Onde coloco a argola para rebocar o carro?": 1.0,
+          "Como trocar a lâmpada do farol?": 0.0,
+          "Queimou a lâmpada do farol, como substituo?": 0.0,
+          "Como substituir a bateria do veículo?": 0.0,
+          "O que devo fazer antes de desconectar a bateria?": 0.0,
+          "Qual a pressão máxima de inflação do pneu?": 1.0,
+          "Quantos kPa suporta o pneu no máximo?": 0.0,
+          "A luz de advertência da pressão do óleo indica o nível do óleo?": 1.0,
+          "O que significa a luz da pressão do óleo no painel?": 0.0,
+          "Como funciona o desembaçador do vidro traseiro?": 1.0,
+          "Como desembaçar o vidro de trás?": 0.0,
+          "O pó que sai do airbag é perigoso?": 0.0,
+          "É normal sair fumaça ou pó quando o airbag dispara?": 0.0,
+          "Posso lavar o carro com lavador de alta pressão?": 0.0,
+          "Cuidados ao lavar o veículo com jato de alta pressão": 0.0
+        },
+        "falsa_por_pergunta": {
+          "Qual o preço do Fox zero quilômetro?": 0.0,
+          "Qual a receita de bolo de cenoura?": 0.0,
+          "Quem ganhou a Copa do Mundo de 2014?": 0.0,
+          "Como programar o piloto automático?": 0.0,
+          "Como pagar o IPVA?": 0.0,
+          "Quais as condições de financiamento?": 0.0,
+          "Quanto custa a revisão de 10.000 km?": 0.0,
+          "Qual a cor mais popular?": 0.0,
+          "Como trocar a embreagem?": 0.0,
+          "Como trocar as pastilhas de freio?": 0.0,
+          "Qual o melhor posto de gasolina da cidade?": 0.0,
+          "Quanto custa a gasolina aditivada?": 0.0,
+          "Quais são os períodos de manutenção?": 0.0,
+          "De quanto em quanto tempo devo fazer a revisão?": 0.0
+        },
+        "rodadas": [
+          {
+            "respondeu": 5,
+            "fato": 5,
+            "recusou": 14,
+            "falsas": 0
+          },
+          {
+            "respondeu": 4,
+            "fato": 4,
+            "recusou": 14,
+            "falsas": 0
+          }
+        ],
+        "media_respondeu": 4.5,
+        "media_fato": 4.5,
+        "media_recusou": 14.0,
+        "max_falsas": 0
+      },
+      "diferenca_fato": -6.0,
+      "perguntas_que_saíram": [
+        "Qual a capacidade do tanque de combustível?",
+        "Quantos litros cabem no tanque do Fox?",
+        "Como montar a argola de reboque dianteira?",
+        "Queimou a lâmpada do farol, como substituo?",
+        "O que significa a luz da pressão do óleo no painel?",
+        "Posso lavar o carro com lavador de alta pressão?",
+        "Cuidados ao lavar o veículo com jato de alta pressão"
+      ],
+      "perguntas_que_entraram": [],
+      "falsas_novas": [],
+      "veredito": "faz diferença"
+    },
+    "regra3_sanada_so_falso_se_nenhum": {
+      "frase": "`sanada` só é falso se NENHUM trecho trata do assunto. Índice, sumário e lista de termos não contam.",
+      "caracteres_a_menos": 144,
+      "resumo": {
+        "acerto_por_pergunta": {
+          "Qual a capacidade do tanque de combustível?": 1.0,
+          "Quantos litros cabem no tanque do Fox?": 1.0,
+          "Como montar a argola de reboque dianteira?": 1.0,
+          "Onde coloco a argola para rebocar o carro?": 0.5,
+          "Como trocar a lâmpada do farol?": 0.0,
+          "Queimou a lâmpada do farol, como substituo?": 0.0,
+          "Como substituir a bateria do veículo?": 0.0,
+          "O que devo fazer antes de desconectar a bateria?": 0.0,
+          "Qual a pressão máxima de inflação do pneu?": 1.0,
+          "Quantos kPa suporta o pneu no máximo?": 0.0,
+          "A luz de advertência da pressão do óleo indica o nível do óleo?": 1.0,
+          "O que significa a luz da pressão do óleo no painel?": 1.0,
+          "Como funciona o desembaçador do vidro traseiro?": 1.0,
+          "Como desembaçar o vidro de trás?": 0.0,
+          "O pó que sai do airbag é perigoso?": 0.0,
+          "É normal sair fumaça ou pó quando o airbag dispara?": 0.0,
+          "Posso lavar o carro com lavador de alta pressão?": 0.5,
+          "Cuidados ao lavar o veículo com jato de alta pressão": 0.0
+        },
+        "falsa_por_pergunta": {
+          "Qual o preço do Fox zero quilômetro?": 0.0,
+          "Qual a receita de bolo de cenoura?": 0.0,
+          "Quem ganhou a Copa do Mundo de 2014?": 0.0,
+          "Como programar o piloto automático?": 0.0,
+          "Como pagar o IPVA?": 0.0,
+          "Quais as condições de financiamento?": 0.0,
+          "Quanto custa a revisão de 10.000 km?": 0.0,
+          "Qual a cor mais popular?": 0.0,
+          "Como trocar a embreagem?": 0.0,
+          "Como trocar as pastilhas de freio?": 0.0,
+          "Qual o melhor posto de gasolina da cidade?": 0.0,
+          "Quanto custa a gasolina aditivada?": 0.0,
+          "Quais são os períodos de manutenção?": 0.0,
+          "De quanto em quanto tempo devo fazer a revisão?": 0.0
+        },
+        "rodadas": [
+          {
+            "respondeu": 8,
+            "fato": 8,
+            "recusou": 14,
+            "falsas": 0
+          },
+          {
+            "respondeu": 9,
+            "fato": 8,
+            "recusou": 14,
+            "falsas": 0
+          }
+        ],
+        "media_respondeu": 8.5,
+        "media_fato": 8.0,
+        "media_recusou": 14.0,
+        "max_falsas": 0
+      },
+      "diferenca_fato": -2.5,
+      "perguntas_que_saíram": [
+        "Onde coloco a argola para rebocar o carro?",
+        "Queimou a lâmpada do farol, como substituo?",
+        "Posso lavar o carro com lavador de alta pressão?",
+        "Cuidados ao lavar o veículo com jato de alta pressão"
+      ],
+      "perguntas_que_entraram": [],
+      "falsas_novas": [],
+      "veredito": "faz diferença"
+    },
+    "regra4_trecho_original": {
+      "frase": "`trecho_original` é a cópia literal do trecho que sustenta a resposta...",
+      "caracteres_a_menos": 103,
+      "resumo": {
+        "acerto_por_pergunta": {
+          "Qual a capacidade do tanque de combustível?": 1.0,
+          "Quantos litros cabem no tanque do Fox?": 1.0,
+          "Como montar a argola de reboque dianteira?": 1.0,
+          "Onde coloco a argola para rebocar o carro?": 0.0,
+          "Como trocar a lâmpada do farol?": 0.0,
+          "Queimou a lâmpada do farol, como substituo?": 1.0,
+          "Como substituir a bateria do veículo?": 0.0,
+          "O que devo fazer antes de desconectar a bateria?": 0.0,
+          "Qual a pressão máxima de inflação do pneu?": 1.0,
+          "Quantos kPa suporta o pneu no máximo?": 0.0,
+          "A luz de advertência da pressão do óleo indica o nível do óleo?": 1.0,
+          "O que significa a luz da pressão do óleo no painel?": 0.5,
+          "Como funciona o desembaçador do vidro traseiro?": 1.0,
+          "Como desembaçar o vidro de trás?": 0.0,
+          "O pó que sai do airbag é perigoso?": 0.0,
+          "É normal sair fumaça ou pó quando o airbag dispara?": 0.0,
+          "Posso lavar o carro com lavador de alta pressão?": 1.0,
+          "Cuidados ao lavar o veículo com jato de alta pressão": 1.0
+        },
+        "falsa_por_pergunta": {
+          "Qual o preço do Fox zero quilômetro?": 0.0,
+          "Qual a receita de bolo de cenoura?": 0.0,
+          "Quem ganhou a Copa do Mundo de 2014?": 0.0,
+          "Como programar o piloto automático?": 0.0,
+          "Como pagar o IPVA?": 0.0,
+          "Quais as condições de financiamento?": 0.0,
+          "Quanto custa a revisão de 10.000 km?": 0.0,
+          "Qual a cor mais popular?": 0.0,
+          "Como trocar a embreagem?": 0.0,
+          "Como trocar as pastilhas de freio?": 0.0,
+          "Qual o melhor posto de gasolina da cidade?": 0.0,
+          "Quanto custa a gasolina aditivada?": 0.0,
+          "Quais são os períodos de manutenção?": 0.0,
+          "De quanto em quanto tempo devo fazer a revisão?": 0.0
+        },
+        "rodadas": [
+          {
+            "respondeu": 11,
+            "fato": 10,
+            "recusou": 14,
+            "falsas": 0
+          },
+          {
+            "respondeu": 10,
+            "fato": 9,
+            "recusou": 14,
+            "falsas": 0
+          }
+        ],
+        "media_respondeu": 10.5,
+        "media_fato": 9.5,
+        "media_recusou": 14.0,
+        "max_falsas": 0
+      },
+      "diferenca_fato": -1.0,
+      "perguntas_que_saíram": [
+        "Onde coloco a argola para rebocar o carro?",
+        "O que significa a luz da pressão do óleo no painel?"
+      ],
+      "perguntas_que_entraram": [
+        "Cuidados ao lavar o veículo com jato de alta pressão"
+      ],
+      "falsas_novas": [],
+      "veredito": "faz diferença"
+    },
+    "regra5_resumo": {
+      "frase": "`resumo` responde à dúvida em português, com no máximo 80 palavras e só com o que os trechos dizem...",
+      "caracteres_a_menos": 157,
+      "resumo": {
+        "acerto_por_pergunta": {
+          "Qual a capacidade do tanque de combustível?": 1.0,
+          "Quantos litros cabem no tanque do Fox?": 1.0,
+          "Como montar a argola de reboque dianteira?": 1.0,
+          "Onde coloco a argola para rebocar o carro?": 1.0,
+          "Como trocar a lâmpada do farol?": 1.0,
+          "Queimou a lâmpada do farol, como substituo?": 1.0,
+          "Como substituir a bateria do veículo?": 0.0,
+          "O que devo fazer antes de desconectar a bateria?": 1.0,
+          "Qual a pressão máxima de inflação do pneu?": 1.0,
+          "Quantos kPa suporta o pneu no máximo?": 1.0,
+          "A luz de advertência da pressão do óleo indica o nível do óleo?": 1.0,
+          "O que significa a luz da pressão do óleo no painel?": 1.0,
+          "Como funciona o desembaçador do vidro traseiro?": 1.0,
+          "Como desembaçar o vidro de trás?": 0.0,
+          "O pó que sai do airbag é perigoso?": 0.0,
+          "É normal sair fumaça ou pó quando o airbag dispara?": 1.0,
+          "Posso lavar o carro com lavador de alta pressão?": 1.0,
+          "Cuidados ao lavar o veículo com jato de alta pressão": 1.0
+        },
+        "falsa_por_pergunta": {
+          "Qual o preço do Fox zero quilômetro?": 0.0,
+          "Qual a receita de bolo de cenoura?": 0.0,
+          "Quem ganhou a Copa do Mundo de 2014?": 0.0,
+          "Como programar o piloto automático?": 0.0,
+          "Como pagar o IPVA?": 0.0,
+          "Quais as condições de financiamento?": 0.0,
+          "Quanto custa a revisão de 10.000 km?": 0.0,
+          "Qual a cor mais popular?": 0.0,
+          "Como trocar a embreagem?": 0.0,
+          "Como trocar as pastilhas de freio?": 0.0,
+          "Qual o melhor posto de gasolina da cidade?": 0.0,
+          "Quanto custa a gasolina aditivada?": 0.0,
+          "Quais são os períodos de manutenção?": 0.0,
+          "De quanto em quanto tempo devo fazer a revisão?": 0.0
+        },
+        "rodadas": [
+          {
+            "respondeu": 16,
+            "fato": 15,
+            "recusou": 14,
+            "falsas": 0
+          },
+          {
+            "respondeu": 16,
+            "fato": 15,
+            "recusou": 14,
+            "falsas": 0
+          }
+        ],
+        "media_respondeu": 16.0,
+        "media_fato": 15.0,
+        "media_recusou": 14.0,
+        "max_falsas": 0
+      },
+      "diferenca_fato": 4.5,
+      "perguntas_que_saíram": [],
+      "perguntas_que_entraram": [
+        "Como trocar a lâmpada do farol?",
+        "O que devo fazer antes de desconectar a bateria?",
+        "Quantos kPa suporta o pneu no máximo?",
+        "É normal sair fumaça ou pó quando o airbag dispara?",
+        "Cuidados ao lavar o veículo com jato de alta pressão"
+      ],
+      "falsas_novas": [],
+      "veredito": "melhora"
+    },
+    "regra6_pensamento": {
+      "frase": "`pensamento` tem no máximo 2 frases.",
+      "caracteres_a_menos": 40,
+      "resumo": {
+        "acerto_por_pergunta": {
+          "Qual a capacidade do tanque de combustível?": 1.0,
+          "Quantos litros cabem no tanque do Fox?": 1.0,
+          "Como montar a argola de reboque dianteira?": 1.0,
+          "Onde coloco a argola para rebocar o carro?": 0.0,
+          "Como trocar a lâmpada do farol?": 0.0,
+          "Queimou a lâmpada do farol, como substituo?": 1.0,
+          "Como substituir a bateria do veículo?": 0.0,
+          "O que devo fazer antes de desconectar a bateria?": 1.0,
+          "Qual a pressão máxima de inflação do pneu?": 1.0,
+          "Quantos kPa suporta o pneu no máximo?": 1.0,
+          "A luz de advertência da pressão do óleo indica o nível do óleo?": 1.0,
+          "O que significa a luz da pressão do óleo no painel?": 1.0,
+          "Como funciona o desembaçador do vidro traseiro?": 1.0,
+          "Como desembaçar o vidro de trás?": 0.5,
+          "O pó que sai do airbag é perigoso?": 0.0,
+          "É normal sair fumaça ou pó quando o airbag dispara?": 0.0,
+          "Posso lavar o carro com lavador de alta pressão?": 1.0,
+          "Cuidados ao lavar o veículo com jato de alta pressão": 0.5
+        },
+        "falsa_por_pergunta": {
+          "Qual o preço do Fox zero quilômetro?": 0.0,
+          "Qual a receita de bolo de cenoura?": 0.0,
+          "Quem ganhou a Copa do Mundo de 2014?": 0.0,
+          "Como programar o piloto automático?": 0.0,
+          "Como pagar o IPVA?": 0.0,
+          "Quais as condições de financiamento?": 0.0,
+          "Quanto custa a revisão de 10.000 km?": 0.0,
+          "Qual a cor mais popular?": 0.0,
+          "Como trocar a embreagem?": 0.0,
+          "Como trocar as pastilhas de freio?": 0.0,
+          "Qual o melhor posto de gasolina da cidade?": 0.0,
+          "Quanto custa a gasolina aditivada?": 0.0,
+          "Quais são os períodos de manutenção?": 0.0,
+          "De quanto em quanto tempo devo fazer a revisão?": 0.0
+        },
+        "rodadas": [
+          {
+            "respondeu": 12,
+            "fato": 12,
+            "recusou": 14,
+            "falsas": 0
+          },
+          {
+            "respondeu": 12,
+            "fato": 12,
+            "recusou": 14,
+            "falsas": 0
+          }
+        ],
+        "media_respondeu": 12.0,
+        "media_fato": 12.0,
+        "media_recusou": 14.0,
+        "max_falsas": 0
+      },
+      "diferenca_fato": 1.5,
+      "perguntas_que_saíram": [
+        "Onde coloco a argola para rebocar o carro?"
+      ],
+      "perguntas_que_entraram": [
+        "O que devo fazer antes de desconectar a bateria?",
+        "Quantos kPa suporta o pneu no máximo?",
+        "Como desembaçar o vidro de trás?"
+      ],
+      "falsas_novas": [],
+      "veredito": "faz diferença"
+    },
+    "proc_indice": {
+      "frase": "regra aprendida: Índice, sumário e lista de termos de manual nunca respondem...",
+      "caracteres_a_menos": null,
+      "resumo": {
+        "acerto_por_pergunta": {
+          "Qual a capacidade do tanque de combustível?": 1.0,
+          "Quantos litros cabem no tanque do Fox?": 1.0,
+          "Como montar a argola de reboque dianteira?": 1.0,
+          "Onde coloco a argola para rebocar o carro?": 1.0,
+          "Como trocar a lâmpada do farol?": 0.5,
+          "Queimou a lâmpada do farol, como substituo?": 1.0,
+          "Como substituir a bateria do veículo?": 0.0,
+          "O que devo fazer antes de desconectar a bateria?": 1.0,
+          "Qual a pressão máxima de inflação do pneu?": 1.0,
+          "Quantos kPa suporta o pneu no máximo?": 0.5,
+          "A luz de advertência da pressão do óleo indica o nível do óleo?": 0.5,
+          "O que significa a luz da pressão do óleo no painel?": 1.0,
+          "Como funciona o desembaçador do vidro traseiro?": 1.0,
+          "Como desembaçar o vidro de trás?": 0.5,
+          "O pó que sai do airbag é perigoso?": 0.0,
+          "É normal sair fumaça ou pó quando o airbag dispara?": 0.0,
+          "Posso lavar o carro com lavador de alta pressão?": 0.0,
+          "Cuidados ao lavar o veículo com jato de alta pressão": 1.0
+        },
+        "falsa_por_pergunta": {
+          "Qual o preço do Fox zero quilômetro?": 0.0,
+          "Qual a receita de bolo de cenoura?": 0.0,
+          "Quem ganhou a Copa do Mundo de 2014?": 0.0,
+          "Como programar o piloto automático?": 0.0,
+          "Como pagar o IPVA?": 0.0,
+          "Quais as condições de financiamento?": 0.0,
+          "Quanto custa a revisão de 10.000 km?": 0.0,
+          "Qual a cor mais popular?": 0.0,
+          "Como trocar a embreagem?": 0.0,
+          "Como trocar as pastilhas de freio?": 0.0,
+          "Qual o melhor posto de gasolina da cidade?": 0.0,
+          "Quanto custa a gasolina aditivada?": 0.0,
+          "Quais são os períodos de manutenção?": 0.0,
+          "De quanto em quanto tempo devo fazer a revisão?": 0.0
+        },
+        "rodadas": [
+          {
+            "respondeu": 13,
+            "fato": 12,
+            "recusou": 14,
+            "falsas": 0
+          },
+          {
+            "respondeu": 13,
+            "fato": 12,
+            "recusou": 14,
+            "falsas": 0
+          }
+        ],
+        "media_respondeu": 13.0,
+        "media_fato": 12.0,
+        "media_recusou": 14.0,
+        "max_falsas": 0
+      },
+      "diferenca_fato": 1.5,
+      "perguntas_que_saíram": [
+        "A luz de advertência da pressão do óleo indica o nível do óleo?",
+        "Posso lavar o carro com lavador de alta pressão?"
+      ],
+      "perguntas_que_entraram": [
+        "Como trocar a lâmpada do farol?",
+        "O que devo fazer antes de desconectar a bateria?",
+        "Quantos kPa suporta o pneu no máximo?",
+        "Como desembaçar o vidro de trás?",
+        "Cuidados ao lavar o veículo com jato de alta pressão"
+      ],
+      "falsas_novas": [],
+      "veredito": "faz diferença"
+    }
+  }
+}

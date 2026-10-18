@@ -1,12 +1,8 @@
 {
-  "commit": "30e8bee",
-  "codigo_limpo": false,
-  "arquivos_alterados": [
-    "src/grafo.py",
-    "avaliar_extracao.py",
-    "dados/casos_extracao.json"
-  ],
-  "data": "2026-10-16",
+  "commit": "a5113fe",
+  "codigo_limpo": true,
+  "arquivos_alterados": [],
+  "data": "2026-10-18",
   "modelo": "qwen2.5:7b",
   "resumo": {
     "casos": 29,
