@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -9,6 +10,8 @@ PROMPTS_PATH = PROJECT_PATH / 'src' / 'prompts'
 
 
 def commit_atual() -> str:
+    if os.environ.get('CODE_COMMIT'):  # imagem Docker: não há .git lá dentro, o commit entra no build (--build-arg CODE_COMMIT=...)
+        return os.environ['CODE_COMMIT']
     try:
         saida = subprocess.run(
             ['git', 'rev-parse', '--short', 'HEAD'],

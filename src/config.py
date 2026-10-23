@@ -9,7 +9,7 @@ api_key = ""
 MODEL = None
 
 if(os.environ['MODE'] == 'local'):
-    base_url = 'http://localhost:11434/v1'
+    base_url = os.environ.get('OLLAMA_URL') or 'http://localhost:11434/v1'  # OLLAMA_URL: Ollama em outra máquina ou em outro contêiner
     api_key = 'ollama'
     MODEL = os.environ["AI_MODEL"]
 else:

@@ -6,7 +6,7 @@ Por dentro é um grafo LangGraph: o modelo só decide a intenção e os dados do
 
 ## Como rodar
 
-Requisitos: Linux ou WSL, Python 3.12+, Chromium do sistema (o scraper usa `/usr/bin/chromium`) e uma chave de API (Groq) ou um modelo local no Ollama.
+Requisitos: Linux ou WSL, Python 3.12+, Chromium do sistema (o scraper usa `/usr/bin/chromium`) e uma chave de API (Groq) ou um modelo local no Ollama. **Sem nada disso instalado, use o Docker** (seção "Com Docker", logo abaixo).
 
 ```bash
 sudo apt install chromium
@@ -24,6 +24,22 @@ Variáveis do `.env` (nomes em `.env.example`):
 | `MODE` | `remote` (Groq) ou `local` (Ollama em `localhost:11434`) |
 | `AI_MODEL` | modelo a usar (obrigatório em `local`; em `remote` vazio usa `openai/gpt-oss-120b`). No Ollama use o nome com a tag, por exemplo `qwen2.5:7b` |
 | `GROQ_API_KEY` | chave da Groq (modo `remote`) |
+
+### Com Docker
+
+Alternativa ao `venv`: a imagem já traz Python 3.14, o Chromium, as dependências e o modelo de embeddings. Só é preciso o Docker com o plugin Compose.
+
+```bash
+cp .env.example .env                       # preencha GROQ_API_KEY (deixe MODE vazio: vale remote)
+docker compose build                       # 1ª vez: ~4 min e uma imagem de ~4 GB; depois fica em cache
+docker compose run --rm app                # abre a conversa; "docker compose run --rm app minha-sessao" retoma uma sessão
+```
+
+- **Onde ficam os dados.** A base de peças, o índice do manual, a memória, as conversas e os logs ficam em volumes do Docker (`databases` e `logs`), que nascem com o conteúdo da imagem. Os arquivos do repositório não são alterados. `docker compose down -v` volta ao estado da imagem.
+- **Outros scripts** rodam trocando o ponto de entrada: `docker compose run --rm --entrypoint python app conferir_grafo.py`.
+- **Modelo local no Docker (perfil `local`).** `docker compose --profile local up -d ollama`, depois `docker compose --profile local run --rm puxar-modelo` (baixa o `AI_MODEL`; o `qwen2.5:7b` tem 4,7 GB) e `MODE=local AI_MODEL=qwen2.5:7b docker compose run --rm app`. **É lento**: o Ollama do contêiner usa só CPU (há um trecho de GPU NVIDIA comentado no `docker-compose.yml`), e o `LLM_TIMEOUT` padrão de 90 s pode estourar na leitura do manual. Para usar o Ollama já instalado no computador, ponha `OLLAMA_URL` no `.env` (Docker Desktop: `http://host.docker.internal:11434/v1`; Docker Engine no Linux/WSL, com o Ollama no Windows ou no próprio Linux: `docker run --rm -it --network host -e MODE=local -e AI_MODEL=qwen2.5:7b assistente-automotivo`, que enxerga o `localhost:11434` do computador).
+- **Versão nos logs.** A imagem não tem o `.git`; o commit do carimbo vem do build: `docker compose build --build-arg CODE_COMMIT=$(git rev-parse --short HEAD)`. `codigo_limpo` fica `null` dentro do contêiner, porque não há como saber se havia alteração sem commit.
+- **Validado** em 2026-10-23 (conversa real no contêiner, `MODE=local` apontando para o Ollama do computador): pergunta de peça, raspagem do catálogo da Chevrolet, pausa para aprovação, gravação e, numa segunda execução, resposta vinda da base guardada no volume. O modo `remote` (Groq) usa o mesmo caminho do código, mas **não foi exercitado** (sem chave neste ambiente).
 
 Verificações úteis: `python src/verificar_local.py` (o modelo aceita saída estruturada e tool calling?) e `python conferir_grafo.py` (nós e arestas do grafo).
 
@@ -102,6 +118,7 @@ Você pode aprovar, rejeitar ou **aprovar editando** (remover itens ou corrigir 
 ```
 src/              o sistema (grafo, nós, estado, contrato, memória, serviços)
   prompts/        prompts em arquivo, carregados em tempo de execução
+Dockerfile, docker-compose.yml, .dockerignore   a imagem e o compose (seção "Com Docker")
 conferir_grafo.py nós e arestas do grafo executado
 verificar_remocao.py varre todas as estruturas atrás de um identificador (prova da remoção)
 avaliar_rag.py   avalia o RAG com dados/perguntas_rag.json (`perguntas` pelo grafo, `manual` só pelo leitor)

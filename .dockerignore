@@ -1,0 +1,14 @@
+# Fora da imagem: o que é do computador de quem desenvolve, o que é segredo e o que muda a cada execução.
+.git
+.env
+venv
+.venv
+**/__pycache__
+logs
+docs
+exercicios
+teste.txt
+*.md
+# Conversas e pendências de aprovação deste computador nunca vão para a imagem
+databases/checkpoints.sqlite*
+databases/db.sqlite-journal

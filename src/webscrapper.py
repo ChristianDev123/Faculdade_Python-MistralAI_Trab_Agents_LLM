@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import json
+import os
 import re
 import time
 import unicodedata
@@ -264,7 +265,8 @@ class WebScrapper:
         paginas_lidas = 0
         try:
             with sync_playwright() as p:
-                browser = p.chromium.launch(executable_path=CHROMIUM, headless=True)
+                # No contêiner o Chromium roda como root e não abre sem --no-sandbox (o Dockerfile liga CHROMIUM_NO_SANDBOX); fora dele, nada muda.
+                browser = p.chromium.launch(executable_path=CHROMIUM, headless=True, args=['--no-sandbox'] if os.environ.get('CHROMIUM_NO_SANDBOX') else [])
                 context = browser.new_context(
                     user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                     viewport={"width": 1280, "height": 800}
