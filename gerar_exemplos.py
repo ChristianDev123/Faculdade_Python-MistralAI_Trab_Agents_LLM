@@ -5,7 +5,7 @@ Uso:
   python gerar_exemplos.py feliz manual  roda só estes
   python gerar_exemplos.py --lista       lista os cenários
 
-Saídas: logs/exemplos/<cenário>/trajetoria.jsonl (um por conversa; a segunda conversa é <cenário>-2...) e
+Saídas: logs/exemplos/<cenário>/trace.jsonl (um por conversa; a segunda conversa é <cenário>-2...) e
 logs/exemplos/resultado.json, com a entrada exata, a saída completa e o carimbo (commit, data, modelo, código limpo).
 
 Cuidados:

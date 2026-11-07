@@ -1,8 +1,8 @@
 """Nós e funções de rota do grafo (ver docs/grafo.md).
 
 Quem decide o quê:
-  - MODELO: `extrair` (intenção e dados a partir do texto livre), `raspar` (extração da página) e `ler_manual`
-    (resposta fundamentada nos trechos). Nada além disso passa por modelo.
+  - MODELO: `extrair` (intenção e dados a partir do texto livre) e `ler_manual` (resposta fundamentada nos trechos); em `raspar`,
+    só como reserva, em página de formato desconhecido. Nada além disso passa por modelo.
   - CÓDIGO: todas as rotas, os portões, a consulta à base, a gravação e o texto da saída.
   - HUMANO: `aprovar_gravacao` e `confirmar_esquecimento`, via interrupt.
 """
@@ -19,8 +19,8 @@ from pydantic import ValidationError
 from src.contrato import Extracao, Fonte, Peca, RespostaAprovacao, RespostaConfirmacao, Saida
 from src.estado import LIMPAR, ZERAR
 from src.memoria import COLECAO_EPISODICA as COLECAO, JANELA_TOKENS, Memoria, janela_historico, texto_procedural
-from src.trajetoria import Trajetoria, carimbo_prompts, estado_do_codigo
-from src.util import ler_prompt, modelo_em_uso, tokens_estimados
+from src.rastreio import chamar_modelo, como_ferramenta, evento, silenciar
+from src.util import dobrar, ler_prompt, modelo_em_uso, tokens_estimados
 
 MAX_TURNOS = int(os.environ.get('MAX_TURNOS') or 15)                      # mensagens do usuário por conversa
 MAX_PERGUNTAS_IGUAIS = 3                                                  # mesma pergunta sem resposta: desiste
@@ -41,8 +41,7 @@ PERGUNTAS = {
     'nome_peca': 'Qual peça você procura?',
     'duvida': 'Qual é a sua dúvida sobre o veículo?',
 }
-# Conhecimento de domínio para não perguntar o óbvio. Só preenche `fabricante` quando o usuário não o disse.
-# Lista curta de propósito: modelo fora dela gera a pergunta da montadora. Ampliar com revisão de quem conhece o domínio.
+# Completa `fabricante` quando o usuário não o disse. Modelo fora da lista gera a pergunta da montadora.
 MODELO_FABRICANTE = {
     'fox': 'Volkswagen', 'gol': 'Volkswagen', 'polo': 'Volkswagen', 'up': 'Volkswagen',
     'corsa': 'Chevrolet', 'onix': 'Chevrolet', 'celta': 'Chevrolet', 'prisma': 'Chevrolet', 'cruze': 'Chevrolet',
@@ -53,8 +52,6 @@ MODELO_FABRICANTE = {
 MONTADORAS = ['volkswagen', 'chevrolet', 'fiat', 'toyota', 'honda', 'ford', 'hyundai', 'renault', 'nissan', 'jeep']
 
 _servicos = None
-_trajetorias = {}
-_silenciados = set()  # conversas cujos dados foram apagados: nada mais é gravado no log delas
 
 
 def servicos():
@@ -74,27 +71,8 @@ def servicos():
     return _servicos
 
 
-def _traj(config) -> Trajetoria:
-    thread_id = config['configurable']['thread_id']
-    if thread_id not in _trajetorias:
-        usuario, _, sessao = thread_id.partition(':')
-        _trajetorias[thread_id] = Trajetoria(usuario, sessao or 'sessao')
-        _trajetorias[thread_id].registrar('inicio', thread_id=thread_id, **estado_do_codigo(),
-                                          modelo=modelo_em_uso(), parametros_extracao=PARAMS_EXTRACAO,
-                                          limites={'max_turnos': MAX_TURNOS, 'max_perguntas_iguais': MAX_PERGUNTAS_IGUAIS,
-                                                   'prazo_aprovacao_horas': PRAZO_APROVACAO_HORAS},
-                                          prompts=carimbo_prompts())
-    return _trajetorias[thread_id]
-
-
 def _usuario(config) -> str:
     return config['configurable']['thread_id'].partition(':')[0]
-
-
-def _log(config, evento: str, **dados) -> None:
-    if config['configurable']['thread_id'] in _silenciados:
-        return
-    _traj(config).registrar(evento, **dados)
 
 
 def _agora() -> datetime:
@@ -106,12 +84,12 @@ def _resumo(dados: dict) -> dict:
 
 
 def registrando(func):
-    """Registra no log da trajetória cada nó que terminou: nome, o que escreveu no estado e quanto levou."""
+    """Registra no trace cada nó que terminou: nome, o que escreveu no estado e quanto levou. A sequência desses eventos é a trajetória."""
     @wraps(func)
     def interno(state, config):
         inicio = time.time()
         saida = func(state, config)
-        _log(config, 'no', no=func.__name__, escreveu=_resumo(saida), duracao_s=round(time.time() - inicio, 3))
+        evento('no', no=func.__name__, escreveu=_resumo(saida), duracao_s=round(time.time() - inicio, 3))
         return saida
     return interno
 
@@ -140,6 +118,17 @@ def normalizar_veiculo(campos: dict) -> dict:
     return {**campos, 'modelo': modelo or None, 'fabricante': fabricante}
 
 
+def so_o_dito(campos: dict, mensagem: str) -> dict:
+    """Só vale o dado do veículo que está na última mensagem; o resto fica nulo, e o reducer mantém o que o estado já sabe.
+    Sem isto, quando a última frase não cita carro nenhum, o modelo às vezes devolve um veículo antigo do histórico.
+    A montadora acompanha o modelo, porque o código a completa a partir dele."""
+    texto = dobrar(mensagem)
+    ditos = {k: (v if k == 'fabricante' or v in (None, '') or dobrar(v) in texto else None) for k, v in campos.items()}
+    if not ditos['modelo'] and ditos['fabricante'] and dobrar(ditos['fabricante']) not in texto:
+        ditos['fabricante'] = None
+    return ditos
+
+
 def _linhas_pecas(pecas: list[dict]) -> str:
     linhas = [f"  {i}. {p['nome_peca']} — código {p['codigo_peca']}" for i, p in enumerate(pecas[:MAX_ITENS_TEXTO], 1)]
     if len(pecas) > MAX_ITENS_TEXTO:
@@ -164,9 +153,6 @@ def texto_aprovacao(veiculo: dict, candidatas: list[dict]) -> str:
 @registrando
 def entrada(state, config):
     turno = state.get('turno', 0) + 1
-    mensagens = state.get('mensagens') or []
-    if mensagens:  # o texto exato que a pessoa digitou: sem ele o log não prova de qual entrada saiu a resposta
-        _log(config, 'entrada_usuario', turno=turno, texto=mensagens[-1].content)
     return {
         'turno': turno,
         'passos': [ZERAR], 'evidencias': [ZERAR], 'avisos': [ZERAR],
@@ -179,20 +165,20 @@ def entrada(state, config):
 
 @registrando
 def extrair(state, config):
-    # Técnica: few-shot (6 exemplos no prompt) sobre saída estruturada. Zero-shot errava a intenção MANUAL.
+    # Técnica: few-shot (7 exemplos no prompt) sobre saída estruturada.
     # Contrato: Extracao {intencao: Literal, modelo, ano:int|null, motorizacao, fabricante, nome_peca, duvida}; null = não disse.
-    #   O schema garante uma intenção válida, não a certa: a rota seguinte confia no valor, então ele é testado em execução real.
+    #   O schema garante uma intenção válida, não a certa.
     # Impede: o modelo inventar dado do veículo, e o sistema agir sobre uma intenção que o usuário não expressou.
     # Janela: só as últimas mensagens que cabem no orçamento. O que saiu já está no estado (veículo, intenção).
     sistema = ler_prompt('extracao.md') + '\n\n# Regras aprendidas (escritas por uma pessoa)\n' + texto_procedural('extrair')
     conversa = [{'role': 'user' if isinstance(m, HumanMessage) else 'assistant', 'content': m.content} for m in state['mensagens']]
     enviadas = janela_historico(conversa, JANELA_TOKENS - tokens_estimados(sistema))
-    _log(config, 'janela', no='extrair', mensagens_total=len(conversa), mensagens_enviadas=len(enviadas),
-         tokens_estimados=tokens_estimados(sistema) + sum(tokens_estimados(m['content']) for m in enviadas))
+    evento('janela', no='extrair', mensagens_total=len(conversa), mensagens_enviadas=len(enviadas),
+           tokens_estimados=tokens_estimados(sistema) + sum(tokens_estimados(m['content']) for m in enviadas))
     historico = [{'role': 'system', 'content': sistema}] + enviadas
     try:
-        resposta = servicos().client.chat.completions.create(
-            model=modelo_em_uso(), messages=historico, **PARAMS_EXTRACAO,
+        resposta = chamar_modelo(
+            servicos().client, model=modelo_em_uso(), messages=historico, **PARAMS_EXTRACAO,
             response_format={'type': 'json_schema', 'json_schema': {
                 'name': 'extracao', 'strict': True, 'schema': Extracao.model_json_schema()}},
         )
@@ -202,7 +188,8 @@ def extrair(state, config):
     except ValueError as err:
         return {'erro': {'origem': 'modelo', 'mensagem': f'Resposta fora do contrato Extracao: {err}'}, 'passos': ['extrair']}
 
-    campos = normalizar_veiculo({'modelo': ext.modelo, 'ano': ext.ano, 'motorizacao': ext.motorizacao, 'fabricante': ext.fabricante})
+    ultima = next(m.content for m in reversed(state['mensagens']) if isinstance(m, HumanMessage))
+    campos = so_o_dito(normalizar_veiculo({'modelo': ext.modelo, 'ano': ext.ano, 'motorizacao': ext.motorizacao, 'fabricante': ext.fabricante}), ultima)
     atual = state.get('veiculo') or {}
     avisos = [f"Considerei {k} = {v} (antes: {atual[k]})." for k, v in campos.items()
               if v not in (None, '') and atual.get(k) not in (None, '') and str(atual[k]).lower() != str(v).lower()]
@@ -236,6 +223,7 @@ def perguntar(state, config):
 
 
 @registrando
+@como_ferramenta('consultar_base', lambda s: {'intencao': s['intencao'], 'veiculo': s['veiculo'], 'nome_peca': s.get('nome_peca'), 'duvida': s.get('duvida')})
 def consultar_base(state, config):
     s, v = servicos(), state['veiculo']
     if state['intencao'] == 'MANUAL':
@@ -256,9 +244,9 @@ def consultar_base(state, config):
 
 
 @registrando
+@como_ferramenta('raspar_catalogo', lambda s: {'veiculo': s['veiculo'], 'nome_peca': s['nome_peca']})
 def raspar(state, config):
-    # Dentro do scraper: os cartões `/peca/<código>/` são lidos em código; só a página sem esse formato vai ao modelo (one-shot, em lotes), e o código é conferido contra o texto.
-    # Aqui só se decide, em código, qual catálogo abrir e com quais dados; nada é gravado neste nó.
+    # Decide, em código, qual catálogo abrir e com quais dados; nada é gravado neste nó.
     s, v = servicos(), state['veiculo']
     catalogos = s.reg.resgatar('webcatalogos', {'fabricante': v['fabricante']})
     if not isinstance(catalogos, list) or not catalogos:
@@ -312,6 +300,7 @@ def aprovar_gravacao(state, config):
 
 
 @registrando
+@como_ferramenta('gravar_pecas', lambda s: {'veiculo': s['veiculo'], 'candidatas': s['candidatas']})
 def gravar(state, config):
     reg, v = servicos().reg, state['veiculo']
     novas = ja_existiam = 0
@@ -351,6 +340,7 @@ def ler_manual(state, config):
 
 
 @registrando
+@como_ferramenta('registrar_duvida', lambda s: {'veiculo': s['veiculo'], 'duvida': s['duvida']})
 def registrar_duvida(state, config):
     """Memória episódica: guarda a dúvida respondida (linha na tabela + vetor no índice), só se foi sanada."""
     resultado = servicos().memoria.registrar_episodio(
@@ -359,6 +349,7 @@ def registrar_duvida(state, config):
 
 
 @registrando
+@como_ferramenta('lembrar_veiculo', lambda s: {})
 def lembrar(state, config):
     """Memória semântica, leitura: no primeiro turno, preenche o veículo que o usuário já declarou em outra conversa."""
     perfil = servicos().memoria.lembrar_veiculo(_usuario(config))
@@ -370,6 +361,7 @@ def lembrar(state, config):
 
 
 @registrando
+@como_ferramenta('memorizar_veiculo', lambda s: {'veiculo': s['veiculo']})
 def memorizar(state, config):
     """Memória semântica, escrita: depois de uma resposta entregue, guarda o veículo. Idempotente (ja_existia)."""
     return {'memorizado': servicos().memoria.memorizar_veiculo(_usuario(config), state['veiculo'])}
@@ -401,7 +393,7 @@ def esquecer(state, config):
     """Remoção a pedido do titular. A conversa em andamento fica para o fim: a CLI a apaga depois do grafo terminar."""
     thread_id = config['configurable']['thread_id']
     contagens = servicos().memoria.esquecer_usuario(_usuario(config), manter_thread=thread_id)
-    _silenciados.add(thread_id)  # a pasta de log acabou de ser apagada: não pode ser recriada por este turno
+    silenciar(thread_id)  # a pasta de log acabou de ser apagada: não pode ser recriada por este turno
     return {'esquecimento': {'decisao': 'confirmar', 'contagens': contagens}}
 
 
@@ -409,12 +401,7 @@ def esquecer(state, config):
 def emitir(state, config):
     """Único ponto de saída: monta o texto por código e valida o contrato Saida antes de devolver."""
     saida, motivo = _montar_saida(state)
-    mensagens = [AIMessage(content=saida.resultado)]
-    if motivo == 'esquecido':
-        _silenciados.add(config['configurable']['thread_id'])
-    _log(config, 'termino', motivo=motivo, situacao=saida.situacao, suficiencia=saida.suficiencia,
-         passos=len(state.get('passos') or []), saida=saida.model_dump())
-    return {'saida': saida.model_dump(), 'motivo_termino': motivo, 'mensagens': mensagens}
+    return {'saida': saida.model_dump(), 'motivo_termino': motivo, 'mensagens': [AIMessage(content=saida.resultado)]}
 
 
 def _montar_saida(state) -> tuple[Saida, str]:

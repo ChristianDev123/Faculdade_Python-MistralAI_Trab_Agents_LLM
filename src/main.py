@@ -17,7 +17,8 @@ from langchain_core.messages import HumanMessage
 from langgraph.types import Command
 
 from src.grafo import RECURSION_LIMIT, grafo
-from src.nos import _traj, servicos
+from src.nos import servicos
+from src.rastreio import caminho_do_trace, concluir, execucao
 
 AJUDA_APROVACAO = 'Não entendi. Use: aprovar | rejeitar | editar remover 3,5 | editar codigo 2 ABC123'
 
@@ -70,21 +71,27 @@ def decidir(payload: dict) -> dict | None:
         print(AJUDA_APROVACAO)
 
 
+def invocar(entrada, cfg) -> dict:
+    """Uma chamada ao grafo é uma execução: um trace, com a raiz `invoke_agent`."""
+    retomada = isinstance(entrada, Command)
+    with execucao(cfg['configurable']['thread_id'], entrada=None if retomada else entrada['mensagens'][-1].content,
+                  resposta_humana=entrada.resume if retomada else None) as raiz:
+        resultado = grafo.invoke(entrada, cfg)
+        concluir(raiz, resultado)
+    return resultado
+
+
 def processar(entrada, cfg, decisor=None) -> dict | None:
     """Roda o grafo até ele terminar o turno. Se parar numa aprovação, pergunta e retoma; sem resposta, a pausa fica salva.
     `decisor` troca a pergunta no terminal por outra fonte de resposta (gerar_exemplos.py usa respostas roteirizadas)."""
     decisor = decisor or decidir
-    traj = _traj(cfg)
-    resultado = grafo.invoke(entrada, cfg)
+    resultado = invocar(entrada, cfg)
     while '__interrupt__' in resultado:
-        payload = resultado['__interrupt__'][0].value
-        traj.registrar('pausa', acao=payload['acao'], pausado_em=payload.get('pausado_em'), candidatas=len(payload.get('candidatas', [])))
-        resposta = decisor(payload)
+        resposta = decisor(resultado['__interrupt__'][0].value)
         if resposta is None:
             print('Pedido pendente: ele continua salvo nesta conversa. Rode de novo com a mesma sessão para responder.')
             return None
-        traj.registrar('resposta_humana', resposta=resposta)
-        resultado = grafo.invoke(Command(resume=resposta), cfg)
+        resultado = invocar(Command(resume=resposta), cfg)
     return resultado
 
 
@@ -117,7 +124,6 @@ def main() -> None:
         resposta = decidir(pendentes[0].value)
         if resposta is None:
             return
-        _traj(cfg).registrar('resposta_humana', resposta=resposta)
         resultado = processar(Command(resume=resposta), cfg)
         mostrar(resultado)
         if encerrar_se_esquecido(resultado, thread_id):
@@ -126,7 +132,7 @@ def main() -> None:
     while True:
         texto = ler('user: ')
         if texto is None:
-            print(f'Conversa encerrada. Log: {_traj(cfg).path}')
+            print(f'Conversa encerrada. Trace: {caminho_do_trace(thread_id)}')
             return
         resultado = processar({'mensagens': [HumanMessage(texto)]}, cfg)
         if resultado is None:

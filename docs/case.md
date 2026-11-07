@@ -226,7 +226,7 @@ dado pessoal, financeiro ou de saúde.
 
 # 2.12 O que o domínio ensinou (complemento da Parte 2)
 
-> **RASCUNHO para revisão.** Cada item traz **como sabemos**: ou foi **observado no sistema rodando** (com o arquivo onde está a prova), ou é **conhecimento de balcão** que só quem atende confirma. O que está marcado com **[confirmar]** não foi verificado por medição nenhuma e deve ser corrigido, ou apagado.
+> Cada item traz **como sabemos**: **observado no sistema rodando**, com o arquivo onde está a prova, ou **conhecimento de balcão**. O que está marcado com **[confirmar]** não foi verificado por medição.
 
 ## 2.12.1 O vocabulário que ninguém de fora entende
 
@@ -285,7 +285,7 @@ A seção 2.3 descreve "consulta, registro e apresentação". Na prática, **ach
 ## 2.12.6 O que ainda não sabemos do domínio (perguntas para quem atende no balcão)
 
 - **[confirmar]** O balconista digita como no caso 5 (*"me ve a palheta traseria do corsa 2008 motor 1.4"*)? Os casos de teste foram escritos pelo grupo, não colhidos de quem usa; isso muda o resultado, e o enunciado avisa.
-- **[confirmar]** Qual a taxa real de devolução por peça errada hoje? Sem esse número, o "~90%" da seção 2.5.2 é um palpite.
+- **[confirmar]** Qual a taxa real de devolução por peça errada hoje? Sem esse número, o "~90%" da seção 2.5.2 não tem base.
 - **[confirmar]** Os catálogos da Chevrolet e da Volkswagen são as fontes que a loja aceita como verdade, ou o distribuidor tem a última palavra?
 - **[confirmar]** Em quais anos a geração do carro muda (o "Onix A" e o "Onix B")? O catálogo fala em geração; quem pede fala em ano. Sem essa tabela o sistema não sabe dizer se uma peça "Onix A Hatch" serve num Onix 2018.
 - **[confirmar]** A peça de segurança (freio, suspensão, direção) deve ter um caminho próprio, como diz o critério de sucesso da seção 2.7? Hoje o sistema trata todas as peças do mesmo jeito, e a aprovação humana é o único freio.

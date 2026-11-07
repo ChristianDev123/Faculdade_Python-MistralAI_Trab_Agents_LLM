@@ -1,5 +1,4 @@
-# Imagem do assistente. Alternativa ao venv do README: não precisa instalar Python, Chromium nem dependências no computador.
-# Python 3.14 é a versão em que o requirements.txt foi congelado.
+# Python 3.14: a versão em que o requirements.txt foi congelado.
 FROM python:3.14-slim
 
 ENV PYTHONUNBUFFERED=1 \
@@ -15,15 +14,13 @@ RUN apt-get update \
 
 WORKDIR /app
 
-# O requirements.txt foi gerado numa máquina com GPU: traz o torch com CUDA e uns vinte pacotes nvidia-*/cuda-*/triton que juntos
-# pesam vários GB. No contêiner o torch roda em CPU (só serve para gerar os embeddings da memória episódica), na MESMA versão fixada,
-# vinda do índice CPU do PyTorch. O requirements.txt do repositório não é alterado.
+# Torch em CPU, na versão fixada no requirements.txt, sem os pacotes de GPU (nvidia-*, cuda-*, triton), que pesam vários GB.
 COPY requirements.txt .
 RUN grep -v -E '^(nvidia-|cuda-|triton==)' requirements.txt \
       | sed -E 's/^torch==(.+)$/torch==\1+cpu/' > /tmp/requirements-cpu.txt \
     && pip install --extra-index-url https://download.pytorch.org/whl/cpu -r /tmp/requirements-cpu.txt
 
-# O modelo de embeddings fica dentro da imagem: a primeira execução não depende do Hugging Face.
+# O modelo de embeddings fica dentro da imagem.
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
 COPY src ./src

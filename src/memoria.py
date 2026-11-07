@@ -30,11 +30,8 @@ COLECAO_EPISODICA = 'memoria_episodica'
 CAMPOS_VEICULO = ('modelo', 'ano', 'motorizacao', 'fabricante')
 USER_ID_VALIDO = re.compile(r'^[A-Za-z0-9_.-]{1,100}$')
 
-# Distância de cosseno máxima para uma pergunta anterior valer como "a mesma". Medido com o modelo de embedding real
-# (all-MiniLM-L6-v2, centrado em inglês) sobre perguntas em português: variações de grafia da mesma pergunta ficaram
-# entre 0,000 e 0,088; outras dúvidas do mesmo carro entre 0,238 e 0,383; paráfrases entre 0,194 e 0,443, misturadas com
-# as outras dúvidas. O corte fica acima de toda grafia e abaixo da dúvida diferente mais próxima (0,12): prefere-se reler
-# o manual a servir a resposta de outra pergunta. Medição completa em docs/memoria.md.
+# Distância de cosseno máxima para uma pergunta anterior valer como "a mesma": acima das variações de grafia e abaixo
+# da dúvida diferente mais próxima. Medição em docs/memoria.md.
 LIMIAR_EPISODIO = float(os.environ.get('LIMIAR_EPISODIO') or 0.12)
 
 
@@ -128,9 +125,8 @@ class Memoria:
             'user_id': user_id, 'created_at': agora()})
         if 'erro' in resultado:
             return resultado
-        # Índice derivado, sem dado pessoal: só o vetor, o id da linha e modelo/ano. Nem o texto da pergunta nem o user_id
-        # vão para o Chroma (o log interno dele guarda tudo o que entra e não dá para limpá-lo por fora). Quem é dono de
-        # qual vetor está na tabela. Repetir a chamada atualiza o mesmo vetor e repara um vetor que faltasse.
+        # Índice derivado, sem dado pessoal: só o vetor, o id da linha e modelo/ano, porque o log interno do Chroma
+        # guarda tudo o que entra e não dá para limpá-lo por fora. Quem é dono de qual vetor está na tabela.
         colecao = self._colecao()
         vetor = [float(x) for x in self._ef([duvida])[0]]
         colecao.upsert(ids=[str(resultado['id'])], embeddings=[vetor],

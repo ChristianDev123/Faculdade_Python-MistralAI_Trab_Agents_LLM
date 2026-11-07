@@ -1,4 +1,6 @@
 import os
+import re
+import unicodedata
 from pathlib import Path
 
 from src.config import MODEL
@@ -12,13 +14,16 @@ def ler_prompt(nome: str) -> str:
     return (PROMPTS_PATH / nome).read_text(encoding='utf-8')
 
 
+def dobrar(texto) -> str:
+    """Minúsculas, sem acento e com espaços normalizados: para comparar textos."""
+    return re.sub(r'\s+', ' ', ''.join(c for c in unicodedata.normalize('NFKD', str(texto).lower()) if not unicodedata.combining(c)))
+
+
 def modelo_em_uso() -> str:
     return MODEL or MODELO_PADRAO
 
 
 # Orçamento de contexto por chamada ao modelo, em tokens estimados (caracteres / 3,5 para português).
-# A janela medida do manual usa ~1,7 mil tokens; o orçamento deixa folga para o modelo local, cujo contexto
-# padrão no Ollama não é explícito (o modelo suporta 32 mil).
 JANELA_TOKENS = int(os.environ.get('JANELA_TOKENS') or 3000)
 CARACTERES_POR_TOKEN = 3.5
 

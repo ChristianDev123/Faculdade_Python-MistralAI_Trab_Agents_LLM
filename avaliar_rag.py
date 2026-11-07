@@ -22,10 +22,9 @@ DADOS = json.loads((RAIZ / 'dados' / 'perguntas_rag.json').read_text(encoding='u
 
 def avaliar_perguntas(usuario: str = 'rag-avaliacao') -> int:
     from langchain_core.messages import HumanMessage
-    from langgraph.types import Command
 
-    from src.grafo import RECURSION_LIMIT, grafo
-    from src.nos import _log, _traj
+    from src.grafo import RECURSION_LIMIT
+    from src.main import processar
     from src.trajetoria import estado_do_codigo
     from src.util import modelo_em_uso
 
@@ -33,10 +32,14 @@ def avaliar_perguntas(usuario: str = 'rag-avaliacao') -> int:
     for p in DADOS['perguntas']:
         cfg = {'configurable': {'thread_id': f"{usuario}:q{p['id']}"}, 'recursion_limit': RECURSION_LIMIT}
         inicio = time.time()
-        resultado = grafo.invoke({'mensagens': [HumanMessage(p['pergunta'])]}, cfg)
-        pausou = '__interrupt__' in resultado
-        if pausou:  # a avaliação não grava no cache: rejeita a gravação pendente
-            resultado = grafo.invoke(Command(resume={'decisao': 'rejeitar'}), cfg)
+        pausas = []
+
+        def rejeitar(payload):  # a avaliação não grava no cache: rejeita a gravação pendente
+            pausas.append(payload['acao'])
+            return {'decisao': 'rejeitar'}
+
+        resultado = processar({'mensagens': [HumanMessage(p['pergunta'])]}, cfg, rejeitar)
+        pausou = bool(pausas)
         saida = resultado['saida']
         esperado = p['esperado']
         ok = saida['situacao'] == esperado['situacao'] and esperado['contem'].lower() in saida['resultado'].lower()

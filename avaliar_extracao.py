@@ -4,8 +4,8 @@ Uso:
   python avaliar_extracao.py [rodadas]     linha de base do prompt atual (padrão: 3 rodadas)
 
 Chama a função REAL do nó (`nos.extrair`), com o prompt e as regras aprendidas que estão em src/prompts/, e a
-normalização em código (a montadora sai do nome do modelo e é completada pela lista de modelos conhecidos). Não grava
-log de trajetória nem toca nos bancos. O modelo local não é determinístico nem com temperature=0, por isso as rodadas.
+normalização em código (a montadora sai do nome do modelo e é completada pela lista de modelos conhecidos). Extrai a cada
+mensagem do usuário e acumula o veículo com o reducer real, como o grafo faz. Não grava trace nem toca nos bancos. O modelo local não é determinístico nem com temperature=0, por isso as rodadas.
 
 Vazamento: um caso cuja entrada o prompt já mostra como exemplo (semelhança >= 0,80, calculada na hora contra o prompt
 ORIGINAL) é contado à parte. A medida que vale é a dos casos que o prompt nunca viu (`heldout`).
@@ -63,10 +63,9 @@ VAZADOS = casos_vazados()
 
 
 def preparar_nos():
-    """Isola o nó do resto do sistema: sem log, sem bancos. Devolve o módulo `nos` já preparado."""
+    """Isola o nó do resto do sistema: sem bancos. Devolve o módulo `nos` já preparado."""
     from src import nos
     from src.config import client
-    nos._log = lambda *a, **k: None
     nos.servicos = lambda: SimpleNamespace(client=client)
     return nos
 
@@ -76,9 +75,23 @@ def montar_estado(conversa):
     return {'mensagens': [HumanMessage(t) if papel == 'usuario' else AIMessage(t) for papel, t in conversa], 'veiculo': {}}
 
 
+def extrair_como_no_grafo(nos, conversa, cfg) -> dict:
+    """O nó roda a cada mensagem do usuário, e o reducer acumula o veículo: um dado dito antes continua valendo."""
+    from langchain_core.messages import HumanMessage
+    from src.estado import mesclar
+    mensagens, veiculo, saida = montar_estado(conversa)['mensagens'], {}, {}
+    for i, m in enumerate(mensagens):
+        if isinstance(m, HumanMessage):
+            saida = nos.extrair.__wrapped__({'mensagens': mensagens[:i + 1], 'veiculo': veiculo}, cfg)
+            if 'erro' in saida:
+                return saida
+            veiculo = mesclar(veiculo, saida['veiculo'])
+    return {**saida, 'veiculo': veiculo}
+
+
 def avaliar_caso(nos, caso) -> dict:
     cfg = {'configurable': {'thread_id': 'avaliacao-extracao:caso'}}
-    saida = nos.extrair.__wrapped__(montar_estado(caso['conversa']), cfg)
+    saida = extrair_como_no_grafo(nos, caso['conversa'], cfg)
     esperado = caso['esperado']
     if 'erro' in saida:
         return {'id': caso['id'], 'grupo': caso['grupo'], 'intencao_ok': False, 'ficha_ok': False,
