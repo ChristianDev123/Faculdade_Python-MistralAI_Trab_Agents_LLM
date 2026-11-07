@@ -21,7 +21,7 @@ src/prompts/
 └── system_prompt.py                             # carregador
 ```
 
-Cada execução grava no `log` de início o **hash (12 caracteres do SHA-256) de cada arquivo de `src/prompts/`** e o carimbo do código (`commit`, `codigo_limpo`, `arquivos_alterados`; `src/trajetoria.py`). Com o commit e o hash, qualquer resultado deste documento se liga à versão exata do prompt. O git guarda o histórico; o hash prova qual versão rodou. `procedural.md` nunca é escrito pelo sistema: só uma pessoa, por commit revisado.
+Cada execução grava no trace o **hash (12 caracteres do SHA-256) de cada arquivo de `src/prompts/`** e o carimbo do código (`commit`, `codigo_limpo`, `arquivos_alterados`; `src/trajetoria.py`). Com o commit e o hash, qualquer resultado deste documento se liga à versão exata do prompt. O git guarda o histórico; o hash prova qual versão rodou. `procedural.md` nunca é escrito pelo sistema: só uma pessoa, por commit revisado.
 
 ## 2. Condições das medições
 
@@ -78,8 +78,8 @@ As 3 rodadas deram **o mesmo resultado** (nenhum caso instável). Por grupo: pe�
 
 1. **Só três casos se mexem em toda a ablação**: 3, 5 e 21. Os outros 26 não mudam com nenhuma das 21 variantes. Isso vale em dois sentidos. Para frases que têm casos dedicados (ver a tabela da §3.4), "nada mudou" é evidência de que o modelo **não precisa delas para esses casos**. Mas o conjunto é pequeno e o modelo é capaz de acertar sem a frase por outras pistas (o schema, os exemplos restantes): não prova que a frase é inútil em geral.
 2. **O caso 5** ("me ve a palheta traseria do corsa 2008 motor 1.4", com erro de digitação e português de balcão) é o único que depende do prompt de forma consistente: 7 das 21 variantes o perdem. Mas **o efeito não é aditivo**: tirar qualquer um dos exemplos de MANUAL, de conversa ou de esquecer o derruba, e tirar **todos** os exemplos (`zero_shot`) não o derruba. Não dá para atribuir esse acerto a uma frase; é um caso na fronteira do modelo.
-3. **O "melhora" do caso 21 não é mérito de remover a frase.** O caso 21 passa a acertar em 11 das 21 variantes, inclusive ao tirar frases que nada têm a ver com diagnóstico (`regra_json`, `fabricante`...). O modelo trata o caso 21 como cara ou coroa e qualquer perturbação do prompt o vira. Não vou tirar `nome_peca`, `duvida` ou `regra_null` com base nisso.
-4. `modelo_sem_montadora` custa o caso 3 ("VW Fox 2015 1.6", esperado `fabricante` "Volkswagen"): é a única frase cuja perda aparece em um caso que combina com ela (a montadora abreviada junto do modelo). Não inspecionei qual campo errou, então é uma hipótese, não uma prova.
+3. **O "melhora" do caso 21 não é mérito de remover a frase.** O caso 21 passa a acertar em 11 das 21 variantes, inclusive ao tirar frases que nada têm a ver com diagnóstico (`regra_json`, `fabricante`...). O modelo trata o caso 21 como cara ou coroa e qualquer perturbação do prompt o vira. Por isso `nome_peca`, `duvida` e `regra_null` continuam no prompt.
+4. `modelo_sem_montadora` custa o caso 3 ("VW Fox 2015 1.6", esperado `fabricante` "Volkswagen"): é a única frase cuja perda aparece em um caso que combina com ela (a montadora abreviada junto do modelo). O campo que errou não foi inspecionado: é uma hipótese, não uma prova.
 5. `proc_todas` perde o caso 5, mas `proc_compra` e `proc_cumprimento` isoladas não: de novo, não aditivo.
 
 ### 3.4 Regra da frase: decisão para o prompt de extração
@@ -90,11 +90,11 @@ As 3 rodadas deram **o mesmo resultado** (nenhum caso instável). Por grupo: pe�
 |---|---|---|
 | `modelo_sem_montadora` | perda do caso 3 (montadora abreviada); campo errado não inspecionado | **fica**: a perda tem um caso que combina com a frase |
 | `conversa_inteira`, exemplos de MANUAL, conversa, esquecer (e `ex_fora`, `ex_indefinida`) | perda do caso 5; não aditivo | **ficam**: o efeito é real mas instável; o custo é 1.433 caracteres no total |
-| `regra_correcao` (caso 10), `regra_null` (casos 7, 17, 29), `fabricante` (2, 3, 4, 6), `fora_lista` (18 a 22), `manual_exemplos` (11 a 16), `nome_peca` (1, 7, 8), `duvida` (11 a 17), `regra_json`, `ex_peca`, `papel`, `proc_compra`, `proc_cumprimento` | **não consegui dizer**: cada uma tem caso dedicado (entre parênteses) e o caso continua certo sem a frase. `regra_json` é redundante com o schema que o servidor impõe; `papel` descreve um limite (não responder ao usuário) que o contrato já impede | **candidatas a corte, não cortadas**. Cada remoção foi medida **sozinha**; a remoção conjunta não foi medida, e o efeito dos exemplos já mostrou que não é aditivo. Proposta: cortar `regra_json` e `papel` (redundantes com o contrato), medir de novo e só então olhar as demais |
+| `regra_correcao` (caso 10), `regra_null` (casos 7, 17, 29), `fabricante` (2, 3, 4, 6), `fora_lista` (18 a 22), `manual_exemplos` (11 a 16), `nome_peca` (1, 7, 8), `duvida` (11 a 17), `regra_json`, `ex_peca`, `papel`, `proc_compra`, `proc_cumprimento` | **não identificado**: cada uma tem caso dedicado (entre parênteses) e o caso continua certo sem a frase. `regra_json` é redundante com o schema que o servidor impõe; `papel` descreve um limite (não responder ao usuário) que o contrato já impede | **candidatas a corte, não cortadas**. Cada remoção foi medida **sozinha**; a remoção conjunta não foi medida, e o efeito dos exemplos já mostrou que não é aditivo. Próximo passo: cortar `regra_json` e `papel` (redundantes com o contrato), medir de novo e só então olhar as demais |
 
 Nada em `src/prompts/` foi alterado por esta ablação, então não há "frase que voltou": todas estão onde estavam.
 
-**Revisão da regra de decisão, declarada.** A regra inicial julgava só a média de acertos fora do prompt (queda de 0,5 ou mais = "faz diferença"). Depois de ver dados parciais, notei que isso escondia trocas (`conversa_inteira` perdia o caso 5 e ganhava o 21, com a média intacta). Passei a comparar **caso a caso** e a listar quem entrou e quem saiu. A revisão foi feita depois de ver parte dos números; as duas leituras estão neste documento (a coluna "Saíram/Entraram" mostra tudo) para que se possa refazer o veredito.
+**Revisão da regra de decisão, declarada.** A regra inicial julgava só a média de acertos fora do prompt (queda de 0,5 ou mais = "faz diferença"). Os dados parciais mostraram que isso escondia trocas (`conversa_inteira` perdia o caso 5 e ganhava o 21, com a média intacta), e a regra passou a comparar **caso a caso**. A revisão foi feita depois de ver parte dos números; a coluna "Saíram/Entraram" permite refazer o veredito.
 
 ## 4. Leitura do manual (`ler_manual`)
 
@@ -117,7 +117,7 @@ Nada em `src/prompts/` foi alterado por esta ablação, então não há "frase q
 **Achados.**
 
 1. **As regras 2 e 3 fazem o trabalho do prompt.** Sem a regra 2 o leitor responde 4,5 de 18; sem a 3, 8,5. Elas impedem que o modelo trate "formato diferente de parágrafo" ou "assunto só tocado por um trecho" como "sem resposta". É a mesma lição do diagnóstico do RAG ([rag.md](rag.md) §6.2): o prompt rígido responde 3/18, o permissivo, 10 a 11.
-2. **A regra 5 prejudica.** Sem o limite de 80 palavras e a frase sobre o que falta, o leitor responde 16 de 18 (contra 11,5), **sem nenhuma falsa resposta nas 14 sem resposta**. Não investiguei a causa e não vou chutar. Foi a única mudança de prompt que a ablação recomendou, e foi **aplicada e confirmada em 3 rodadas** (§4.1).
+2. **A regra 5 prejudica.** Sem o limite de 80 palavras e a frase sobre o que falta, o leitor responde 16 de 18 (contra 11,5), **sem nenhuma falsa resposta nas 14 sem resposta**. A causa não foi investigada. Foi a única mudança de prompt que a ablação recomendou, e foi **aplicada e confirmada em 3 rodadas** (§4.1).
 3. **`proc_indice` não mostra efeito** (+1,5, dentro do ruído). A regra aprendida foi escrita depois de uma falha real (o índice do manual como "resposta"); a medição **não a sustenta nem a derruba**.
 4. **0 falsas respostas** em todas as variantes e rodadas (14 de 14 recusadas): a amostra é pequena (14 perguntas, um manual, um modelo).
 
@@ -221,7 +221,7 @@ Quando o prompt **passa do contexto**, o Ollama o **corta para metade do context
 
 O que isso significa para cada etapa, conferido no log do servidor:
 
-- **`extrair`** (1.087 a 1.131 tokens) e **`ler_manual`** (até 2.307 tokens nas 18 dúvidas): ficam abaixo de 4096, **nunca foram cortados**. Os resultados das §3 e §4 e de [rag.md](rag.md) não dependem do contexto. (Uma leitura minha anterior, de que o leitor passava do limite em 10 de 18 chamadas, estava errada: contei as chamadas com 2.040 tokens ou mais, não as cortadas.)
+- **`extrair`** (1.087 a 1.131 tokens) e **`ler_manual`** (até 2.307 tokens nas 18 dúvidas): ficam abaixo de 4096, **nunca foram cortados**. Os resultados das §3 e §4 e de [rag.md](rag.md) não dependem do contexto.
 - **`raspar`** (antes da mudança da §5): a chamada tinha 34.591 tokens e **sempre era cortada**, nos dois contextos. O modelo recebia **o fim da página**: 12% com 8192, 6% com 4096, **sem o prompt de sistema** (que fica no começo). Hoje o texto vai ao modelo, na reserva, em lotes de ~2.400 tokens, que nunca passam do limite.
 
 Recomendação: registrar o contexto do Ollama junto de cada medição (`ablacao_prompts.py` já grava `contexto_ollama` a partir da variável `CONTEXTO_OLLAMA`) e tratar o corte como defeito do desenho da raspagem, não do prompt.

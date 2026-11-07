@@ -82,10 +82,10 @@
       "enunciado": "caso 6; humano.md 8.2 e 8.5",
       "usuario": "exemplos",
       "conversas": [
-        [{"usuario": "Quero o código da palheta traseira do meu Onix 2018 1.0 da Chevrolet."}, {"humano": "editar remover 1,2,3,4,5"}],
-        [{"usuario": "Quero o código da palheta traseira do meu Onix 2018 1.0 da Chevrolet."}, {"humano": "editar remover 1,2,3,4,5"}]
+        [{"usuario": "Quero o código do espelho retrovisor do meu Onix 2018 1.0 da Chevrolet."}, {"humano": "editar remover 1"}],
+        [{"usuario": "Quero o código do retrovisor espelho do meu Onix 2018 1.0 da Chevrolet."}, {"humano": "editar remover 1"}]
       ],
-      "esperado": {"motivo": "respondido", "contem": "0 nova(s)"}
+      "esperado": {"motivo": "respondido", "contem": "já existia"}
     },
     {
       "id": "rejeitado",

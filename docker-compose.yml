@@ -1,0 +1,72 @@
+# Uso (detalhes no README, seção "Com Docker"):
+#   cp .env.example .env              # e preencha GROQ_API_KEY (MODE vazio = remote)
+#   docker compose build
+#   docker compose run --rm app       # abre a conversa; "docker compose run --rm app minha-sessao" retoma uma sessão
+#
+# Modelo local, no próprio Docker (lento, só CPU):
+#   docker compose --profile local up -d ollama
+#   docker compose --profile local run --rm puxar-modelo        # baixa o AI_MODEL (qwen2.5:7b tem 4,7 GB)
+#   MODE=local AI_MODEL=qwen2.5:7b docker compose run --rm app
+services:
+  app:
+    image: assistente-automotivo
+    build:
+      context: .
+      args:
+        CODE_COMMIT: ${CODE_COMMIT:-}
+    stdin_open: true
+    tty: true
+    shm_size: 1gb            # o Chromium trava com os 64 MB padrão de /dev/shm
+    environment:
+      MODE: ${MODE:-remote}
+      AI_MODEL: ${AI_MODEL:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-}
+      USER_ID: ${USER_ID:-}
+      MAX_TURNOS: ${MAX_TURNOS:-}
+      PRAZO_APROVACAO_HORAS: ${PRAZO_APROVACAO_HORAS:-}
+      # Ollama: o do perfil "local" (serviço abaixo). Para o Ollama do próprio computador, ponha OLLAMA_URL no .env
+      # (Docker Desktop: http://host.docker.internal:11434/v1).
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434/v1}
+    volumes:
+      # Volumes nomeados nascem com o conteúdo da imagem (base de peças, índice do manual) e guardam memória, conversas e logs
+      # entre execuções sem tocar nos arquivos do repositório. "docker compose down -v" volta ao estado da imagem.
+      - databases:/app/databases
+      - logs:/app/logs
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  ollama:
+    profiles: [local]
+    image: ollama/ollama
+    volumes:
+      - modelos:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # Com GPU NVIDIA (precisa do NVIDIA Container Toolkit), descomente:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  puxar-modelo:
+    profiles: [local]
+    image: ollama/ollama
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: ["sh", "-c", "ollama pull \"$$AI_MODEL\""]
+    environment:
+      OLLAMA_HOST: ollama:11434
+      AI_MODEL: ${AI_MODEL:-qwen2.5:7b}
+
+volumes:
+  databases:
+  logs:
+  modelos:

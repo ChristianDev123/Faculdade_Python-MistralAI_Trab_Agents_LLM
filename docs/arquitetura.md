@@ -25,7 +25,7 @@ Este documento descreve o sistema **como ele está hoje**, nas seis perguntas qu
           ▼               ▼                  ▼                    ▼                 ▼
   databases/db.sqlite  databases/chroma_db  databases/manuais/  databases/         logs/<usuário>/
   pecas_automoveis     trechos dos manuais  PDFs               checkpoints.sqlite  <sessão>/
-  webcatalogos         (lidos por BM25) e                      (estado de cada     trajetoria.jsonl
+  webcatalogos         (lidos por BM25) e                      (estado de cada     trace.jsonl
   log_interacoes       memoria_episodica                       conversa)           (um evento por passo)
   memoria_semantica    (vetores)                                                   src/prompts/ (versão
                                                                                    carimbada no log)
@@ -150,7 +150,7 @@ Os doze motivos pelos quais uma execução termina. O motivo é definido **por c
 | `esquecido` | `esquecido` | `esquecer_confirmar` | (apagado pela própria remoção; ver abaixo) | 1 | 2.0 s |
 | `erro_ferramenta` | `erro` | **não observado** | — | — | — |
 
-**11 dos 12 motivos foram produzidos por execuções reais.** `erro_ferramenta` (a consulta ao banco, a leitura do manual ou o navegador levantam um erro) está implementado em `_montar_saida`, mas não consegui provocá-lo sem simular a falha; fica declarado como previsto e não observado.
+**11 dos 12 motivos foram produzidos por execuções reais.** `erro_ferramenta` (a consulta ao banco, a leitura do manual ou o navegador levantam um erro) está implementado em `_montar_saida`, mas não foi provocado sem simular a falha; fica declarado como previsto e não observado.
 
 **O `esquecido` não deixa log por desenho:** a remoção apaga `logs/<usuário>/`. A prova dele está em outro lugar: o `resultado.json` guarda a transcrição, a varredura independente logo após apagar deu **0 ocorrências** e a linha de auditoria da remoção (só com o hash do identificador) está em `cenarios.esquecer_confirmar.auditoria_da_remocao`. A conversa seguinte voltou a perguntar o modelo do veículo.
 

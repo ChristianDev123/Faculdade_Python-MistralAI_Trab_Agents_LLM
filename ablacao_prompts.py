@@ -9,12 +9,11 @@ Cada variante é o prompt ATUAL menos uma frase (ou um bloco). Nada em src/promp
 memória durante a medição. Regra de decisão:
   - extracao: compara CASO A CASO com a linha de base (um caso "acerta" se acerta a ficha em todas as rodadas). "faz
     diferença" se, sem a frase, algum caso fora do prompt que a base acertava deixa de ser acertado; "melhora" se só
-    entram casos; "sem efeito" se nada muda. A primeira versão da regra olhava só a média de casos fora do prompt
-    (queda de 0,5 ou mais), o que escondia trocas (um caso sai e outro entra); foi trocada depois de ver dados parciais.
+    entram casos; "sem efeito" se nada muda. Olhar só a média esconderia trocas (um caso sai e outro entra).
   - leitor: o modelo varia entre rodadas, então cada pergunta vale a fração de rodadas em que acertou o fato esperado;
     "entrou"/"saiu" é uma mudança de 0,5 ou mais na fração. "faz diferença" se alguma pergunta saiu ou se a falsa
     resposta passou da linha de base; "melhora" se só entraram; "sem efeito" nos demais casos.
-O relatório lista, por variante, os casos que entraram e que saíram. Registre o contexto do servidor em CONTEXTO_OLLAMA.
+O relatório lista, por variante, os casos que entraram e que saíram. O contexto do servidor vem de CONTEXTO_OLLAMA.
 Resultados em logs/ablacao-prompts/<alvo>.json.
 """
 import json

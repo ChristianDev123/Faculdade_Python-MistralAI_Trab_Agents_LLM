@@ -1,0 +1,21 @@
+id,fiel,nota,quem_rotulou
+1,nao,A resposta utiliza o valor falso fornecido na pergunta (300 Nm) em vez da informação correta dos trechos (120 Nm).,Marcelo Fernandes
+2,sim,A resposta sintetiza corretamente os passos descritos nos trechos para a troca da lâmpada do farol de neblina.,Marcelo Fernandes
+3,nao,"A resposta afirma que a troca ocorre aos 90 mil km, informação inserida na pergunta que não consta em nenhum dos trechos.",Marcelo Fernandes
+4,sim,O trecho 1 confirma explicitamente que a inflação máxima é de 350 KPA.,Marcelo Fernandes
+5,sim,O trecho 1 orienta corretamente a desligar a ignição e todos os consumidores elétricos antes da desconexão.,Marcelo Fernandes
+6,sim,A informação de 350 kPa é claramente confirmada pelo trecho 2.,Marcelo Fernandes
+7,sim,"A resposta reflete os trechos 2 e 4, explicando que a luz não indica o nível do óleo, mas alerta para problemas graves.",Marcelo Fernandes
+8,sim,O trecho 5 confirma expressamente que a geração de pó é normal e não representa risco de incêndio.,Marcelo Fernandes
+9,sim,A resposta respeita a recomendação do trecho 1 de evitar distâncias inferiores a 30 cm no uso do lavador de alta pressão.,Marcelo Fernandes
+10,sim,A resposta elenca os passos exatos listados no trecho 1 para a montagem da argola de reboque dianteira.,Marcelo Fernandes
+11,sim,"A resposta reflete corretamente o trecho 2, que afirma que a luz não é um indicador do nível do óleo.",Marcelo Fernandes
+12,sim,A resposta consolida corretamente as instruções de acionamento e os limites de funcionamento do trecho 1.,Marcelo Fernandes
+13,nao,"A resposta baseia-se na informação falsa da pergunta (12 airbags), que não consta nos trechos fornecidos.",Marcelo Fernandes
+14,sim,A localização indicada está perfeitamente de acordo com as descrições dos trechos 5 e 6.,Marcelo Fernandes
+15,sim,"A resposta concorda com o trecho 2, que permite a lavagem desde que respeitadas as orientações do equipamento.",Marcelo Fernandes
+16,sim,"Os passos de remoção, substituição e encaixe descritos estão de acordo com o trecho 1.",Marcelo Fernandes
+17,sim,A resposta traz exatamente a capacidade de aproximadamente 50 litros informada no trecho 1.,Marcelo Fernandes
+18,nao,"A resposta assume o valor falso da pergunta (999 kPa), ignorando o trecho 1 que indica o limite de 350 KPA.",Marcelo Fernandes
+19,sim,Os valores de 50 litros de capacidade e 7 litros de reserva estão diretamente suportados pelo trecho 1.,Marcelo Fernandes
+20,nao,A resposta confunde erroneamente os passos para a troca da bateria da chave (trecho 2) com os da bateria do veículo.,Marcelo Fernandes

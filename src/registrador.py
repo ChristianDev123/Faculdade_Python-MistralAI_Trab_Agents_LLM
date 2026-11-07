@@ -55,8 +55,7 @@ class Registrador:
         self._default_data()
 
     def _default_data(self):
-        # Esta lista é a fonte da verdade dos catálogos: o ausente é criado e o gravado com link ou regra
-        # diferentes é corrigido. As lacunas <...> da regra são preenchidas por WebScrapper._get_data.
+        # Fonte da verdade dos catálogos: o ausente é criado e o gravado com link ou regra diferentes é corrigido.
         catalogos = [
             {
                 "fabricante":'Volkswagen',

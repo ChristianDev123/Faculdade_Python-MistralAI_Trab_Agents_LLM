@@ -2,25 +2,24 @@ from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import json
+import os
 import re
 import time
-import unicodedata
 from urllib.parse import quote_plus
 from bs4 import BeautifulSoup, Comment
 from playwright.sync_api import sync_playwright
-from src.util import ler_prompt, modelo_em_uso
+from src.rastreio import chamar_modelo
+from src.util import dobrar, ler_prompt, modelo_em_uso
 
 MAX_TOKENS_EXTRACAO = 4096  # teto de saída da extração por lote (só na reserva com modelo)
 CHROMIUM = '/usr/bin/chromium'
 
-# Tetos da raspagem: sem eles, a quantidade de páginas era a que o modelo dissesse (chegou a dizer 43) e o tempo não tinha limite.
-# O de tempo é conferido entre páginas e entre lotes; uma única chamada ao modelo já tem o seu (LLM_TIMEOUT).
+# Tetos da raspagem. O de tempo é conferido entre páginas e entre lotes; uma chamada ao modelo tem o seu (LLM_TIMEOUT).
 MAX_PAGINAS = 3
 MAX_SEGUNDOS = 120
-# Tamanho de cada lote enviado ao modelo na reserva. O Ollama corta, em silêncio e pelo começo, o que passa do contexto (4096 por padrão);
-# 5.000 caracteres da página (~2.400 tokens) mais o prompt (~900) cabem com folga, e nenhum lote perde o prompt de sistema.
+# Lote enviado ao modelo na reserva: o Ollama corta pelo começo o que passa do contexto (4096 por padrão), e este tamanho cabe nele.
 LOTE_CARACTERES = 5000
-# Cartão de peça no markdown: "### [Nome](/peca/<código>/<slug>)". O código vem do endereço do link, não de um modelo.
+# Cartão de peça no markdown: "### [Nome](/peca/<código>/<slug>)".
 CABECALHO_CARTAO = re.compile(r'### \[(?P<nome>[^\]]+)\]\(/peca/(?P<codigo>[^/\s)]+)/[^)\s]*\)')
 SELETOR_PROXIMO = (
     "//button[contains(text(), '>') or text()='>' or contains(text(), '»') or contains(@aria-label, 'Next') or contains(@class, 'next') or contains(text(), 'Próximo') or contains(text(), 'Proximo')]"
@@ -51,17 +50,13 @@ FORMATO_RETORNO = {'type': 'json_schema', 'json_schema': {'name': 'retorno_websc
 }}}
 
 
-def _dobrar(texto: str) -> str:
-    return re.sub(r'\s+', ' ', ''.join(c for c in unicodedata.normalize('NFKD', str(texto).lower()) if not unicodedata.combining(c)))
-
-
 def codigo_esta_no_texto(codigo: str, texto: str) -> bool:
     """O código tem forma de código (5 ou mais caracteres, com algum dígito) e aparece no texto como item próprio, sem ser pedaço de outro número?
     É a verificação que pega o código inventado e o preço reformatado ("2097.65" a partir de "2.097,65")."""
     codigo = str(codigo).strip()
     if len(codigo) < 5 or not any(c.isdigit() for c in codigo):
         return False
-    return re.search(r'(?<![\w.,])' + re.escape(_dobrar(codigo)) + r'(?![\w])', _dobrar(texto)) is not None
+    return re.search(r'(?<![\w.,])' + re.escape(dobrar(codigo)) + r'(?![\w])', dobrar(texto)) is not None
 
 
 def ler_cartoes(markdown: str) -> list[dict]:
@@ -79,8 +74,7 @@ def ler_cartoes(markdown: str) -> list[dict]:
             descritores = detalhes[:i]
             if i + 1 < len(detalhes) and not detalhes[i + 1].endswith(':'):
                 aplicacoes = [a.strip() for a in detalhes[i + 1].split(',') if a.strip()]
-        # O que vem antes de "Aplicações:" distingue peças de mesmo título e código diferente: o lado ("Lado esquerdo", em 107 de 202 cartões),
-        # a medida ("M12x1.5x44mm"), a versão. Sem isso, duas peças de lados opostos aparecem repetidas na lista de aprovação.
+        # O que vem antes de "Aplicações:" distingue peças de mesmo título: o lado, a medida, a versão.
         nome = m['nome'].strip() + (f" ({', '.join(descritores)})" if descritores else '')
         pecas.append({'nome_peca': nome, 'carros_compativeis': aplicacoes, 'codigo_peca': m['codigo']})
     return pecas
@@ -92,7 +86,7 @@ PALAVRAS_VAZIAS = {'de', 'da', 'do', 'das', 'dos', 'para', 'pra', 'o', 'a', 'os'
 def _radicais(texto: str) -> list[str]:
     """Palavras do pedido sem artigo e preposição, reduzidas ao radical (plural e final de gênero saem): "palhetas traseiras" -> palhet, traseir."""
     radicais = []
-    for palavra in re.findall(r'[a-z0-9]+', _dobrar(texto)):
+    for palavra in re.findall(r'[a-z0-9]+', dobrar(texto)):
         if palavra in PALAVRAS_VAZIAS:
             continue
         if len(palavra) > 3 and palavra.endswith('s'):
@@ -109,7 +103,7 @@ def filtrar_por_nome(pecas: list[dict], nome_peca: str) -> list[dict]:
     radicais = _radicais(nome_peca)
     if not radicais:
         return pecas
-    return [p for p in pecas if all(r in _dobrar(p['nome_peca']) for r in radicais)]
+    return [p for p in pecas if all(r in dobrar(p['nome_peca']) for r in radicais)]
 
 
 def em_lotes(markdown: str, limite: int = LOTE_CARACTERES) -> list[str]:
@@ -163,26 +157,21 @@ class WebScrapper:
 
         markdown_linhas = []
 
-        # 4. Tratar elementos estruturais e links no corpo do HTML
-        # Se o corpo tiver links envelopando múltiplos blocos (cards)
         anchors = soup.find_all("a", href=True)
 
         if anchors:
             for a in anchors:
                 href = a["href"].strip()
 
-                # Extrai todos os blocos de texto/sub-elementos contidos no link
                 linhas_texto = []
                 for element in a.stripped_strings:
                     texto = element.strip()
-                    # Evita duplicar fragmentos repetidos
                     if texto and texto not in linhas_texto:
                         linhas_texto.append(texto)
 
                 if not linhas_texto:
                     continue
 
-                # Se for um card com múltiplos campos (ex: Título, Atributos, Preço)
                 if len(linhas_texto) > 1:
                     titulo = linhas_texto[0]
                     detalhes = linhas_texto[1:]
@@ -192,33 +181,26 @@ class WebScrapper:
                         block_md += f"- {det}\n"
                     markdown_linhas.append(block_md)
                 else:
-                    # Se for um link simples de linha única
                     markdown_linhas.append(f"-[{linhas_texto[0]}]({href})")
 
-            # Remove o link já processado para não duplicar no texto geral
             a.decompose()
 
-        # 5. Processar o texto restante do HTML (textos fora de <a>)
         texto_restante = soup.get_text(separator="\n")
         for linha in texto_restante.splitlines():
             linha_limpa = linha.strip()
             if linha_limpa:
                 markdown_linhas.append(linha_limpa)
 
-        # 6. Reanexar os componentes de navegação em HTML (se houver)
         if nav_tags:
             markdown_linhas.append(
                 "\n--- COMPONENTES DE NAVEGACAO E PAGINACAO (HTML) ---"
             )
             markdown_linhas.extend(nav_tags)
 
-        # 7. Pós-processamento e compressão drástica de whitespace/quebras
         resultado = "\n".join(markdown_linhas)
 
-        # Substitui múltiplos espaços/tabs por 1 espaço
         resultado = re.sub(r"[ \t]+", " ", resultado)
 
-        # Reduz 3 ou mais quebras de linha para no máximo 2 (\n\n)
         resultado = re.sub(r"\n\s*\n", "\n\n", resultado)
 
         return resultado.strip()
@@ -234,8 +216,8 @@ class WebScrapper:
             # Técnica: extração estruturada com 1 exemplo (one-shot) de card em markdown, no prompt.
             # Contrato: schema estrito {dados_peca: [{nome_peca, carros_compativeis[], codigo_peca}]}.
             # Impede: tratar links de menu como peça. O que o modelo devolve é proposta: só vale o código que está no lote.
-            response = self.client.chat.completions.create(
-                model=modelo_em_uso(),
+            response = chamar_modelo(
+                self.client, model=modelo_em_uso(),
                 messages=[{'role': 'system', 'content': sys_prompt}, {'role': 'user', 'content': lote}],
                 response_format=FORMATO_RETORNO, temperature=0, max_tokens=MAX_TOKENS_EXTRACAO)
             for peca in json.loads(response.choices[0].message.content).get('dados_peca', []):
@@ -264,7 +246,8 @@ class WebScrapper:
         paginas_lidas = 0
         try:
             with sync_playwright() as p:
-                browser = p.chromium.launch(executable_path=CHROMIUM, headless=True)
+                # Como root, no contêiner, o Chromium só abre com --no-sandbox.
+                browser = p.chromium.launch(executable_path=CHROMIUM, headless=True, args=['--no-sandbox'] if os.environ.get('CHROMIUM_NO_SANDBOX') else [])
                 context = browser.new_context(
                     user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                     viewport={"width": 1280, "height": 800}

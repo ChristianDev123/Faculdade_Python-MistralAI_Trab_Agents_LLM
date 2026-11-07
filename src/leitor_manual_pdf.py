@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import os
+import re
 import chromadb
 from chromadb.utils import embedding_functions
 from langchain_community.document_loaders import PyPDFLoader
@@ -9,7 +10,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from src.busca_textual import Bm25
 from src.contrato import LeituraManual
 from src.memoria import texto_procedural
-from src.util import JANELA_TOKENS, ler_prompt, modelo_em_uso, tokens_estimados
+from src.rastreio import chamar_modelo, evento, ferramenta, registrar_resultado
+from src.util import JANELA_TOKENS, dobrar, ler_prompt, modelo_em_uso, tokens_estimados
 
 # Primeira página com conteúdo real de cada manual. As anteriores são capa, sumário e índice,
 # que respondem "onde está" e não "o que fazer". Medido nos PDFs do repositório:
@@ -21,11 +23,32 @@ PRIMEIRA_PAGINA_CONTEUDO = {
     'Volkswagen_Fox_2020.pdf': 9,
 }
 PRIMEIRA_PAGINA_PADRAO = 6
-# Trechos (chunks de 800 caracteres) levados ao modelo. 6 e não 15: com a busca textual, o 7B respondeu 14 de 18 dúvidas
-# com k=6 e menos com mais trechos, porque o ruído extra atrapalha a leitura. Medição em docs/rag.md.
+# Trechos (chunks de 800 caracteres) levados ao modelo. Medição em docs/rag.md.
 K_TRECHOS = 6
 
+# Fração das palavras do `trecho_original` que precisa estar nos trechos. Não é cópia exata: o modelo costura partes
+# do mesmo trecho e corrige a hifenização do PDF, e a exigência literal recusava respostas certas (docs/seguranca.md).
+COBERTURA_MINIMA_DO_TRECHO = 0.8
+
 MAX_TOKENS_LEITURA = 600  # teto de saída da leitura: sem ele, uma geração presa num schema roda até o timeout
+
+
+def motivo_sem_sustentacao(leitura: LeituraManual, trechos: list[str], veiculo: dict | None) -> str | None:
+    """Por que a resposta não se sustenta nos trechos recuperados, ou None se ela se sustenta.
+    O texto da dúvida chega ao modelo pelo mesmo canal dos trechos, então a conferência só olha os trechos que vieram do manual:
+    o `trecho_original` precisa vir deles, e todo número do resumo também (o do veículo pode vir da pergunta)."""
+    texto = dobrar(' '.join(trechos))
+    palavras, do_manual = re.findall(r'\w+', dobrar(leitura.trecho_original)), set(re.findall(r'\w+', texto))
+    if not palavras or sum(p in do_manual for p in palavras) / len(palavras) < COBERTURA_MINIMA_DO_TRECHO:
+        return 'trecho_original fora dos trechos recuperados'
+    texto = texto.replace(',', '.')
+    do_veiculo = {str(v) for v in (veiculo or {}).values() if v}
+    sem_marcadores = re.sub(r'(^|\s)\d{1,2}[.)]\s', ' ', leitura.resumo)  # "1. Retire a tampa": lista numerada, não dado
+    for numero in re.findall(r'\d+(?:[.,]\d+)*', sem_marcadores):
+        numero = numero.replace(',', '.')
+        if numero not in do_veiculo and not re.search(rf'(?<![\d.]){re.escape(numero)}(?![\d])', texto):
+            return f'número {numero} fora dos trechos recuperados'
+    return None
 
 
 class LeitorManualPDF:
@@ -62,8 +85,8 @@ class LeitorManualPDF:
         paginas_pdf = loader.load()
         divisor_por_paragrafo = RecursiveCharacterTextSplitter(
             separators=["\n\n", "\n", " ", ""],
-            chunk_size=800,      # Tamanho limite flexível caso um parágrafo seja enorme
-            chunk_overlap=0      # Sem sobreposição excessiva para preservar limites de blocos
+            chunk_size=800,
+            chunk_overlap=0
         )
         chunks = divisor_por_paragrafo.split_documents(paginas_pdf)
         documentos = []
@@ -120,7 +143,9 @@ class LeitorManualPDF:
         Devolve {'leitura': LeituraManual, 'paginas': [...]} ou {'erro': ...}."""
         indice, trechos_manual = self._indice(namefile)
         ignorar = ' '.join(str(v) for v in (veiculo or {}).values() if v)
-        achados = indice.buscar(duvida, K_TRECHOS, ignorar=ignorar)
+        with ferramenta('buscar_manual', manual=namefile, duvida=duvida) as span:
+            achados = indice.buscar(duvida, K_TRECHOS, ignorar=ignorar)
+            registrar_resultado(span, [trechos_manual[i][1] for i, _ in achados])  # os identificadores dos trechos, não o texto
         if not achados:
             return {'erro': 'Nenhum trecho do manual contém os termos da dúvida'}
         result = {'documents': [[trechos_manual[i][0] for i, _ in achados]],
@@ -142,10 +167,10 @@ class LeitorManualPDF:
         paginas = sorted({meta['pagina'] for meta in metas})
 
         # Técnica: geração fundamentada nos trechos recuperados (RAG), com `pensamento` curto antes da resposta (cadeia de pensamento).
-        # Contrato: LeituraManual {pensamento, trecho_original, resumo, sanada}; o limite de 80 palavras vale só pelo prompt.
+        # Contrato: LeituraManual {pensamento, trecho_original, resumo, sanada}.
         # Impede: completar com conhecimento que não está nos trechos, e dar por sanada uma dúvida que só aparece em índice.
-        resposta = self.client.chat.completions.create(
-            model=modelo_em_uso(),
+        resposta = chamar_modelo(
+            self.client, model=modelo_em_uso(),
             messages=[
                 {'role': 'system', 'content': sistema},
                 {'role': 'user', 'content': f"Dúvida: {duvida}\n\nTrechos do manual:\n\n" + "\n\n".join(trechos)},
@@ -159,4 +184,9 @@ class LeitorManualPDF:
             leitura = LeituraManual.model_validate_json(resposta.choices[0].message.content)
         except ValueError as err:
             return {'erro': f'Resposta do modelo fora do contrato LeituraManual: {err}'}
+        motivo = motivo_sem_sustentacao(leitura, result['documents'][0][:len(trechos)], veiculo) if leitura.sanada else None
+        if motivo:  # fail-closed: resposta sem sustentação não sai como resposta nem vai para a memória
+            evento('leitura_rejeitada', motivo=motivo, resumo=leitura.resumo)
+            leitura = LeituraManual(pensamento=leitura.pensamento, trecho_original='', sanada=False,
+                                    resumo='Os trechos encontrados não sustentam uma resposta.')
         return {'leitura': leitura, 'paginas': paginas, 'trechos_descartados': descartados}

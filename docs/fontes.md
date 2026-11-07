@@ -62,4 +62,9 @@ As fontes abaixo foram abertas em 2026-10-18 para conferir que o link existe e d
 
 ## 15. Manuais do proprietário (corpus de manuais)
 **Documentos:** `Volkswagen_Fox_2015.pdf` (335 páginas, fechamento 22.08.2014, edição 09.2014) e `Volkswagen_Fox_2020.pdf` (300 páginas, fechamento 07.02.2020, edição 05.2020), em `databases/manuais/`.
-**O que sustenta no texto:** o conteúdo que o RAG consulta ([rag.md](rag.md) §2). **O endereço de onde o grupo baixou cada PDF não foi registrado:** quem os baixou precisa acrescentar o link aqui.
+**Link:** [https://www.vw.com.br/pt/servicos-e-acessorios/servicos-e-produtos/manuais-e-garantia/manuais.html](https://www.vw.com.br/pt/servicos-e-acessorios/servicos-e-produtos/manuais-e-garantia/manuais.html) (a página oficial lista o "Manual Fox 2015" e o "Manual Fox 2020"; conferida em 2026-11-07)
+**O que sustenta no texto:** o conteúdo que o RAG consulta ([rag.md](rag.md) §2).
+
+## 16. Manuais da Chevrolet
+**Link:** [https://www.chevrolet.com.br/servicos/manuais](https://www.chevrolet.com.br/servicos/manuais) (conferida em 2026-11-07)
+**O que sustenta no texto:** a página oficial de manuais do proprietário da Chevrolet, de onde viria um novo manual da marca. **Nenhum manual da Chevrolet está no corpus hoje:** as dúvidas de manual só são respondidas para o Fox 2015 e o Fox 2020.
