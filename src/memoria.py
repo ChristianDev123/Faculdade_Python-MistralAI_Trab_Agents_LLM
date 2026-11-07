@@ -78,6 +78,10 @@ def _canonico(valor: dict) -> str:
     return json.dumps({k: str(v).strip().casefold() for k, v in valor.items()}, sort_keys=True, ensure_ascii=False)
 
 
+# CPF, e-mail e telefone: o que a memória episódica, compartilhada entre usuários, nunca guarda.
+DADO_PESSOAL = re.compile(r'\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b|[\w.+-]+@[\w-]+\.[\w.-]+|\(?\b\d{2}\)?[\s-]?9?\d{4}-?\d{4}\b')
+
+
 class Memoria:
     def __init__(self, registrador, chroma_client):
         self.reg = registrador
@@ -118,6 +122,8 @@ class Memoria:
     # ------------------------- episódica: dúvidas de manual já respondidas -------------------------
 
     def registrar_episodio(self, user_id: str, veiculo: dict, duvida: str, resolucao: str) -> dict:
+        if DADO_PESSOAL.search(duvida) or DADO_PESSOAL.search(resolucao):
+            return {'ignorado': 'dado pessoal na dúvida ou na resposta'}
         palavras = ', '.join(sorted({w.lower().strip('?,.') for w in duvida.split() if len(w) > 4}))
         resultado = self.reg.inserir('log_interacoes', {
             'modelo': veiculo['modelo'], 'ano_fabricacao': veiculo['ano'], 'motorizacao': veiculo.get('motorizacao') or '',

@@ -6,7 +6,7 @@ from pathlib import Path
 PROJECT_PATH = Path(__file__).resolve().parent.parent
 PROMPTS_PATH = PROJECT_PATH / 'src' / 'prompts'
 # Vai em cada trace e separa as rodadas da avaliação. Sobe a cada mudança de comportamento.
-VERSAO_SISTEMA = '2.0.0'
+VERSAO_SISTEMA = '3.0.0'
 
 
 def commit_atual() -> str:

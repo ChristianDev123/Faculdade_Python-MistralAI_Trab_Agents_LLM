@@ -44,6 +44,12 @@ def texto_da_memoria() -> str:
         return ' '.join(str(l) for t in ('log_interacoes', 'memoria_semantica') for l in conn.execute(f'SELECT * FROM {t}'))
 
 
+def respostas_da_memoria() -> str:
+    """O que a memória episódica serve a outros usuários: a resposta, não a pergunta."""
+    with sqlite3.connect(DB / 'db.sqlite') as conn:
+        return ' '.join(l[0] for l in conn.execute('SELECT resolucao FROM log_interacoes'))
+
+
 def ler_traces(usuario: str) -> list[dict]:
     spans = []
     for arquivo in sorted((LOGS / usuario).rglob('trace.jsonl')):
@@ -51,7 +57,7 @@ def ler_traces(usuario: str) -> list[dict]:
     return sorted(spans, key=lambda s: s['start_time'])
 
 
-def avaliar(esperado: dict, corpo: dict, spans: list[dict], novas: dict, duplicatas: bool, memoria: str) -> dict:
+def avaliar(esperado: dict, corpo: dict, spans: list[dict], novas: dict, duplicatas: bool, memoria: str, respostas: str) -> dict:
     """As propriedades conferidas no caso, por nível: {nível: {propriedade: passou}}."""
     from pydantic import ValidationError
     from src.contrato import Saida
@@ -91,6 +97,8 @@ def avaliar(esperado: dict, corpo: dict, spans: list[dict], novas: dict, duplica
         r[f'linhas novas em {tabela} = {quantas}'] = novas[tabela] == quantas
     if 'nao_grava' in esperado:
         r[f"memoria sem {esperado['nao_grava']}"] = esperado['nao_grava'] not in memoria
+    if 'nao_grava_resposta' in esperado:
+        r[f"respostas da memoria sem {esperado['nao_grava_resposta']}"] = esperado['nao_grava_resposta'] not in respostas
     if esperado.get('sem_duplicatas'):
         r['sem duplicatas em pecas_automoveis'] = not duplicatas
     if esperado.get('varredura_limpa'):
@@ -137,11 +145,11 @@ def rodar(versao: str, ids: list[str]) -> int:
             usuario = f"evals-{versao}-{caso['id']}"
             inicio = time.time()
             corpo, spans = rodar_caso(caso, usuario)
-            depois, duplicatas, memoria = contar_linhas(), ha_duplicatas(), texto_da_memoria()
+            depois, duplicatas, memoria, respostas = contar_linhas(), ha_duplicatas(), texto_da_memoria(), respostas_da_memoria()
             novas = {t: depois[t] - antes[t] for t in TABELAS}
             restaurar_estado(copias / 'migrado')
             shutil.rmtree(LOGS / usuario, ignore_errors=True)
-            niveis = avaliar(caso['esperado'], corpo, spans, novas, duplicatas, memoria)
+            niveis = avaliar(caso['esperado'], corpo, spans, novas, duplicatas, memoria, respostas)
             ok = all(all(n.values()) for n in niveis.values())
             traces += spans
             resultados[caso['id']] = {'classe': caso['classe'], 'origem': caso['origem'], 'ok': ok, 'niveis': niveis, 'linhas_novas': novas,
