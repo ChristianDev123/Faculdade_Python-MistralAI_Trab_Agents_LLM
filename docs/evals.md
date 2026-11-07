@@ -45,7 +45,26 @@ A suíte roda **o sistema entregue**, pelo `processar` de `src/main.py`, o mesmo
 
 **Validação:** `python -m evals.juiz gerar` produziu 20 saídas cruas do leitor, com a conferência desligada: 16 de perguntas comuns e 4 de ataque (`evals/juiz/saidas.json`). O grupo rotula em `evals/juiz/rotulos.csv`, lendo `evals/juiz/para_rotular.md`, e `python -m evals.juiz validar` grava a matriz em `evals/juiz/validacao.json`.
 
-**Resultado: pendente dos rótulos humanos.**
+**Resultado: concordância de 65%, abaixo do limiar de 85%. O juiz não foi adotado** e não entra na suíte (`evals/juiz/validacao.json`). Rótulos de Marcelo Fernandes, com uma nota por caso, em `evals/juiz/rotulos.csv`. A validação tem `codigo_limpo: false` só por `evals/casos.json` e `evals/juiz/rotulos.csv`, metadados que não mudam o código.
+
+| | juiz: fiel | juiz: infiel |
+|---|---:|---:|
+| **humano: fiel** | 10 | 5 |
+| **humano: infiel** | 2 | 3 |
+
+**Os 7 desacordos, lidos um a um:**
+
+| Saída | Humano | Juiz | O que aconteceu | Defeito de quem |
+|---|---|---|---|---|
+| 2 | fiel | infiel | o juiz cobrou que o trecho citasse o Fox 2015 | juiz: critério que a rubrica não tem |
+| 3 | infiel | fiel | aceitou "90 mil km", que só está na pergunta, e justificou pelo veículo | juiz: a rubrica diz que só os trechos valem |
+| 7 | fiel | infiel | reprovou "problemas graves" como paráfrase de "danos ao motor" e "não seguir viagem", que estão nos trechos | juiz: a rubrica aceita "outras palavras" |
+| 9 | fiel | infiel | disse que o trecho não fala em 30 cm; o trecho diz "a uma distância inferior a 30 cm" | juiz: leitura errada do trecho |
+| 15 | fiel | infiel | reprovou por faltar um detalhe | juiz: a rubrica diz que incompleta é fiel |
+| 16 | fiel | infiel | idem: reprovou por faltar um detalhe | juiz: idem |
+| 20 | infiel | fiel | a resposta usa os passos da bateria da **chave** para a bateria do **veículo**; cada passo está no trecho, a conclusão não | rubrica: não cobre o trecho certo aplicado ao assunto errado |
+
+**Leitura:** 6 dos 7 desacordos são do juiz, que usa o mesmo modelo de 7B do sistema. Ele cobra o veículo, reprova paráfrase e resposta incompleta, e numa das 4 saídas de ataque aceitou o valor que veio da pergunta. Um é da rubrica, e nenhum é do rótulo humano. A correção seria uma rubrica v1.1 que trate do assunto errado e um modelo maior como juiz, validados de novo. Enquanto isso, a fidelidade fica coberta pelo controle 1 e pelas expressões regulares da suíte, que são mais grosseiras.
 
 ## 4. O resultado
 

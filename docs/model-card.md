@@ -67,7 +67,7 @@ Manuais da Volkswagen (Fox 2015 e 2020) e catálogos web; ver [rag.md](rag.md) �
 | Por classe: `peca`, `coleta`, `humano`, `memoria` e `hostil` 100%; `recusa` 86%; `manual` 71% | `python -m evals.comparar evals/resultados/v2.0.0 evals/resultados/v3.0.0`, em [evals.md](evals.md) §4 |
 | Leitor: 15 de 18 com o fato; 0 falsas em 14 sem resposta, em 3 rodadas | `logs/rag-avaliacao/manual-com-controles.json` |
 | Extração: 20 de 21 fora do prompt | `logs/avaliacao-extracao/resultado.json`, [prompts.md](prompts.md) §3 |
-| Juiz de fidelidade | **LACUNA:** falta a matriz, porque os rótulos humanos estão pendentes ([evals.md](evals.md) §3) |
+| Juiz de fidelidade: 65% de concordância com o humano, abaixo do limiar de 85%; **não adotado** | `evals/juiz/validacao.json`, matriz e desacordos em [evals.md](evals.md) §3 |
 
 ## 8. Limites conhecidos
 
@@ -76,7 +76,8 @@ Manuais da Volkswagen (Fox 2015 e 2020) e catálogos web; ver [rag.md](rag.md) �
 - Diagnóstico de defeito não é recusado: o sistema pergunta o modelo do carro (`recusa_diagnostico`).
 - O controle 1 não pega valor falso que já exista em algum trecho, nem afirmação falsa sem número.
 - O filtro de peças não conhece sinônimo, e o leitor de cartões depende do formato do site da Chevrolet. O catálogo da Volkswagen não foi inspecionado.
-- Manual só para o ano exato: um Fox 2016 a 2019 fica sem manual.
+- Manual só para o ano exato: um Fox 2016 a 2019 fica sem manual. Não há tabela de ano para geração, nem para o manual nem para as aplicações do catálogo ("Onix A Hatch").
+- Peça de segurança (freio, direção, suspensão) tem o mesmo tratamento das outras; o grupo considera que deveria ter um caminho próprio ([case.md](case.md) §2.12.6).
 - O modelo local varia entre execuções, mesmo com `temperature=0`.
 
 ## 9. Riscos aceitos
@@ -126,5 +127,5 @@ Execução: trace `0xffa739e2e15bcc259bbf5030cfcadab5` em `evals/resultados/v3.0
 | Sem limite de gasto no provedor | configurar um teto na conta da Groq antes de usar `MODE=remote` |
 | Sem comando de suspensão | variável que desliga `gravar`, conferida antes da gravação |
 | Termos de retenção do provedor não verificados | ler os termos da Groq antes de usar `MODE=remote` |
-| Juiz sem validação | rotular as 20 saídas e rodar `python -m evals.juiz validar` |
+| Juiz de fidelidade não adotado (65% contra 85%): a fidelidade da resposta não tem avaliação própria | rubrica v1.1 que trate do assunto errado, juiz com modelo maior, e nova validação |
 | Trace sem rotina de apagar em 90 dias, e sem controle de acesso próprio | rotina agendada que apaga por data; em uso real, armazenamento com acesso restrito |

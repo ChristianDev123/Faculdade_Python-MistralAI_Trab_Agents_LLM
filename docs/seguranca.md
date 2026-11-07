@@ -70,7 +70,7 @@ Testes em `tests/test_controles.py`, com `python -m unittest discover -s tests`.
 - **O que o sistema deixou de conseguir:** responder com um número que o modelo calculou ou converteu, como "350 kPa são 3,5 bar", se ele não estiver no trecho. Vira recusa.
 - **A primeira versão custou mais, e foi trocada.** Exigir o `trecho_original` como cópia literal derrubou o leitor de 15 para 12 ou 13 de 18 respostas com o fato, porque o modelo costura partes e corrige a hifenização. A versão atual exige 80% das palavras do trecho (`COBERTURA_MINIMA_DO_TRECHO`, valor escolhido depois de ver esse resultado). Com ela o leitor mantém 16 respondidas, 15 com o fato e 0 falsas nas 14 sem resposta, em 3 rodadas (`logs/rag-avaliacao/manual-com-controles.json`).
 - **Fail-closed:** se não se sustenta, a resposta vira recusa e não vai para a memória. Preferimos perder uma resposta a guardar uma falsa, que alcançaria outros usuários.
-- **O que ele não pega:** valor falso que já exista em algum trecho recuperado, e afirmação falsa sem número. Medimos isso só nos casos do dataset.
+- **O que ele não pega:** valor falso que já exista em algum trecho recuperado, e afirmação falsa sem número. Exemplo em `evals/juiz/saidas.json`, saída 13: "12 airbags" é falso, mas o número 12 aparece nos trechos, então a conferência de números não o barra. Medimos isso só nos casos do dataset.
 
 ### Controle 2: gravar só com aprovação
 
