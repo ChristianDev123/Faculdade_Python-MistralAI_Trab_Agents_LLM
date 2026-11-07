@@ -25,7 +25,7 @@ Este documento descreve o sistema **como ele está hoje**, nas seis perguntas qu
           ▼               ▼                  ▼                    ▼                 ▼
   databases/db.sqlite  databases/chroma_db  databases/manuais/  databases/         logs/<usuário>/
   pecas_automoveis     trechos dos manuais  PDFs               checkpoints.sqlite  <sessão>/
-  webcatalogos         (lidos por BM25) e                      (estado de cada     trajetoria.jsonl
+  webcatalogos         (lidos por BM25) e                      (estado de cada     trace.jsonl
   log_interacoes       memoria_episodica                       conversa)           (um evento por passo)
   memoria_semantica    (vetores)                                                   src/prompts/ (versão
                                                                                    carimbada no log)

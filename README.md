@@ -91,10 +91,9 @@ Saída completa (objeto `Saida`, validado em [src/contrato.py](src/contrato.py))
 **Quando o grafo para e espera alguém:** se a peça não está na base, o sistema busca no catálogo e mostra o que **vai gravar**:
 
 ```
-Vou GRAVAR 24 peça(s) na base local (tabela pecas_automoveis) para Onix 2018 1.0, vindas do catálogo da Chevrolet:
-  1. Bujão do orifício do atuador da tampa traseira — código 52056750
-  ...
-Consequência: respostas futuras sobre este veículo passam a usar estes dados, sem nova consulta ao catálogo. ...
+Vou GRAVAR 1 peça(s) na base local (tabela pecas_automoveis) para Onix 2018 1.0, vindas do catálogo da Chevrolet:
+  1. Palheta traseira ACDelco — código 19376259
+Consequência: respostas futuras sobre este veículo passam a usar estes dados, sem nova consulta ao catálogo. Para desfazer, é preciso apagar as linhas da base.
 Prazo: 24 h; depois disso nada é gravado.
 Responda: aprovar | rejeitar | editar remover 3,5 | editar codigo 2 ABC123
 aprovação:
@@ -113,6 +112,28 @@ Você pode aprovar, rejeitar ou **aprovar editando** (remover itens ou corrigir 
 - sem dados suficientes: pergunta; depois de 3 perguntas iguais sem resposta, desiste e diz por quê;
 - sem base para responder: diz que não encontrou (`sem_base`) em vez de inventar.
 
+## Avaliação e testes
+
+```bash
+python -m evals.rodar --versao 3.0.0                                       # roda os 35 casos e grava em evals/resultados/ (~10 min)
+python -m evals.comparar evals/resultados/v2.0.0 evals/resultados/v3.0.0   # compara duas rodadas, por classe
+python -m evals.metricas evals/resultados/v2.0.0 evals/resultados/v3.0.0   # latência, custo, términos, erros por ferramenta, SLO
+python -m unittest discover -s tests                                       # os testes dos controles de segurança; não precisam de Ollama
+```
+
+`evals.rodar` exige `MODE` e `AI_MODEL` no ambiente e o modelo no ar. Resultados e leitura em [docs/evals.md](docs/evals.md).
+
+## Como ver os traces
+
+Cada conversa grava um trace por execução em `logs/<usuario>/<sessao>/trace.jsonl`, nas convenções GenAI do OpenTelemetry; o caminho aparece ao encerrar a conversa. Os das rodadas estão em `evals/resultados/<rodada>/traces.jsonl`. Para ler como árvore:
+
+```bash
+python -m evals.ver_trace logs/local/minha-sessao/trace.jsonl
+python -m evals.ver_trace evals/resultados/v3.0.0/traces.jsonl hostil_injecao
+```
+
+No Docker: `docker compose run --rm --entrypoint python app -m evals.ver_trace logs/local/minha-sessao/trace.jsonl`. O que cada atributo significa está em [docs/observabilidade.md](docs/observabilidade.md).
+
 ## Estrutura
 
 ```
@@ -124,10 +145,12 @@ verificar_remocao.py varre todas as estruturas atrás de um identificador (prova
 avaliar_rag.py   avalia o RAG com dados/perguntas_rag.json (`perguntas` pelo grafo, `manual` só pelo leitor)
 gerar_exemplos.py roda os cenários de dados/exemplos.json no sistema real e grava logs/exemplos/ (os exemplos da documentação)
 demo_reducer.py   demonstração do reducer num grafo paralelo
+evals/            o dataset, a suíte, o juiz, as métricas e os resultados das rodadas
+tests/            os testes dos controles de segurança
 interfaces/       formatos auxiliares usados pelos scripts de verificação
 databases/        SQLite local, índice ChromaDB e manuais em PDF
-docs/             case, modelos, prompts, arquitetura, io, memória, RAG, grafo, humano, fontes
-logs/             trajetória de cada execução (um JSON por evento)
+docs/             case, modelos, prompts, arquitetura, io, memória, RAG, grafo, humano, evals, model card, segurança, observabilidade, mudanças, fontes
+logs/             traces de cada execução (trace.jsonl) e os logs citados nos documentos da Parte 2 (trajetoria.jsonl)
 ```
 
 ## Contribuidores

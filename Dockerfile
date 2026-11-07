@@ -26,6 +26,8 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 COPY src ./src
 COPY interfaces ./interfaces
 COPY dados ./dados
+COPY evals ./evals
+COPY tests ./tests
 COPY databases ./databases
 COPY *.py ./
 

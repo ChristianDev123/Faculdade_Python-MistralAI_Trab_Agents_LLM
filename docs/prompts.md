@@ -21,7 +21,7 @@ src/prompts/
 └── system_prompt.py                             # carregador
 ```
 
-Cada execução grava no `log` de início o **hash (12 caracteres do SHA-256) de cada arquivo de `src/prompts/`** e o carimbo do código (`commit`, `codigo_limpo`, `arquivos_alterados`; `src/trajetoria.py`). Com o commit e o hash, qualquer resultado deste documento se liga à versão exata do prompt. O git guarda o histórico; o hash prova qual versão rodou. `procedural.md` nunca é escrito pelo sistema: só uma pessoa, por commit revisado.
+Cada execução grava no trace o **hash (12 caracteres do SHA-256) de cada arquivo de `src/prompts/`** e o carimbo do código (`commit`, `codigo_limpo`, `arquivos_alterados`; `src/trajetoria.py`). Com o commit e o hash, qualquer resultado deste documento se liga à versão exata do prompt. O git guarda o histórico; o hash prova qual versão rodou. `procedural.md` nunca é escrito pelo sistema: só uma pessoa, por commit revisado.
 
 ## 2. Condições das medições
 
