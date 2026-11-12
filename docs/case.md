@@ -160,7 +160,7 @@ rotear, ainda decide sozinho como formatar a resposta e o que registrar no SQLit
 
 | Ferramenta | O que faz | Leitura/Escrita | Reversível? | Com quem se comunica |
 |---|---|---|---|---|
-| `executar_webscrapping` | Realiza extração de todo um site de webcatálogo de uma determinada montadora | Escriya | — | Sites de Catálogos |
+| `executar_webscrapping` | Realiza extração de todo um site de webcatálogo de uma determinada montadora | Escrita | — | Sites de Catálogos |
 | `buscar_manual` | Recupera trecho relevante do manual do veículo | Leitura | — | Manuais em PDF indexados |
 | `registrar` | Grava no cache os modelos dados estruturados em json | Escrita | Sim (é cache, pode ser sobrescrito) | SQLite local |
 | `resgatar` | Resgata dados à partir do cache local | Leitura | - | SQLite local |
