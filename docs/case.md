@@ -2,7 +2,7 @@
 
 # 2.1 O problema
 
-**Problema em uma frase:** propietários e mecânicos não confirmam no balcão se uma
+**Problema em uma frase:** proprietários e mecânicos não confirmam no balcão se uma
 peça de reposição é compatível com o veículo específico (modelo, ano e motorização),
 o que gera compra errada, devolução e atraso no conserto.
 
@@ -59,14 +59,14 @@ confirmação do fornecedor.
     </thead>
     <tbody>
         <tr>
-            <td>Propietário</td>
+            <td>Proprietário</td>
             <td>
                 <ul>
                     <li>
                         Comprar de forma autônoma uma peça compatível com seu veículo;
                     </li>
                     <li>
-                        Consultar informações no manual do propietário, como períodos de manutenção, lista de peças próximas de serem trocadas, manutenções preventivas necessárias à ser realizadas, e dicas de condução.
+                        Consultar informações no manual do proprietário, como períodos de manutenção, lista de peças próximas de serem trocadas, manutenções preventivas necessárias à ser realizadas, e dicas de condução.
                     </li>
                 </ul>
             </td>
